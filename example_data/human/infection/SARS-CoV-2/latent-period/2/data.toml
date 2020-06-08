@@ -1,0 +1,4 @@
+[distribution]
+distribution = "gamma"
+shape = 3.0
+scale = 2.0

@@ -1,0 +1,17 @@
+[pAdultOnly.point-estimate]
+value = 0.3
+
+[pPensionerOnly.point-estimate]
+value = 0.1
+
+[pAdultPensioner.point-estimate]
+value = 0.1
+
+[pAdultChildren.point-estimate]
+value = 0.3
+
+[pPensionerChildren.point-estimate]
+value = 0.1
+
+[pAdultPensionerChildren.point-estimate]
+value = 0.1
