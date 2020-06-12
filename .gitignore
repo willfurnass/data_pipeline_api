@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# test output
+.coverage
+.pytest_cache/*
+
+# IDE
+.idea
+*.sw[po]
+.vscode
+
+# sphinx / readthedocs
+doc/build/*
