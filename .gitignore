@@ -6,6 +6,9 @@ __pycache__/
 .coverage
 .pytest_cache/*
 
+# data
+repos/*
+
 # IDE
 .idea
 *.sw[po]
