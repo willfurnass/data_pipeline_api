@@ -1,4 +1,7 @@
 # data_pipeline_api
+
+[![Anaconda-Server Badge](https://anaconda.org/scottishcovidresponse/data_pipeline_api/badges/version.svg)](https://anaconda.org/scottishcovidresponse/data_pipeline_api)
+
 API to access the data pipeline
 
 # Current issues and questions
