@@ -1,13 +1,16 @@
-import pathlib
-from scipy import stats
-from data_pipeline_api.api import API, DataAccess, ParameterRead
-from data_pipeline_api.file_system_data_access import FileSystemDataAccess
+import pandas as pd
+from data_pipeline_api.read_write_api import ReadWriteAPI
+from data_pipeline_api.standard_api import StandardAPI
+from data_pipeline_api.csv_api import CsvAPI
 
-data_path = "../simple_network_sim/data_pipeline_inputs"
-api = API(FileSystemDataAccess(data_path, "metadata.toml"))
-population = api.read_table("human/population")
+read_write_api = ReadWriteAPI("test_data_2")
 
-print(f"Population is {population['Total'].sum()}")
+api = CsvAPI(read_write_api)
+print(api.read_csv("human/estimate"))
+api.write_csv("human/estimatec", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
 
-api.write_table(population, "output/table", version=1)
-api.close()
+api = StandardAPI(read_write_api)
+print(api.read_estimate("human/estimate"))
+# api.write_estimate("human/estimateb", 0.3)
+
+read_write_api.write_access_file()

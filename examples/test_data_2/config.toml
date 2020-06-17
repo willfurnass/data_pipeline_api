@@ -1,0 +1,6 @@
+["human/population"]
+version=1
+format="foo"
+
+["output/population"]
+version=2
