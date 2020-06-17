@@ -13,34 +13,32 @@ def hexdigest(path: Path) -> str:
 
 
 class ReadWriteAPI:
-    def __init__(self, path: Union[str, Path]):
+    def __init__(self, path: Path, filename_api: FilenameAPI):
         self._path = Path(path)
-        self._filename_api = FilenameAPI(self._path)
+        self._filename_api = filename_api
         self._accesses = []
 
     def read(self, **metadata) -> IOBase:
-        results = self._filename_api.match(metadata)
+        results = self._filename_api.find(metadata)
         if len(results) != 1:
             raise ValueError(f"{len(results)} results ({results}) for {metadata}")
         filename, matched_metadata = results.popitem()
-        path = self._path / filename
         self._accesses.append(
             {
                 "type": "read",
-                "filename": str(path),
-                "hexdigest": hexdigest(path),
+                "filename": str(filename),
+                "hexdigest": hexdigest(filename),
                 "requested_metadata": metadata,
                 "read_metadata": matched_metadata,
             }
         )
-        return open(path, mode="rb")
+        return open(filename, mode="rb")
 
     def write(self, **metadata) -> IOBase:
-        filename = self._filename_api.standard_filename(metadata)
-        path = self._path / filename
-        if not path.parent.exists():
-            path.parent.mkdir(parents=True)
-        file = open(path, mode="wb")
+        filename = self._filename_api.path(metadata)
+        if not filename.parent.exists():
+            filename.parent.mkdir(parents=True)
+        file = open(filename, mode="wb")
         # Wrap the file close method with something to record the file access.
         close_file = file.close
 
@@ -50,8 +48,8 @@ class ReadWriteAPI:
             self._accesses.append(
                 {
                     "type": "write",
-                    "filename": str(path),
-                    "hexdigest": hexdigest(path),
+                    "filename": str(filename),
+                    "hexdigest": hexdigest(filename),
                     "write_metadata": metadata,
                 }
             )
