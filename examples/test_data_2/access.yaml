@@ -1,39 +1,40 @@
-path: repos/data_pipeline_api/examples/test_data_2
-accesses:
+data_directory: .
+open_timestamp: 2020-06-18 14:35:42.565496
+close_timestamp: 2020-06-18 14:35:42.579163
+overrides:
+  human/estimate:
+    version: 1
+  human/estimatec:
+    version: 2
+io:
 - type: read
-  filename: repos/data_pipeline_api/examples/test_data_2/human/estimate/1.csv
-  hexdigest: 2170594e2a5e8facd26d4be1ea85769a74b5897d3bfeffa936912d26c6590303
-  requested_metadata:
+  path: human/estimate/1.csv
+  calculated_hash: bdab7c7a5c48e6c4f922e39d6863612fddd0c27d
+  timestamp: 2020-06-18 14:35:42.569945
+  call_metadata:
     quantity: human/estimate
     format: csv
+  normalised_metadata:
+    quantity: human/estimate
+    format: csv
+    version: 1
+    extension: csv
   read_metadata:
+    filename: human/estimate/1.csv
     quantity: human/estimate
     version: 1
     format: csv
     extension: csv
 - type: write
-  filename: repos/data_pipeline_api/examples/test_data_2/human/estimatec/1.csv
-  hexdigest: 0243b5ed64a46a573b16c4be119f822beca1c901dd7d7ba4acf780e0af240a85
+  path: human/estimatec/1.csv
+  calculated_hash: 91a6791ab4f6d3a4616066ffcae641ca3da79567
+  timestamp: 2020-06-18 14:35:42.578903
+  call_metadata:
+    quantity: human/estimatec
+    run_id: 1
+    extension: csv
   write_metadata:
     quantity: human/estimatec
     run_id: 1
     extension: csv
-- type: read
-  filename: repos/data_pipeline_api/examples/test_data_2/file2.txt
-  hexdigest: 7b1e9e1f4d2764c48cf578e6d1641811eb3614cc57fb3efebfea312a091a862f
-  requested_metadata:
-    quantity: human/estimate
-    format: parameter
-  read_metadata:
-    quantity: human/estimate
-    format: parameter
-    extension: toml
     version: 2
-- type: write
-  filename: repos/data_pipeline_api/examples/test_data_2/human/estimateb/1.toml
-  hexdigest: 5c3c3aa13eeda163d7f4f3e6942fc75d996fb41532ff0e50dbd5971670c8fad6
-  write_metadata:
-    quantity: human/estimateb
-    format: parameter
-    run_id: 1
-    extension: toml

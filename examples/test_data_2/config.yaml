@@ -1,0 +1,8 @@
+data_directory: .
+access_log: access.yaml
+
+overrides:
+  human/estimate:
+    version: 1
+  human/estimatec:
+    version: 2

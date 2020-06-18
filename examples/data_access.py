@@ -1,18 +1,21 @@
 import pandas as pd
 from pathlib import Path
-from data_pipeline_api.file_api import FileAPI
-from data_pipeline_api.standard_api import StandardAPI
 from data_pipeline_api.csv_api import CsvAPI
 
-data_path = Path("repos/data_pipeline_api/examples/test_data_2")
-file_api = FileAPI(data_path, data_path / "config.toml", data_path / "access.yaml")
+"""
+TODO
 
-api = CsvAPI(file_api)
-print(api.read_csv("human/estimate"))
-api.write_csv("human/estimatec", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
+[X] Make things work just off the config file?
+[X] Consider changing the config file to yaml.
+[X] Implement version handling.
+[ ] Work out the set of metadata keys.
+[ ] Flesh out the standard interface.
+"""
 
-api = StandardAPI(file_api)
-print(api.read_estimate("human/estimate"))
-api.write_estimate("human/estimateb", 0.5)
+with CsvAPI(
+    "repos/data_pipeline_api/examples/test_data_2/config.yaml",
+    do_not_overwrite=False,
+) as api:
 
-file_api.write_access_file()
+    print(api.read_csv("human/estimate"))
+    api.write_csv("human/estimatec", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
