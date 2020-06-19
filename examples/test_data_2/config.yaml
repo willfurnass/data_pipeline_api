@@ -1,8 +1,16 @@
 data_directory: .
-access_log: access.yaml
+access_log: access-{run_id}.yaml
+fail_on_hash_mismatch: True
+fail_on_overwrite: True
 
-overrides:
-  human/estimate:
-    version: 1
-  human/estimatec:
-    version: 2
+# read:
+# - where:
+#     quantity: human/mixing-matrix
+#   use:
+#     filename: human/mixing-matrix/mymixingmatrix.csv
+
+write:
+- where:
+    {}
+  use:
+    source: simple_network_sim
