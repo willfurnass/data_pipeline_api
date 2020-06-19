@@ -3,9 +3,12 @@ from pathlib import Path
 
 Metadata = Mapping[str, str]
 
+METADATA_FILENAME = "metadata.yaml"
+
 class MetadataKey:
     filename = "filename"
     data_product = "data_product"
+    component = "component"
     extension = "extension"
     run_id = "run_id"
     version = "version"

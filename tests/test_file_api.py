@@ -1,6 +1,8 @@
 import pytest
 from pathlib import Path
 from data_pipeline_api.file_api import FileAPI
+from data_pipeline_api.metadata import METADATA_FILENAME
+
 
 
 @pytest.fixture
@@ -11,7 +13,7 @@ def configuration_file(tmp_path: Path) -> Path:
     with open(tmp_path / "version2.txt", "w") as file:
         file.write("contents2")
 
-    metadata_file = tmp_path / "metadata.yaml"
+    metadata_file = tmp_path / METADATA_FILENAME
     with open(metadata_file, "w") as file:
         file.write(
             """
@@ -26,7 +28,7 @@ def configuration_file(tmp_path: Path) -> Path:
 """
         )
 
-    configuration_file = tmp_path / "config.yaml"
+    configuration_file = tmp_path / "simple_network_sim_config.yaml"
     with open(configuration_file, "w") as file:
         file.write(
             """

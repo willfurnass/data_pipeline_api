@@ -6,7 +6,7 @@ from functools import wraps
 from hashlib import sha1
 import yaml
 
-from data_pipeline_api.metadata import Metadata, MetadataKey
+from data_pipeline_api.metadata import Metadata, MetadataKey, METADATA_FILENAME
 from data_pipeline_api.metadata_store import MetadataStore
 from data_pipeline_api.overrides import Overrides
 
