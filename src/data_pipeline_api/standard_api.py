@@ -10,14 +10,14 @@ from scipy import stats
 class StandardAPI(FileAPI):
     def read_estimate(self, quantity: str) -> float:
         with TextIOWrapper(
-            self.read(quantity=quantity, format="parameter")
+            self.read(quantity=quantity, extension="toml")
         ) as toml_file:
             return Estimate.read_parameter(toml.load(toml_file))
 
     def write_estimate(self, quantity: str, value: float):
         with TextIOWrapper(
             self.write(
-                quantity=quantity, format="parameter", run_id=1, extension="toml"
+                quantity=quantity, run_id=1, extension="toml"
             )
         ) as toml_file:
             toml.dump(Estimate.write_parameter(value), toml_file)
