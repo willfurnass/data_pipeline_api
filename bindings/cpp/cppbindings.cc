@@ -208,7 +208,9 @@ int main()
 
   api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
 
-  example_data_access();
+  // example_data_access();
+
+  example_data_access_wrapped();
 
   pd.release();
   SimpleNetworkSimAPI.release();
