@@ -9,7 +9,8 @@
 #include "pybind11/numpy.h"
 #include "pybind11/stl.h"
 
-#include "Table.hh"
+#include "table.hh"
+#include "datapipeline.hh"
 
 namespace py = pybind11;
 using namespace std;
@@ -21,72 +22,6 @@ namespace pyglobals
   py::object  api;
   py::object  StandardAPI;
 }
-
-
-//********************************************************************************************/
-// API
-//********************************************************************************************/
-
-class Distribution;
-
-double read_estimate(string data_product, const string &component)
-{
-  using namespace pyglobals;
-  double est = py::float_ (StandardAPI.attr("read_estimate")(data_product));
-  // TODO: what about component?
-  return est;
-}
-
-Distribution read_distribution(const string &data_product, const string &component);
-
-double read_sample(const string *data_product, const string &component)
-{
-  using namespace pyglobals;
-  double est = py::float_(StandardAPI.attr("read_sample")(data_product));
-  return est;
-}
-
-void write_estimate(const string &data_product, const string &component, double estimate);
-void write_distribution(const string &data_product, const string &component,
-                        const Distribution &d);
-void write_sample(const string &data_product, const string &component, const vector<double> &samples);
-
-vector<double> read_array(const string &data_product, const string &component);
-
-Table read_table(const string &data_product)
-{
-  using namespace pyglobals;
-
-  Table table;
-
-  py::object dataframe = api.attr("read_table")(data_product);
-
-  vector<string> colnames = dataframe.attr("columns").attr("tolist")().cast<vector<string>>();
-
-  for (const auto &colname: colnames) {
-    
-    string dtype = py::str(dataframe.attr("dtypes").attr(colname.c_str()));
-
-    if (dtype == "float64") {
-      vector<double> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<double>>();
-      table.add_column<double>(colname, values);
-    } else {
-      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
-
-      vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
-      table.add_column<string>(colname, values);
-    }
-  }
-
-  return table;
-}
-
-void write_array(const string &data_product, const string &component, vector<double> array);
-void write_table(const string &data_product, const string &component, const Table &table);
-
-// TODO: need to decide on a class for arrays.  Will return as vector of Ts for now.
-
-/********************************************************************************************/
 
 void example_data_access()
 {
@@ -112,16 +47,16 @@ string python_type(py::object obj)
 }
 
 
-void example_data_access_wrapped()
+void example_data_access_wrapped(DataPipeline &dp)
 {
-  Table table = read_table("human/mixing-matrix");
+  Table table = dp.read_table("human/mixing-matrix");
 
   cout << "human/mixing-matrix:" << endl;
   cout << table.to_string();
   cout << endl;
 
   // No data in the repository yet
-  // cout << "estimate: " << read_estimate("TODO","point-estimate");
+  // cout << "estimate: " << dp.read_estimate("TODO","point-estimate");
 }
 
 int main()
@@ -130,25 +65,11 @@ int main()
 
   using namespace pyglobals;
 
-  pd = py::module::import("pandas");
-
-  SimpleNetworkSimAPI = py::module::import(
-    "data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
-
-  api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
-
-  py::object StandardAPIClass = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
-
-  StandardAPI = StandardAPIClass("repos/data_pipeline_api/examples/test_data_2/config.yaml");
-
   // example_data_access();
 
-  example_data_access_wrapped();
+  DataPipeline dp("repos/data_pipeline_api/examples/test_data_2/config.yaml");
 
-  pd.release();
-  SimpleNetworkSimAPI.release();
-  api.release();
-  StandardAPI.release();
+  example_data_access_wrapped(dp);
 
   cout << "Done." << endl;
   return 0;
