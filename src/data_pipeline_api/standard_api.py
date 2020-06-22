@@ -8,16 +8,16 @@ from scipy import stats
 
 
 class StandardAPI(FileAPI):
-    def read_estimate(self, quantity: str) -> float:
+    def read_estimate(self, data_product: str) -> float:
         with TextIOWrapper(
-            self.read(quantity=quantity, extension="toml")
+            self.read(data_product=data_product, extension="toml")
         ) as toml_file:
             return Estimate.read_parameter(toml.load(toml_file))
 
-    def write_estimate(self, quantity: str, value: float):
+    def write_estimate(self, data_product: str, value: float):
         with TextIOWrapper(
             self.write(
-                quantity=quantity, run_id=1, extension="toml"
+                data_product=data_product, run_id=1, extension="toml"
             )
         ) as toml_file:
             toml.dump(Estimate.write_parameter(value), toml_file)

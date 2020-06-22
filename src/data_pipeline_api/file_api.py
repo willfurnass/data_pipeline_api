@@ -22,7 +22,7 @@ def standard_hash(path: Path) -> str:
 def standard_path(metadata: Metadata) -> Path:
     """Return a standardised path given some metadata.
     """
-    return Path(metadata[MetadataKey.quantity]) / "{}.{}".format(
+    return Path(metadata[MetadataKey.data_product]) / "{}.{}".format(
         metadata[MetadataKey.run_id], metadata[MetadataKey.extension]
     )
 
@@ -37,7 +37,7 @@ def is_superset(metadataA: Metadata, metadataB: Metadata) -> bool:
 
 class MetadataKey:
     filename = "filename"
-    quantity = "quantity"
+    data_product = "data_product"
     extension = "extension"
     run_id = "run_id"
     version = "version"

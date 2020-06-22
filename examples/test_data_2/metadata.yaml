@@ -1,36 +1,36 @@
 - 
-  quantity: human/commutes
+  data_product: human/commutes
   version: 1
   extension: csv
   filename: human/commutes/1.csv
 - 
-  quantity: human/compartment-transition
+  data_product: human/compartment-transition
   version: 1
   extension: csv
   filename: human/compartment-transition/1.csv
 - 
-  quantity: human/infectious-compartments
+  data_product: human/infectious-compartments
   version: 1
   extension: csv
   filename: human/infectious-compartments/1.csv
 - 
-  quantity: human/initial-infections
+  data_product: human/initial-infections
   version: 1
   extension: csv
   filename: human/initial-infections/1.csv
 - 
-  quantity: human/mixing-matrix
+  data_product: human/mixing-matrix
   version: 1
   extension: csv
   filename: human/mixing-matrix/1.csv
-  verified_hash: 075abd810909918419cf7495c16f1afec6fa010cd
+  verified_hash: 075abd810909918419cf7495c16f1afec6fa010c
 - 
-  quantity: human/movement-multipliers
+  data_product: human/movement-multipliers
   version: 1
   extension: csv
   filename: human/movement-multipliers/1.csv
 - 
-  quantity: human/population
+  data_product: human/population
   version: 1
   extension: csv
   filename: human/population/1.csv

@@ -5,7 +5,7 @@ fail_on_overwrite: True
 
 # read:
 # - where:
-#     quantity: human/mixing-matrix
+#     data_product: human/mixing-matrix
 #   use:
 #     filename: human/mixing-matrix/mymixingmatrix.csv
 
