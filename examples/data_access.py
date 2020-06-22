@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from data_pipeline_api.csv_api import CsvAPI
+from data_pipeline_api.simple_network_sim_api import SimpleNetworkSimAPI
 
 """
 TODO
@@ -15,9 +15,9 @@ TODO
     cannot complete.
 """
 
-with CsvAPI(
+with SimpleNetworkSimAPI(
     "repos/data_pipeline_api/examples/test_data_2/config.yaml",
 ) as api:
 
-    print(api.read_csv("human/mixing-matrix"))
-    api.write_csv("human/estimatec", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
+    print(api.read_table("human/mixing-matrix"))
+    api.write_table("human/estimatec", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
