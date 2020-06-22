@@ -11,6 +11,7 @@
 using namespace std;
 
 class Distribution;
+// TODO: define a representation for distributions
 
 class DataPipeline
 {
@@ -34,4 +35,5 @@ class DataPipeline
   pybind11::object  SimpleNetworkSimAPI;
   pybind11::object  api;
   pybind11::object  StandardAPI;
+  // TODO: fix "declared with greater visibility than the type of its field" warning
 };

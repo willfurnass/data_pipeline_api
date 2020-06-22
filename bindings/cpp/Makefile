@@ -14,7 +14,7 @@ PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python-config --ldflags)
 # PYTHON_LDFLAGS = -L/Users/h52229ih/opt/miniconda3/envs/data_pipeline_api/lib/python3.7/config-3.7m-darwin -lpython3.7m -ldl -framework CoreFoundation
 #CPPFLAGS = -I /usr/local/lib/python3.7/site-packages/pybind11/include -I /usr/local/Cellar/python/3.7.6_1/Frameworks/Python.framework/Versions/3.7/include/python3.7m
 
-CXXFLAGS = -g -std=c++11 -Wall $(PYTHON_CFLAGS)
+CXXFLAGS = -g -std=c++11 -Wall -Wno-attributes $(PYTHON_CFLAGS)
 
 cppbindings: cppbindings.cc
 	$(CXX) -o cppbindings $(PYTHON_LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) cppbindings.cc table.cc datapipeline.cc

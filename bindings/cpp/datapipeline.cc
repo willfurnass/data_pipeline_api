@@ -10,6 +10,7 @@ namespace py = pybind11;
 
 DataPipeline::DataPipeline(const string &config_file)
 {
+  // TODO: tidy up these variable names
   pd = py::module::import("pandas");
 
   SimpleNetworkSimAPI = py::module::import(
@@ -24,7 +25,6 @@ DataPipeline::DataPipeline(const string &config_file)
 
 double DataPipeline::read_estimate(string data_product, const string &component)
 {
-//  using namespace pyglobals;
   double est = py::float_ (StandardAPI.attr("read_estimate")(data_product));
   // TODO: what about component?
   return est;
@@ -34,7 +34,6 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 
 double DataPipeline::read_sample(const string *data_product, const string &component)
 {
-//  using namespace pyglobals;
   double est = py::float_(StandardAPI.attr("read_sample")(data_product));
   return est;
 }
@@ -77,4 +76,15 @@ Table DataPipeline::read_table(const string &data_product)
 //void DataPipeline::write_array(const string &data_product, const string &component, vector<double> array);
 // TODO: need to decide on a class for arrays.  Will return as vector of doubles for now
 
-//void DataPipeline::write_table(const string &data_product, const string &component, const Table &table);
+// void DataPipeline::write_table(const string &data_product, const string &component,
+//                                const Table &table)
+// {
+//   map<string,vector<double>>  estc_map; // pybind automatically recognises a map as a dict
+
+//   estc_map["a"] = vector<double>{1,2};
+//   estc_map["b"] = vector<double>{3,4};
+
+//   py::object estc_df = pd.attr("DataFrame")(estc_map);
+
+//   api.attr("write_table")("human/estimatec", estc_df);
+// }
