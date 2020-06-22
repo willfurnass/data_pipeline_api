@@ -19,28 +19,39 @@ namespace pyglobals
   py::object  pd;
   py::object  SimpleNetworkSimAPI;
   py::object  api;
+  py::object  StandardAPI;
 }
 
-void example_data_access()
+
+//********************************************************************************************/
+// API
+//********************************************************************************************/
+
+class Distribution;
+
+double read_estimate(string data_product, const string &component)
 {
   using namespace pyglobals;
-
-  cout << (string) py::str(api.attr("read_table")("human/mixing-matrix")) << endl;
-
-  map<string,vector<double>>  estc_map; // pybind automatically recognises a map as a dict
-
-  estc_map["a"] = vector<double>{1,2};
-  estc_map["b"] = vector<double>{3,4};
-
-  py::object estc_df = pd.attr("DataFrame")(estc_map);
-
-  api.attr("write_table")("human/estimatec", estc_df);
+  double est = py::float_ (StandardAPI.attr("read_estimate")(data_product));
+  // TODO: what about component?
+  return est;
 }
 
-string python_type(py::object obj)
+Distribution read_distribution(const string &data_product, const string &component);
+
+double read_sample(const string *data_product, const string &component)
 {
-  return (string) py::str(obj.get_type());
+  using namespace pyglobals;
+  double est = py::float_(StandardAPI.attr("read_sample")(data_product));
+  return est;
 }
+
+void write_estimate(const string &data_product, const string &component, double estimate);
+void write_distribution(const string &data_product, const string &component,
+                        const Distribution &d);
+void write_sample(const string &data_product, const string &component, const vector<double> &samples);
+
+vector<double> read_array(const string &data_product, const string &component);
 
 Table read_table(const string &data_product)
 {
@@ -70,12 +81,47 @@ Table read_table(const string &data_product)
   return table;
 }
 
+void write_array(const string &data_product, const string &component, vector<double> array);
+void write_table(const string &data_product, const string &component, const Table &table);
+
+// TODO: need to decide on a class for arrays.  Will return as vector of Ts for now.
+
+/********************************************************************************************/
+
+void example_data_access()
+{
+  using namespace pyglobals;
+
+  cout << (string) py::str(api.attr("read_table")("human/mixing-matrix")) << endl;
+
+  map<string,vector<double>>  estc_map; // pybind automatically recognises a map as a dict
+
+  estc_map["a"] = vector<double>{1,2};
+  estc_map["b"] = vector<double>{3,4};
+
+  py::object estc_df = pd.attr("DataFrame")(estc_map);
+
+  api.attr("write_table")("human/estimatec", estc_df);
+
+//  cout << (string) py::str(api.attr("read_estimate")("human/infection/SARS-CoV-2/latent-period")) << endl;
+}
+
+string python_type(py::object obj)
+{
+  return (string) py::str(obj.get_type());
+}
+
+
 void example_data_access_wrapped()
 {
   Table table = read_table("human/mixing-matrix");
 
-  cout << "Table:" << endl;
+  cout << "human/mixing-matrix:" << endl;
   cout << table.to_string();
+  cout << endl;
+
+  // No data in the repository yet
+  // cout << "estimate: " << read_estimate("TODO","point-estimate");
 }
 
 int main()
@@ -91,6 +137,10 @@ int main()
 
   api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
 
+  py::object StandardAPIClass = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
+
+  StandardAPI = StandardAPIClass("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+
   // example_data_access();
 
   example_data_access_wrapped();
@@ -98,6 +148,7 @@ int main()
   pd.release();
   SimpleNetworkSimAPI.release();
   api.release();
+  StandardAPI.release();
 
   cout << "Done." << endl;
   return 0;
