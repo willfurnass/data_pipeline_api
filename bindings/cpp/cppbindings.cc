@@ -33,6 +33,81 @@ void example_data_access()
   api.attr("write_table")("human/estimatec", estc_df);
 }
 
+class Table
+{
+  public:
+  void add_double_column(const string &colname, const vector<double> &values);
+  vector<string> get_column_names();
+  vector<double> &get_double_column(const string &colname);
+
+  private:
+  map<string, vector<double>>  cols_double;
+};
+
+string python_type(py::object obj)
+{
+  return (string) py::str(obj.get_type());
+}
+
+void Table::add_double_column(const string &colname, const vector<double> &values)
+{
+  cols_double[colname] = values;
+
+  // colnames_double.push_back(colname);
+  // cols_double.push_back(values);
+}
+
+vector<double> &Table::get_double_column(const string &colname)
+{
+  if (cols_double.find(colname) == cols_double.end()) {
+    throw out_of_range("There is no column named " + colname + " of type double in this table");
+  }
+  return cols_double[colname];
+}
+
+// void Table::add_string_column(const string &colname, const vector<string> &values)
+// {
+//   colnames_string.push_back(colname);
+//   cols_string.push_back(values);
+// }
+
+Table read_table(const string &data_product)
+{
+  using namespace pyglobals;
+
+  Table table;
+
+  py::object dataframe = api.attr("read_table")(data_product);
+
+  vector<string> colnames = dataframe.attr("columns").attr("tolist")().cast<vector<string>>();
+
+  for (const auto &colname: colnames) {
+    
+    string dtype = py::str(dataframe.attr("dtypes").attr(colname.c_str()));
+
+    if (dtype == "float64") {
+      vector<double> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<double>>();
+      table.add_double_column(colname, values);
+    }
+
+    // if (dtype == "object") {
+    //   vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
+    //   table.add_string_column(colname, values);
+    // }
+  }
+
+  return table;
+}
+
+void example_data_access_wrapped()
+{
+  Table table = read_table("human/mixing-matrix");
+}
+
+
+
+
+
 int main()
 {
   py::scoped_interpreter guard{}; // start the interpreter and keep it alive
