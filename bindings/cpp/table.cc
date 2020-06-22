@@ -48,7 +48,6 @@ void Table::add_column(const string &colname, const vector<T> &values)
 
   columns[colname].reset(new ColumnT<T>(values));
   colnames.push_back(colname);
-  cout << "  Added table column " << colname << endl;
 }
 
 template<typename T>
