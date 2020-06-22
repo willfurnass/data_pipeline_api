@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "Table.hh"
+#include "table.hh"
 
 using namespace std;
 
