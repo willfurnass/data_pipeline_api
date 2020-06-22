@@ -7,20 +7,17 @@ from typing import Union, TypeVar, Generic, Dict
 from scipy import stats
 
 
-class StandardAPI:
-    def __init__(self, file_api: FileAPI):
-        self._file_api = file_api
-
-    def read_estimate(self, quantity: str) -> float:
+class StandardAPI(FileAPI):
+    def read_estimate(self, data_product: str) -> float:
         with TextIOWrapper(
-            self._file_api.read(quantity=quantity, format="parameter")
+            self.read(data_product=data_product, extension="toml")
         ) as toml_file:
             return Estimate.read_parameter(toml.load(toml_file))
 
-    def write_estimate(self, quantity: str, value: float):
+    def write_estimate(self, data_product: str, value: float):
         with TextIOWrapper(
-            self._file_api.write(
-                quantity=quantity, format="parameter", run_id=1, extension="toml"
+            self.write(
+                data_product=data_product, run_id=1, extension="toml"
             )
         ) as toml_file:
             toml.dump(Estimate.write_parameter(value), toml_file)
