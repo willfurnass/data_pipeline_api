@@ -10,14 +10,16 @@
 namespace py = pybind11;
 using namespace std;
 
+namespace pyglobals
+{
+  py::object  pd;
+  py::object  SimpleNetworkSimAPI;
+  py::object  api;
+}
+
 void example_data_access()
 {
-  // using namespace py::module;
-
-  py::object pandas = py::module::import("pandas");
-  py::object Path = py::module::import("pathlib").attr("Path");
-  py::object SimpleNetworkSimAPI = py::module::import("data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
-  py::object api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+  using namespace pyglobals;
 
   cout << (string) py::str(api.attr("read_table")("human/mixing-matrix")) << endl;
 
@@ -26,7 +28,7 @@ void example_data_access()
   estc_map["a"] = vector<double>{1,2};
   estc_map["b"] = vector<double>{3,4};
 
-  py::object estc_df = pandas.attr("DataFrame")(estc_map);
+  py::object estc_df = pd.attr("DataFrame")(estc_map);
 
   api.attr("write_table")("human/estimatec", estc_df);
 }
@@ -35,7 +37,22 @@ int main()
 {
   py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
+  using namespace pyglobals;
+
+  pd = py::module::import("pandas");
+
+  SimpleNetworkSimAPI = py::module::import(
+    "data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
+
+  api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+
   example_data_access();
+
+  pd.release();
+  SimpleNetworkSimAPI.release();
+  api.release();
+
+  cout << "Done." << endl;
   return 0;
 
   py::object pandas = py::module::import("pandas");
