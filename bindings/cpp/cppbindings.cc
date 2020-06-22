@@ -1,57 +1,84 @@
 #include <iostream>
 #include <string>
+#include <map>
+#include <vector>
 
 #include "pybind11/embed.h"
 #include "pybind11/numpy.h"
-//#include "embed.h"
+#include "pybind11/stl.h"
 
 namespace py = pybind11;
 using namespace std;
+
+void example_data_access()
+{
+  // using namespace py::module;
+
+  py::object pandas = py::module::import("pandas");
+  py::object Path = py::module::import("pathlib").attr("Path");
+  py::object SimpleNetworkSimAPI = py::module::import("data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
+  py::object api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+
+  cout << (string) py::str(api.attr("read_table")("human/mixing-matrix")) << endl;
+
+  map<string,vector<double>>  estc_map; // pybind automatically recognises a map as a dict
+
+  estc_map["a"] = vector<double>{1,2};
+  estc_map["b"] = vector<double>{3,4};
+
+  py::object estc_df = pandas.attr("DataFrame")(estc_map);
+
+  api.attr("write_table")("human/estimatec", estc_df);
+}
 
 int main()
 {
   py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-  #ifdef NDEBUG
-  cout << "NDEBUG is defined" << endl;
-  #endif
-
-  // py::print("Hello, World!"); // use the Python API
-
-  // py::exec(R"(
-  //       kwargs = dict(name="World", number=42)
-  //       message = "Hello, {name}! The answer is {number}".format(**kwargs)
-  //       print(message)
-  //   )");
+  example_data_access();
+  return 0;
 
   py::object pandas = py::module::import("pandas");
   py::object Path = py::module::import("pathlib").attr("Path");
-  py::object FileAPI = py::module::import("data_pipeline_api.file_api").attr("FileAPI");
-  py::object StandardAPI = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
-  py::object CsvAPI = py::module::import("data_pipeline_api.csv_api").attr("CsvAPI");
+  // py::object FileAPI = py::module::import("data_pipeline_api.file_api").attr("FileAPI");
+  // py::object StandardAPI = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
+  py::object SimpleNetworkSimAPI = py::module::import("data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
 
-  py::object data_path = Path("examples/test_data_2");
-  py::object file_api = FileAPI(data_path, Path(data_path.attr("joinpath")("config.toml")), Path(data_path.attr("joinpath")("/access.yaml")));
+  py::object api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
 
-  py::object api = CsvAPI(file_api);
+  cout << (string) py::str(api.attr("read_table")("human/mixing-matrix")) << endl;
 
-  py::object human_estimate = api.attr("read_csv")("human/estimate");
-  auto human_estimate_t = human_estimate.get_type();
+  map<string,vector<double>>  estc_map; // pybind automatically recognises a map as a dict
 
-  cout << (string) py::str(human_estimate_t) << endl;
-  cout << (string) py::str(human_estimate) << endl;
+  estc_map["a"] = vector<double>{1,2};
+  estc_map["b"] = vector<double>{3,4};
 
-  cout << endl;
+  py::object estc_df = pandas.attr("DataFrame")(estc_map);
 
-  py::array_t<double> human_estimate_columnB = py::array_t<double>(human_estimate.attr("columnB").attr("to_numpy")());
+  api.attr("write_table")("human/estimatec", estc_df);
 
-  cout << (string) py::str(human_estimate_columnB.get_type()) << endl;
+  // py::object data_path = Path("examples/test_data_2");
+  // py::object file_api = FileAPI(data_path, Path(data_path.attr("joinpath")("config.toml")), Path(data_path.attr("joinpath")("/access.yaml")));
 
-  // https://stackoverflow.com/questions/49582252/pybind-numpy-access-2d-nd-arrays/49693704
-  auto buf = human_estimate_columnB.request();
-  double *ptr = (double *) buf.ptr;
-  cout << ptr[0] << endl;
-  cout << ptr[1] << endl;
+  // py::object api = SimpleNetworkSimAPI(file_api);
+
+  // py::object human_estimate = api.attr("read_csv")("human/estimate");
+  // auto human_estimate_t = human_estimate.get_type();
+
+  // cout << (string) py::str(human_estimate_t) << endl;
+  // cout << (string) py::str(human_estimate) << endl;
+
+  // cout << endl;
+
+  // py::array_t<double> human_estimate_columnB = py::array_t<double>(human_estimate.attr("columnB").attr("to_numpy")());
+
+  // cout << (string) py::str(human_estimate_columnB.get_type()) << endl;
+
+  // // https://stackoverflow.com/questions/49582252/pybind-numpy-access-2d-nd-arrays/49693704
+  // auto buf = human_estimate_columnB.request();
+  // double *ptr = (double *) buf.ptr;
+  // cout << ptr[0] << endl;
+  // cout << ptr[1] << endl;
 
   // cout << (string) py::str(human_estimate_columnB.get_type()) << endl;
 
