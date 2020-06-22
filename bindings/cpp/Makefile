@@ -17,4 +17,4 @@ PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python-config --ldflags)
 CXXFLAGS = -g -std=c++11 -Wall $(PYTHON_CFLAGS)
 
 cppbindings: cppbindings.cc
-	$(CXX) -o cppbindings $(PYTHON_LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) cppbindings.cc
+	$(CXX) -o cppbindings $(PYTHON_LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) cppbindings.cc table.cc
