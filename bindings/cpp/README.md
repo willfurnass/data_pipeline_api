@@ -1,69 +1,67 @@
-# C++ bindings for python data api
 
-## With pip
+# C++ bindings for Python Data Pipeline API
 
-Procedure on CSD3:
+This directory contains C++ bindings for the Python data pipeline API.
 
-```
-. /etc/profile.d/modules.sh
-module purge
-#module load rhel7/default-peta4
-module load python/3.6
-```
-
-Install required packages with pip:
+Ensure that you have the required Python packages installed, for
+example using pip:
 
 ```
-# Get a pip3, as there is none in this python installation
-python -m ensurepip --user --upgrade
+pip3 install pybind11 pyyaml pandas scipy toml
+```
 
-# Install required packages to ~/.local
-pip3 install --user --upgrade pybind11 pyyaml pandas scipy toml
+You should now be able to run the Python example:
 
-# Run the example pipeline script
+```
 cd data_pipeline_api
 export PYTHONPATH=$PWD/src:$PYTHONPATH
-python examples/data_access.py
+python3 examples/data_access.py
 ```
 This should output
 
 ```
-   columnA  columnB
-0  goodbye        2
-1    hello        4
-0.2
+    source   target    mixing
+0   [0,17)   [0,17)  2.158825
+1   [0,17)  [17,70)  1.642811
+2   [0,17)      70+  0.095393
+3  [17,70)   [0,17)  0.540818
+4  [17,70)  [17,70)  2.291221
+5  [17,70)      70+  0.175799
+6      70+   [0,17)  0.036736
+7      70+  [17,70)  0.274034
+8      70+      70+  0.075217
 ```
+(You might also get some YAML warnings.)
+
+Now build the C++ test program:
 
 ```
 cd bindings/cpp
 make
-export PYTHONPATH=$PWD/../../src:$PYTHONPATH
-./cppbindings
-```
-You should get
-```
-Hello, World!
-Hello, World! The answer is 42
-   columnA  columnB
-0  goodbye        2
-1    hello        4
-0.2
+./test_datapipeline
 ```
 
+If you get errors about pybind11/embed.h being missing, edit the
+Makefile to add the path to the required include directory installed
+by pip3.  It doesn't appear to be possible to determine this
+automatically.
 
+## Notes for installation on DiRAC CSD3
 
+The python/3.6 module on CSD3 can be used, but it has no pip
+available, and some of the packages appear to be broken, so it's best
+to install pip3 and all required packages in ~/.local as follows:
 
-## With miniconda
+```
+. /etc/profile.d/modules.sh
+module purge
+module load python/3.6
 
-(I couldn't get this to work, when trying it on macOS, but I'm leaving
-notes here in case it can be fixed in future.)
+# Bootstrap pip3
+python -m ensurepip --user --upgrade
 
-Notes:
+# Install required packages to ~/.local
+pip3 install --user --upgrade pybind11 pyyaml pandas scipy toml
+```
 
-- Install miniconda 
-- Create an env for the project and activate it
-- Install pyyaml pandas package
-- Determine `PYTHON_CFLAGS` and `PYTHON_LDFLAGS` from python3-config.
-- Make the executable
-- Set PYTHONHOME to the miniconda3 directory
-- Run the executable
+Then proceed as above.
