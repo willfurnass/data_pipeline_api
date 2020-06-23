@@ -1,12 +1,9 @@
 
-# CSD3
-# PYTHON_CFLAGS := -I/home/dc-hind2/.local/include/python3.6m -I/usr/local/software/master/python/3.6/include/python3.6m -I/usr/local/software/master/python/3.6/include/python3.6m  -Wno-unused-result -Wsign-compare -fPIC -DNDEBUG -g -fwrapv -O3 -Wall
-# PYTHON_LDFLAGS :=  -L/usr/local/software/master/python/3.6/lib -lpython3.6m -lintl -lpthread -ldl  -lutil -lm  -Xlinker -export-dynamic
+# Use this on CSD3.  Adapt it to point to your pip-installed packages if they cannot be found at compile time
+#PYTHON_EXTRA_CFLAGS := -I${HOME}/.local/include/python3.6m -I/usr/local/lib/python3.7/site-packages/pybind11/include
 
-# It's not clear how to determine these automatically
-PYTHON_EXTRA_CFLAGS := -I${HOME}/.local/include/python3.6m -I/usr/local/lib/python3.7/site-packages/pybind11/include
-
-PYTHON_EXTRA_LDFLAGS :=
+# Use this if you have python 3.8
+#PYTHON_EXTRA_LDFLAGS := #-lpython3.8
 
 PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(shell python3-config --cflags) -UNDEBUG
 PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python3-config --ldflags)
