@@ -3,12 +3,24 @@
 
 This directory contains C++ bindings for the Python data pipeline API.
 
-Ensure that you have the required Python packages installed, for
-example using pip:
+There are two ways to make sure you have a working Python with all the
+required packages:
 
-```
-pip3 install --user pybind11 pyyaml pandas scipy toml
-```
+1. Manual: If you are familiar with Python, have Python3 installed,
+   and are willing to edit the Makefile to add certain paths to
+   installed packages if it doesn't work, just ensure you have the
+   required packages installed, e.g. using pip3:
+   ```
+   pip3 install pybind11 pyyaml pandas scipy toml
+   ```
+   Add --user if needed.
+2. Automatic: Giving up on any existing installation, we can build our
+   own by running the provided script:
+   ```
+   cd data_pipeline_api/bindings/cpp
+   ./install-python-stack $PWD/python
+   ```
+   Copy and paste the "export PATH=" line printed at the end to choose this version of Python.
 
 You should now be able to run the Python example:
 
@@ -47,6 +59,8 @@ by pip3.  It doesn't appear to be possible to determine this
 automatically.
 
 ## Notes for installation on DiRAC CSD3
+
+(TODO: update to use the self-contained build above)
 
 The python/3.6 module on CSD3 can be used, but it has no pip
 available, and some of the packages appear to be broken, so it's best
