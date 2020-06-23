@@ -7,7 +7,7 @@ Ensure that you have the required Python packages installed, for
 example using pip:
 
 ```
-pip3 install pybind11 pyyaml pandas scipy toml
+pip3 install --user pybind11 pyyaml pandas scipy toml
 ```
 
 You should now be able to run the Python example:
