@@ -9,7 +9,7 @@ PYBIND11_INCLUDE := -I$(shell python3 -c 'import os; import pybind11; print(os.p
 
 $(info PYBIND11_INCLUDE = $(PYBIND11_INCLUDE))
 
-PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell python3-config --cflags) -UNDEBUG
+PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell python3-config --cflags) -UNDEBUG -fPIC
 PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python3-config --ldflags)
 
 CXXFLAGS = -g -std=c++11 -Wall -Wno-attributes $(PYTHON_CFLAGS)
