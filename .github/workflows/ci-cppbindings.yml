@@ -25,5 +25,5 @@ jobs:
       run: |
         export PYTHONPATH=$PWD/src:$PYTHONPATH
         cd bindings/cpp
-        make
+        make PYTHON_EXTRA_CFLAGS=-I/usr/local/include/python3.6
         ./test_datapipeline
