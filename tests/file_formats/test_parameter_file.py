@@ -1,0 +1,63 @@
+import numpy as np
+from scipy import stats
+from io import TextIOWrapper
+from data_pipeline_api.file_formats import parameter_file
+
+
+def test_write_parameter_to_empty_file(tmp_path):
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test", "test")
+
+
+def test_write_parameter_to_nonempty_file(tmp_path):
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test", "test")
+    with open(tmp_path / "test.toml", "r+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test2", "test2")
+
+
+def test_overwrite_parameter(tmp_path):
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test", "test")
+    with open(tmp_path / "test.toml", "r+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test", "test")
+
+
+def test_parameter_roundtrip(tmp_path):
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_parameter(TextIOWrapper(file), "test", "test")
+    with open(tmp_path / "test.toml", "r+b") as file:
+        assert parameter_file.read_parameter(TextIOWrapper(file), "test") == "test"
+
+
+def test_estimate_roundtrip(tmp_path):
+    estimate = 3
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_estimate(TextIOWrapper(file), "test", estimate)
+    with open(tmp_path / "test.toml", "r+b") as file:
+        assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
+
+
+def test_distribution_roundtrip(tmp_path):
+    distribution = stats.gamma(1, scale=2)
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_distribution(TextIOWrapper(file), "test", distribution)
+
+    def representation(distribution):
+        return distribution.dist._parse_args(*distribution.args, **distribution.kwds)
+
+    with open(tmp_path / "test.toml", "r+b") as file:
+        assert representation(
+            parameter_file.read_distribution(TextIOWrapper(file), "test")
+        ) == representation(distribution)
+
+
+def test_samples_roundtrip(tmp_path):
+    samples = np.array([1, 2, 3])
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_samples(TextIOWrapper(file), "test", samples)
+    with open(tmp_path / "test.toml", "r+b") as file:
+        np.testing.assert_array_equal(
+            parameter_file.read_samples(TextIOWrapper(file), "test"), samples
+        )
+
