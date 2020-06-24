@@ -1,5 +1,26 @@
+from io import TextIOWrapper
+from pathlib import Path
+import toml
+from data_pipeline_api.file_api import FileAPI
+
 from typing import Union, TypeVar, Generic, Dict
 from scipy import stats
+
+
+class StandardAPI(FileAPI):
+    def read_estimate(self, data_product: str) -> float:
+        with TextIOWrapper(
+            self.open_for_read(data_product=data_product, extension="toml")
+        ) as toml_file:
+            return Estimate.read_parameter(toml.load(toml_file))
+
+    def write_estimate(self, data_product: str, value: float):
+        with TextIOWrapper(
+            self.open_for_write(
+                data_product=data_product, run_id=1, extension="toml"
+            )
+        ) as toml_file:
+            toml.dump(Estimate.write_parameter(value), toml_file)
 
 
 T = TypeVar("T")

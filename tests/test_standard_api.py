@@ -1,8 +1,5 @@
 import pytest
-import pathlib
-from data_pipeline_api.parameter_file import Estimate, Distribution
-
-DATA_PATH = pathlib.Path(__file__).parent.parent / "example_data"
+from data_pipeline_api.standard_api import Estimate, Distribution
 
 
 def test_estimate_read_estimate():
