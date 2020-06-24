@@ -1,6 +1,8 @@
 
 # C++ bindings for Python Data Pipeline API
 
+[![](https://github.com/ScottishCovidResponse/data_pipeline_api/workflows/ci-cppbindings/badge.svg?branch=cppbindings)](https://github.com/ScottishCovidResponse/data_pipeline_api/actions?query=workflow%3Aci-cppbindings)
+
 This directory contains C++ bindings for the Python data pipeline API.
 
 There are two ways to make sure you have a working Python with all the
