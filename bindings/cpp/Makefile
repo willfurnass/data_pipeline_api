@@ -5,7 +5,11 @@
 # Use this if you have python 3.8
 #PYTHON_EXTRA_LDFLAGS := #-lpython3.8
 
-PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(shell python3-config --cflags) -UNDEBUG
+PYBIND11_INCLUDE := -I$(shell python3 -c 'import os; import pybind11; print(os.path.dirname(pybind11.__file__)+"/include")')
+
+$(info PYBIND11_INCLUDE = $(PYBIND11_INCLUDE))
+
+PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell python3-config --cflags) -UNDEBUG
 PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python3-config --ldflags)
 
 CXXFLAGS = -g -std=c++11 -Wall -Wno-attributes $(PYTHON_CFLAGS)
