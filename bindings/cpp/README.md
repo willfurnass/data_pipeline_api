@@ -5,6 +5,8 @@
 
 This directory contains C++ bindings for the Python data pipeline API.
 
+## Requirements
+
 There are two ways to make sure you have a working Python with all the
 required packages:
 
@@ -24,7 +26,10 @@ required packages:
    ```
    Copy and paste the "export PATH=" line printed at the end to choose this version of Python.
 
-You should now be able to run the Python example:
+## Run the Python example
+
+To test that things are working so far, you should now be able to run
+the Python example:
 
 ```
 cd data_pipeline_api
@@ -47,18 +52,24 @@ This should output
 ```
 (You might also get some YAML warnings.)
 
+## Building the C++ wrapper
+
 Now build the C++ test program:
 
 ```
 cd bindings/cpp
 make
+```
+
+## Running the C++ wrapper
+
+The test program for the wrapper can be run as:
+```
 ./test_datapipeline
 ```
 
-If you get errors about pybind11/embed.h being missing, edit the
-Makefile to add the path to the required include directory installed
-by pip3.  It doesn't appear to be possible to determine this
-automatically.
+It should run without producing an error (you might get warnings about
+YAML) and output some data from the data repository.
 
 ## Notes for installation on DiRAC CSD3
 
