@@ -1,6 +1,6 @@
 package:
   name: data_pipeline_api
-  version: 0.0.1
+  version: 0.1.0
 
 source:
   git_url: ..
@@ -19,6 +19,8 @@ requirements:
     - toml>=0.9.4
     - scipy>=1.4.1
     - pandas>=1.0.3
+    - pyyaml>=5.3.1
+    - semver>=2.9.0
 
 test:
   imports:
