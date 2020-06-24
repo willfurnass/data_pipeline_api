@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(pybind11)
+
+include("${CMAKE_CURRENT_LIST_DIR}/data_pipeline_cppTargets.cmake")
