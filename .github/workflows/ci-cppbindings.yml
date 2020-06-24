@@ -27,4 +27,14 @@ jobs:
         export PYTHONPATH=$PWD/src:$PYTHONPATH
         cd bindings/cpp
         make
+
+    - name: Run
+      run: |
+        export PYTHONPATH=$PWD/src:$PYTHONPATH
+        cd bindings/cpp
+        # TODO: make the path to the repo an argument to the executable
+        mkdir repos
+        cd repos
+        ln -s ../../.. data_pipeline_api
+        cd ..
         ./test_datapipeline
