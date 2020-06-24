@@ -1,0 +1,29 @@
+name: ci-cppbindings
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        shell: bash
+        # This doesn't work:
+        # /bin/bash --noprofile --norc -e -o pipefail -o nounset {0}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Install packages
+      run: sudo apt-get update && sudo apt-get install -y git build-essential
+
+    - name: Install Python packages
+      run: |
+        pip3 install pybind11 pyyaml pandas scipy toml
+
+    - name: Compile
+      run: |
+        export PYTHONPATH=$PWD/src:$PYTHONPATH
+        cd bindings/cpp
+        make
+        ./test_datapipeline
