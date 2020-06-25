@@ -14,6 +14,5 @@ setup(
    description='Interacts with SCRC data pipeline',
    author='SCRC',
    author_email='scrc@glasgow.ac.uk',
-   package_dir = {'': 'src'},
    packages=['data_pipeline_api'],
 )
