@@ -9,7 +9,7 @@ Options:
   --config TEXT         Path to the yaml config file.  [required]
   --data-registry TEXT  URL of the data registry API. Defaults to
                         DATA_REGISTRY_URL env variable followed by
-                        http://data.scrc.uk/api/.
+                        https://data.scrc.uk/api/.
 
   --token TEXT          github personal access token. Defaults to
                         DATA_REGISTRY_ACCESS_TOKEN env if not passed.Personal
@@ -41,7 +41,7 @@ Options:
   --config TEXT         Path to the yaml config file.  [required]
   --data-registry TEXT  URL of the data registry API. Defaults to
                         DATA_REGISTRY_URL env variable followed by
-                        http://data.scrc.uk/api/.
+                        https://data.scrc.uk/api/.
 
   --token TEXT          github personal access token. Defaults to
                         DATA_REGISTRY_ACCESS_TOKEN env if not passed.Personal

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DATA_REGISTRY_URL = "DATA_REGISTRY_URL"
 DATA_REGISTRY_ACCESS_TOKEN = "DATA_REGISTRY_ACCESS_TOKEN"
 
-DEFAULT_DATA_REGISTRY_URL = "http://data.scrc.uk/api/"
+DEFAULT_DATA_REGISTRY_URL = "https://data.scrc.uk/api/"
 
 
 YamlDict = Dict[str, Union[str, "YamlDict"]]
