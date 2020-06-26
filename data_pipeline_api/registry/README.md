@@ -15,7 +15,7 @@ Options:
                         DATA_REGISTRY_ACCESS_TOKEN env if not passed.Personal
                         access tokens can be created from
                         https://github.com/settings/tokens, only
-                        admin:org/read:org permissions are required.
+                        read:org permissions are required.
 
   --help                Show this message and exit.
 
@@ -47,7 +47,7 @@ Options:
                         DATA_REGISTRY_ACCESS_TOKEN env if not passed.Personal
                         access tokens can be created from
                         https://github.com/settings/tokens, only
-                        admin:org/read:org permissions are required.
+                        read:org permissions are required.
 
   --help                Show this message and exit.
 ```

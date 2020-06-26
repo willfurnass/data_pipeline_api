@@ -219,7 +219,7 @@ def download_from_config_file(config_filename: Union[Path, str], data_registry_u
     "--token",
     type=str,
     help=f"github personal access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
-    f"Personal access tokens can be created from https://github.com/settings/tokens, only admin:org/read:org "
+    f"Personal access tokens can be created from https://github.com/settings/tokens, only read:org "
     f"permissions are required.",
 )
 def download_cli(config, data_registry, token):
