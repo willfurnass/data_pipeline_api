@@ -11,13 +11,6 @@ reference:
     data:
       username: 'mrow84'
 
-patch:
-  -
-    target: 'storage_type'
-    data:
-      name: 'ftp'
-      description: 'File Transfer Protocol'
-
 post:
   - &https
     target: 'storage_type'
@@ -153,7 +146,7 @@ post:
       store: *simple_network_sim_store
       accessibility: *public
 
-  -
+  - &human_mixing_matrix_data_product_version
     target: 'data_product_version'
     data:
       version_identifier: '0.1.0'
@@ -164,7 +157,7 @@ post:
       accessibility: *public
       processing_script_version: *simple_network_sim_processing_script_version
 
-  -
+  - &human_commutes_data_product_version
     target: 'data_product_version'
     data:
       version_identifier: '0.1.0'
@@ -175,7 +168,7 @@ post:
       accessibility: *public
       processing_script_version: *simple_network_sim_processing_script_version
 
-  -
+  - &human_compartment_transition_data_product_version
     target: 'data_product_version'
     data:
       version_identifier: '0.1.0'
@@ -186,7 +179,7 @@ post:
       accessibility: *public
       processing_script_version: *simple_network_sim_processing_script_version
 
-  -
+  - &human_population_data_product_version
     target: 'data_product_version'
     data:
       version_identifier: '0.1.0'
@@ -196,3 +189,31 @@ post:
       store: *human_population_store
       accessibility: *public
       processing_script_version: *simple_network_sim_processing_script_version
+
+  -
+    target: 'data_product_version_component'
+    data:
+      name: 'mixing-matrix'
+      responsible_person: *richard_blackwell
+      data_product_version: *human_mixing_matrix_data_product_version
+
+  -
+    target: 'data_product_version'
+    data:
+      name: 'commutes'
+      responsible_person: *richard_blackwell
+      data_product_version: *human_commutes_data_product_version
+
+  -
+    target: 'data_product_version'
+    data:
+      name: 'compartment-transition'
+      responsible_person: *richard_blackwell
+      data_product_version: *human_compartment_transition_data_product_version
+
+  -
+    target: 'data_product_version'
+    data:
+      name: 'population'
+      responsible_person: *richard_blackwell
+      data_product_version: *human_population_data_product_version
