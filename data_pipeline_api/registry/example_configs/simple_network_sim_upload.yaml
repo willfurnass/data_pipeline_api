@@ -198,21 +198,21 @@ post:
       data_product_version: *human_mixing_matrix_data_product_version
 
   -
-    target: 'data_product_version'
+    target: 'data_product_version_component'
     data:
       name: 'commutes'
       responsible_person: *richard_blackwell
       data_product_version: *human_commutes_data_product_version
 
   -
-    target: 'data_product_version'
+    target: 'data_product_version_component'
     data:
       name: 'compartment-transition'
       responsible_person: *richard_blackwell
       data_product_version: *human_compartment_transition_data_product_version
 
   -
-    target: 'data_product_version'
+    target: 'data_product_version_component'
     data:
       name: 'population'
       responsible_person: *richard_blackwell

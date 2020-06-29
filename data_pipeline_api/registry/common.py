@@ -120,7 +120,7 @@ def build_query_string(query_data: YamlDict, data_registry_url: str) -> str:
 
 
 @lru_cache(maxsize=None)
-def get(end_point: str, token: str, query_str: Optional[str] = None) -> JsonResult:
+def get_on_end_point(end_point: str, token: str, query_str: Optional[str] = None) -> JsonResult:
     """
     Calls GET on the target end point of the data registry and returns the result
 
@@ -152,7 +152,7 @@ def get_data(query_data: YamlDict, target: str, data_registry_url: str, token: s
     :return: reference url to existing data or None if it does not exist
     """
     query_str = build_query_string(query_data, data_registry_url)
-    result = get(get_end_point(data_registry_url, target), token, query_str)
+    result = get_on_end_point(get_end_point(data_registry_url, target), token, query_str)
     if not result:
         logger.info(f"No matching data found for query '{query_str}' to target '{target}'")
         return None

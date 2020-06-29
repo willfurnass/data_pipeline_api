@@ -4,45 +4,9 @@ from unittest.mock import patch, call
 import pytest
 import yaml
 
-from data_pipeline_api.registry.upload import (
-    get_end_point,
-    get_headers,
-    resolve_references,
-    get,
-    upload_from_config,
-)
-
-DATA_REGISTRY_URL = "data/"
-TOKEN = "token"
-
-
-class MockResponse:
-    def __init__(self, json, raise_for_status=False, status_code="200"):
-        self._json = json
-        self._raise_for_status = raise_for_status
-        self._status_code = status_code
-
-    def json(self):
-        return self._json
-
-    def raise_for_status(self):
-        if self._raise_for_status:
-            raise ValueError("Raise")
-
-    @property
-    def status_code(self):
-        return self._status_code
-
-
-def test_get_end_point():
-    assert get_end_point("https://someurl", "target") == "https://someurl/target/"
-    assert get_end_point("https://someurl/test", "target") == "https://someurl/test/target/"
-    assert get_end_point("https://someurl/test/", "target") == "https://someurl/test/target/"
-    assert get_end_point("https://someurl/test/", "target/") == "https://someurl/test/target/"
-
-
-def test_get_headers():
-    assert get_headers("abcde") == {"Authorization": "token abcde"}
+from registry.upload import resolve_references, upload_from_config
+from registry.common import get_end_point, get_headers
+from tests.registry.common import DATA_REGISTRY_URL, TOKEN, MockResponse
 
 
 def test_resolve_references_no_resolution():
@@ -67,19 +31,6 @@ def test_resolve_references_version():
     with patch("requests.get") as get:
         get.return_value = MockResponse([{"url": "mock_url_v", "version_identifier": "1", "model": "mock_url_b"}])
         assert resolve_references(data, DATA_REGISTRY_URL, TOKEN) == {"name": "A", "o": "mock_url_v"}
-
-
-def test_get_data_cache():
-    with patch("requests.get") as get:
-        json_data_1 = [{"url": "mock_url_v", "version_identifier": "1", "model": "mock_url_b"}]
-        get.return_value = MockResponse(json_data_1)
-        assert get("target1", DATA_REGISTRY_URL, TOKEN) == json_data_1
-        assert get("target1", DATA_REGISTRY_URL, TOKEN) == json_data_1
-        get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
-        json_data_2 = [{"a": 1}, {"b": 2}]
-        get.return_value = MockResponse(json_data_2)
-        assert get("target2", DATA_REGISTRY_URL, TOKEN) == json_data_2
-        assert get("target1", DATA_REGISTRY_URL, TOKEN) == json_data_1
 
 
 def test_upload_from_config_with_patch_present():
@@ -196,7 +147,7 @@ def test_resolve_references_recurse():
             },
         },
     }
-    with patch("data_pipeline_api.registry.upload.get_reference") as ref:
+    with patch("registry.upload.get_reference") as ref:
 
         def side_effect(ndata, ntarget, url, token):
             return ndata["name"]

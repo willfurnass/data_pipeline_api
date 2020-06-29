@@ -10,7 +10,7 @@ import semver
 import yaml
 
 from data_pipeline_api.registry.common import configure_cli_logging, YamlDict, get_reference, get_end_point, \
-    get_headers, get, DATA_REGISTRY_ACCESS_TOKEN, DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL, DataRegistryField
+    get_headers, get_on_end_point, DATA_REGISTRY_ACCESS_TOKEN, DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL, DataRegistryField
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
                 logger.info(f"Nothing to do for {method} for target '{target}'")
 
             if clear_cache:
-                get.cache_clear()
+                get_on_end_point.cache_clear()
 
 
 def upload_from_config_file(config_filename: Union[Path, str], data_registry_url: str, token: str) -> None:
