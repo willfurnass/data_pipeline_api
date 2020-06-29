@@ -17,7 +17,7 @@ const std::string TEST_HDF5_FILENAME = "test_npy.h5";
 const char *TEST_DATASET_NAME = "nparray";
 
 /// this can also be written in pure c++ conveniently
-void write_array_to_hdf5(const IArray &da)
+void write_array_to_hdf5(const Array &da)
 {
   py::module h5py = py::module::import("h5py");
   const py::array pya = da.encode();
@@ -30,15 +30,26 @@ void write_array_to_hdf5(const IArray &da)
   py::object dataset = h5file.attr("create_dataset")(TEST_DATASET_NAME, "data"_a = pya);
   //
   dataset.attr("write_direct")(pya);
-  // appending metadata as attributes "append"
+
   py::object attrs = dataset.attr("attrs");
-  //attrs.attr("append")("unit", "unknown");  // error
+  attrs.attr("__setitem__")(py::str("unit"), da.unit());
+  //  attrs.attr("__setitem__")(py::str("title"), da.title());
+  auto dims = ((ArrayT<int64_t> &)da).dims();
+  for (size_t i = 0; i < dims.size(); i++)
+  {
+    std::string dn = "dim_" + std::to_string(i);
+    py::array _dv = py::cast(dims[i].values);
+    attrs.attr("__setitem__")(py::str(dn + "_values"), _dv);
+    attrs.attr("__setitem__")(py::str(dn + "_unit"), py::cast(dims[i].unit));
+    py::str dtitle = py::cast(dims[i].title);
+    attrs.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+  }
   // no need to close dataset?
   h5file.attr("close")();
 }
 
 template <typename DT>
-typename Array<DT>::Ptr read_array_from_hdf5()
+typename ArrayT<DT>::Ptr read_array_from_hdf5()
 {
   py::module h5py = py::module::import("h5py");
 
@@ -52,9 +63,23 @@ typename Array<DT>::Ptr read_array_from_hdf5()
                                          "dtype"_a = dataset.attr("dtype"));
   dataset.attr("read_direct")(mat);
   py::print("read nparray from dataset", mat.dtype().kind(), mat.nbytes(), mat);
-  typename Array<DT>::Ptr ap = Array<DT>::decode(mat);
+  typename ArrayT<DT>::Ptr ap = ArrayT<DT>::decode(mat);
 
-  // todo: metadata extraction
+  // if the date type is unknown
+  //Array::Ptr ip = DataDecoder::decode_array(mat);  // working
+
+  py::object attrs = dataset.attr("attrs");
+  py::str _unit = attrs.attr("__getitem__")(py::str("unit"));
+  ap->unit() = _unit;
+  for (size_t i = 0; i < mat.ndim(); i++)
+  {
+    std::string dn = "dim_" + std::to_string(i);
+    py::str dtitle = attrs.attr("__getitem__")(py::str(dn + "_title"));
+    py::array _dv = attrs.attr("__getitem__")(py::str(dn + "_values"));
+    py::str dunit = attrs.attr("__getitem__")(py::str(dn + "_unit"));
+    Dimension<DT> d{dtitle, _dv.cast<std::vector<DT>>(), dunit};
+    ap->dims().push_back(d);
+  }
 
   // no need to close dataset?
   h5file.attr("close")();
@@ -79,9 +104,13 @@ int main()
   py::print(mat.dtype().kind(), mat.nbytes(), mat);
 
   // py::array to Array<T> bug !  first 2 rows correct, but third all zero
-  Array<DT>::Ptr ap = Array<DT>::decode(mat);
+  ArrayT<DT>::Ptr ap = ArrayT<DT>::decode(mat);
   std::cout << "decoded Array from NumpyArray with dim = " << ap->dimension() << std::endl;
   std::cout << "values of the Array<> : " << (*ap)[0] << (*ap)(1, 0) << std::endl;
+  ap->unit() = "unknown";
+  ap->dim_unit(0) = "second";
+  ap->dim_unit(1) = "mm";
+  ap->dim_values(0) = {1, 4};
 
   // write_array is working, confirmed by h5dump
   write_array_to_hdf5(*ap);

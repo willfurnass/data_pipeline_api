@@ -3,8 +3,6 @@
 // https://github.com/simple-access-layer/source
 #pragma once
 
-//#include <iostream>
-
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -21,11 +19,12 @@ namespace py = pybind11;
 // this code has been widely unit tested, unit test code can be copied here soon
 
 /// HDF5 C-API has DimensionScaled
+template <typename DT>
 struct Dimension
 {
     std::string title;
     //std::vector<std::string> names;
-    //std::vector<T> values;
+    std::vector<DT> values; // ticks can be a better name
     std::string unit;
 };
 
@@ -33,15 +32,11 @@ struct Dimension
 using ShapeType = std::vector<uint64_t>;
 
 /// base class for all Array<T> as non-templated interface to array metadata
-class IArray
+class Array
 {
 public:
-    // todo: make these field protected
-    std::vector<Dimension> dims;
-    std::string unit;
-
-    typedef std::shared_ptr<IArray> Ptr;
-    IArray(ShapeType _shape)
+    typedef std::shared_ptr<Array> Ptr;
+    Array(ShapeType _shape)
     {
 
         this->m_dimension = _shape.size();
@@ -59,7 +54,7 @@ public:
         }
     }
 
-    virtual ~IArray() // virtual destructor when virtual functions are present.
+    virtual ~Array() // virtual destructor when virtual functions are present.
     {
     }
     /// those functions below could be made non-virtual for better performance
@@ -77,6 +72,15 @@ public:
         return this->m_strides;
     };
 
+    std::string &unit()
+    {
+        return m_unit;
+    }
+    const std::string &unit() const
+    {
+        return m_unit;
+    }
+
     //virtual AttributeType element_type() const = 0;
     virtual std::string element_type_name() const = 0;
 
@@ -84,6 +88,7 @@ public:
     /** infra-structure for C-API */
     virtual uint64_t size() const = 0;
 
+    /// numpy array's nbytes()
     virtual size_t byte_size() const = 0;
 
     /// read-only pointer to provide read view into the data buffer
@@ -102,6 +107,7 @@ protected:
     uint8_t m_dimension; // CONSIDER: size_t otherwise lots of compiler warning
     ShapeType m_shape;
     ShapeType m_strides;
+    std::string m_unit;
 
 public:
     template <typename DT>
@@ -150,13 +156,13 @@ public:
          TODO: proxy pattern for m_data, so big data can not fit into memory can be supported.
          */
 template <class T>
-class Array : public IArray
+class ArrayT : public Array
 {
 
 protected:
     /// this non-public constructor should be called by other public constructors
-    Array(ShapeType _shape, const std::string _element_type_name)
-        : IArray(_shape), m_element_type_name(_element_type_name)
+    ArrayT(ShapeType _shape, const std::string _element_type_name)
+        : Array(_shape), m_element_type_name(_element_type_name)
     {
         // calculate array buffer length
         uint64_t element_size = 1;
@@ -167,7 +173,7 @@ protected:
     }
 
 public:
-    typedef std::shared_ptr<Array<T>> Ptr;
+    typedef std::shared_ptr<ArrayT<T>> Ptr;
     typedef T value_type;
 
     /*
@@ -192,20 +198,20 @@ public:
                 Float32Array a3({512, 512, 3});
 
             */
-    Array(ShapeType _shape)
-        : Array(_shape, IArray::to_dtype_name<T>())
+    ArrayT(ShapeType _shape)
+        : ArrayT(_shape, Array::to_dtype_name<T>())
     {
     }
 
     /// move constructor by take over (steal, move) the content of input vector
-    Array(ShapeType _shape, std::vector<T> &&vec)
-        : Array(_shape, IArray::to_dtype_name<T>())
+    ArrayT(ShapeType _shape, std::vector<T> &&vec)
+        : ArrayT(_shape, Array::to_dtype_name<T>())
     {
         this->m_data = vec;
     }
 
-    Array(ShapeType _shape, const std::vector<T> &vec)
-        : Array(_shape, IArray::to_dtype_name<T>())
+    ArrayT(ShapeType _shape, const std::vector<T> &vec)
+        : ArrayT(_shape, Array::to_dtype_name<T>())
     {
         this->m_data = vec;
     }
@@ -219,13 +225,57 @@ public:
     /*
             virtual destructor
             */
-    virtual ~Array(){};
+    virtual ~ArrayT(){};
 
     inline virtual std::string element_type_name() const
     {
         return m_element_type_name;
     }
 
+    std::string &dim_unit(int i)
+    {
+        if (m_dims.size() < i + 1)
+            m_dims.push_back(Dimension<T>());
+        return m_dims[i].unit;
+    }
+    // must exist before read this field
+    const std::string &dim_unit(int i) const
+    {
+        return m_dims[i].unit;
+    }
+
+    std::string &dim_title(int i)
+    {
+        if (m_dims.size() < i + 1)
+            m_dims.push_back(Dimension<T>());
+        return m_dims[i].title;
+    }
+    const std::string &dim_title(int i) const
+    {
+        return m_dims[i].title;
+    }
+
+    std::vector<T> &dim_values(int i)
+    {
+        if (m_dims.size() < i + 1)
+            m_dims.push_back(Dimension<T>());
+        return m_dims[i].values;
+    }
+    const std::vector<T> &dim_values(int i) const
+    {
+        return m_dims[i].values;
+    }
+
+    template <typename DT = T>
+    std::vector<Dimension<DT>> &dims()
+    {
+        return m_dims;
+    }
+    template <typename DT = T>
+    const std::vector<Dimension<DT>> &dims() const
+    {
+        return m_dims;
+    }
     /// @{ STL container API
     /*
             Returns the length of the array buffer, element_size, not byte size
@@ -380,15 +430,16 @@ public:
         return pya;
     }
 
-    static typename Array<T>::Ptr decode(const py::array &pya)
+    static typename ArrayT<T>::Ptr decode(const py::array &pya)
     {
-        // todo: if numpy array is C row-major, then memcpy
-        ShapeType shape(pya.ndim()); // will ndim be minus number ssize_t ?
+        // todo: detect if numpy array is C row-major, then memcpy
+        /// NOTE: all size dim in python are signed integer!, ssize_t
+        ShapeType shape(pya.ndim());
         for (size_t i = 0; i < pya.ndim(); i++)
         {
             shape[i] = pya.shape()[i];
         }
-        Array<T>::Ptr arr = std::make_shared<Array<T>>(shape);
+        ArrayT<T>::Ptr arr = std::make_shared<ArrayT<T>>(shape);
         //std::cout << "pya.itemsize() = " << pya.itemsize() << std::endl; // sizeof(element_type)
         //std::cout << "pya.size() = " << pya.size() << std::endl;  // this is element count
         std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.size(), arr->m_data.begin());
@@ -399,35 +450,36 @@ protected:
     // change element type is not possible without re-create the array object
     const std::string m_element_type_name;
     std::vector<T> m_data;
+    std::vector<Dimension<T>> m_dims;
 };
 
 /// typedef naming as Javascript TypedArray
-typedef Array<int8_t> Int8Array;
-typedef Array<int16_t> Int16Array;
-typedef Array<int32_t> Int32Array;
-typedef Array<int64_t> Int64Array;
+typedef ArrayT<int8_t> Int8Array;
+typedef ArrayT<int16_t> Int16Array;
+typedef ArrayT<int32_t> Int32Array;
+typedef ArrayT<int64_t> Int64Array;
 
-typedef Array<uint8_t> UInt8Array;
-typedef Array<uint16_t> UInt16Array;
-typedef Array<uint32_t> UInt32Array;
-typedef Array<uint64_t> UInt64Array;
+typedef ArrayT<uint8_t> UInt8Array;
+typedef ArrayT<uint16_t> UInt16Array;
+typedef ArrayT<uint32_t> UInt32Array;
+typedef ArrayT<uint64_t> UInt64Array;
 
-typedef Array<float> Float32Array;
-typedef Array<double> Float64Array;
+typedef ArrayT<float> Float32Array;
+typedef ArrayT<double> Float64Array;
 
 class DataDecoder
 {
 public:
     /// decode array without knowing the element type
-    static IArray::Ptr decode_array(const py::array &pyo)
+    static Array::Ptr decode_array(const py::array &pyo)
     {
 
         /** attribute identifier strings in encoded pyo objects
-                  those type name should equal to `numpy.typename`
-                  see: https://numpy.org/devdocs/user/basics.types.html
-                  because they can be shared by both C adn C++.
-                  why not `const char*` instead of `char[]`, maybe caused by Poco::pyo
-                */
+             those type name should equal to `numpy.typename`
+            see: https://numpy.org/devdocs/user/basics.types.html
+            because they can be shared by both C adn C++.
+            why not `const char*` instead of `char[]`, maybe caused by Poco::pyo
+        */
         static char TYPE_NAME_INT8[] = "int8";
         static char TYPE_NAME_INT16[] = "int16";
         static char TYPE_NAME_INT32[] = "int32";
@@ -439,10 +491,11 @@ public:
         static char TYPE_NAME_FLOAT32[] = "float32";
         static char TYPE_NAME_FLOAT64[] = "float64";
         static char TYPE_NAME_BOOL[] = "bool";
-        // end of numpy.dtype 's typename
-        static char TYPE_NAME_STRING[] = "string";
+        static char TYPE_NAME_STRING[] = "string"; // may not support
 
-        std::string el_type_name;
+        auto dt = pyo.dtype();
+        std::string el_type_name = py::str(dt.attr("name")).cast<std::string>();
+        // py::print("el_type_name = ", el_type_name);  // correct here
 
         // this can be removed if Array<T> is working
         if (el_type_name == TYPE_NAME_INT8)
