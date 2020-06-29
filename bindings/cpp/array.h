@@ -3,6 +3,8 @@
 // https://github.com/simple-access-layer/source
 #pragma once
 
+//#include <iostream>
+
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -387,8 +389,9 @@ public:
             shape[i] = pya.shape()[i];
         }
         Array<T>::Ptr arr = std::make_shared<Array<T>>(shape);
-        //arr->data.resize(pya.itemsize());
-        std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.itemsize(), arr->m_data.begin());
+        //std::cout << "pya.itemsize() = " << pya.itemsize() << std::endl; // sizeof(element_type)
+        //std::cout << "pya.size() = " << pya.size() << std::endl;  // this is element count
+        std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.size(), arr->m_data.begin());
         return arr;
     }
 
