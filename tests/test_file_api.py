@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 from data_pipeline_api.file_api import FileAPI
 
+
 @pytest.fixture
 def configuration_file(tmp_path: Path) -> Path:
     with open(tmp_path / "version1.txt", "w") as file:
@@ -62,3 +63,63 @@ def test_write(tmp_path: Path, configuration_file: Path):
 # TODO : test metadata loading.
 # TODO : test for behaviour when we can't find a filename.
 # TODO : test for behaviour when we can't find a file.
+
+
+def test_access_log_written_if_not_set(tmp_path):
+    configuration_file = tmp_path / "config.yaml"
+    with open(configuration_file, "w") as file:
+        file.write(
+            """
+data_directory: .
+fail_on_hash_mismatch: False
+"""
+        )
+    with FileAPI(configuration_file):
+        pass
+    assert (tmp_path / "access.yaml").exists()
+
+
+def test_access_log_written_if_set_to_path(tmp_path):
+    configuration_file = tmp_path / "config.yaml"
+    with open(configuration_file, "w") as file:
+        file.write(
+            """
+data_directory: .
+access_log: access.yaml
+fail_on_hash_mismatch: False
+"""
+        )
+    with FileAPI(configuration_file):
+        pass
+    assert (tmp_path / "access.yaml").exists()
+
+
+def test_access_log_not_written_if_set_to_False(tmp_path):
+    configuration_file = tmp_path / "config.yaml"
+    with open(configuration_file, "w") as file:
+        file.write(
+            """
+data_directory: .
+access_log: False
+fail_on_hash_mismatch: False
+"""
+        )
+    with FileAPI(configuration_file):
+        pass
+    assert not (tmp_path / "access.yaml").exists()
+
+
+def test_access_log_written_if_set_to_absolute_path(tmp_path):
+    configuration_file = tmp_path / "config.yaml"
+    access_file_path = tmp_path / "access.yaml"
+    with open(configuration_file, "w") as file:
+        file.write(
+            f"""
+data_directory: .
+access_log: {str(access_file_path.resolve())}
+fail_on_hash_mismatch: False
+"""
+        )
+    with FileAPI(configuration_file):
+        pass
+    assert access_file_path.exists()
