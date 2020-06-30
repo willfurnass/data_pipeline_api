@@ -29,8 +29,9 @@ namespace data
  * Meanwhile, some C++ object can hold value of dynamic types with type info accessible, 
  * such as `nlohmann::json` or `toml::value`
  * */
-    struct Parameter
+    class Parameter
     {
+    public:
         //  as dict key
         std::string type; /// c++ class name, e.g. Estimation, Sample, Distribution
         std::string name; // short name,
@@ -45,22 +46,24 @@ namespace data
     /// typedef Parameter ParameterFile;
 
     /// these class can be further subclass by specific model
-    struct Estimation : public Parameter
+    class Estimation : public Parameter
     {
+    public:
         // ctor() set type="Estimation"
         DT value; // T any type supported by json, can be std::vector<ET>
     };
 
-    struct Distribution : public Parameter
+    class Distribution : public Parameter
     {
     public:
         // ctor() set type="Distribution"
+        std::string distribution;
         double scale;
         double shape;
     };
 
-    /// sample classes
-    struct Sample : public Parameter
+    /// Sample classes, plural is not a good class name
+    class Sample : public Parameter
     {
     public:
         // ctor() set type="Samples"
