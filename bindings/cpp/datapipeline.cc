@@ -33,8 +33,6 @@ double DataPipeline::read_sample(const string *data_product, const string &compo
 //                        const Distribution &d);
 //void DataPipeline::write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
-//vector<double> DataPipeline::read_array(const string &data_product, const string &component);
-
 Table DataPipeline::read_table(const string &data_product, const string &component)
 {
 //  using namespace pyglobals;
@@ -65,6 +63,34 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
   }
 
   return table;
+}
+
+
+// TODO: template this over the array type, though I suspect we only need doubles
+Array<double> DataPipeline::read_array(const string &data_product, const string &component)
+{
+  py::module np = py::module::import("numpy");
+  py::object array_np = api.attr("read_array")(data_product, component);
+  vector<int> shape = py::list(array_np.attr("shape")).cast<vector<int>>();
+  Array<double> array(shape.size(),shape);
+
+  switch(shape.size()) {
+    case 1:
+      for (int i = 0; i < shape.at(0); i++) {
+        array(i) = py::float_(array_np.attr("item")(i));
+      }
+      break;
+    case 2:
+      for (int i = 0; i < shape.at(0); i++) {
+        for (int j = 0; j < shape.at(1); j++) {
+          array(i,j) = py::float_(array_np.attr("item")(tuple<int,int>({i,j})));
+        }
+      }
+      break;
+  default:
+    throw domain_error("Unsupported array dimensionality in read_array");
+  }
+  return array;
 }
 
 // TODO: template this over the array type, though I suspect we only need doubles
