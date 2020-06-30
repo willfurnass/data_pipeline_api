@@ -11,23 +11,25 @@ using namespace std;
 
 void test_array()
 {
+  cout << "test_array:" << endl;
   Array<double>  a(1, {10});
 
   for (int i = 0; i < 10; i++) {
     a(i) = i;
   }
 
-  cout << "a(0) == " << a(0) << endl;
+  cout << "  a(0) == " << a(0) << endl;
 
   a(3) = 99;
 
-  cout << "a(3) == " << a(3) << endl;
+  cout << "  a(3) == " << a(3) << endl;
 
   bool caught_ok = false;
   try {
-    cout << "a(11) == " << a(11) << endl;
+    cout << "  a(11) == " << a(11) << endl;
   } catch(out_of_range e) {
     caught_ok = true;
+    cout << "Correct exception when accessing out of bounds" << endl;
   } catch(exception e) {
     throw(logic_error(string("Unexpected exception ")+e.what()+" caught in test"));
   }
@@ -44,6 +46,7 @@ int main()
   DataPipeline dp("../../tests/data/config.yaml");
 
   // read_estimate
+  cout << "read_estimate:" << endl;
   cout << "  parameter/example-estimate -> " << dp.read_estimate("parameter", "example-estimate") << endl;
   cout << "  parameter/example-distribution -> " << dp.read_estimate("parameter", "example-distribution") << endl;
   cout << "  parameter/example-samples -> " << dp.read_estimate("parameter", "example-samples") << endl;
