@@ -106,10 +106,11 @@ string Table::to_string()
   return ss.str();
 }
 
-template class ColumnT<double>;
-template vector<double> &Table::get_column(const string &colname);
-template void Table::add_column(const string &colname, const vector<double> &values);
+#define INSTANTIATE_TABLE(type) \
+template class ColumnT<type>; \
+template vector<type> &Table::get_column(const string &colname); \
+template void Table::add_column(const string &colname, const vector<type> &values);
 
-template class ColumnT<string>;
-template vector<string> &Table::get_column(const string &colname);
-template void Table::add_column(const string &colname, const vector<string> &values);
+INSTANTIATE_TABLE(double);
+INSTANTIATE_TABLE(string);
+INSTANTIATE_TABLE(long);
