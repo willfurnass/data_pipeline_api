@@ -12,6 +12,7 @@ using namespace pybind11::literals;
 using namespace std;
 
 const std::string TEST_HDF5_FILENAME = "test_table.h5";
+const std::string TEST_HDF5_FILENAME2 = "test_table2.h5";
 const std::string TEST_DATASET_NAME = "table_ds";
 
 /// hdf5 impl can add attributes/metadata while csv can not
@@ -85,14 +86,39 @@ Table read_table(const string &data_product, const string &component)
 void write_table(const string &data_product, const string &component,
                  const Table &table)
 {
-  map<string, vector<double>> estc_map; // pybind automatically recognises a map as a dict
+  map<string, py::array> _map; // pybind automatically recognises a map as a dict
 
-  estc_map["a"] = vector<double>{1, 2};
-  estc_map["b"] = vector<double>{3, 4};
+  for (const auto &colname : table.get_column_names())
+  {
+
+    string dtype = table.get_column_type(colname);
+    py::list l;
+    if (dtype == "float64")
+    {
+      l = py::cast(table.get_column<double>(colname));
+    }
+    else if (dtype == "int64")
+    {
+      l = py::cast(table.get_column<int64_t>(colname));
+    }
+    else if (dtype == "bool")
+    {
+      l = py::cast(table.get_column<bool>(colname));
+    }
+    // else if (dtype == "string"  || dtype == "object")
+    // {
+    //   l = py::cast(table.get_column<std::string>(colname));
+    // }
+    else
+    {
+      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+    }
+    _map[colname] = l;
+  }
 
   py::module pd = py::module::import("pandas");
-  py::object estc_df = pd.attr("DataFrame")(estc_map);
-  py::object dataframe = pd.attr("to_hdf")(data_product, component);
+  py::object _df = pd.attr("DataFrame")(_map);
+  _df.attr("to_hdf")(data_product, component);
   //api.attr("write_table")(data_product, estc_df);
 }
 
@@ -119,7 +145,7 @@ int main()
            TEST_HDF5_FILENAME + "', '" + TEST_DATASET_NAME + "')\n");
 
   Table h5table = read_table(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
-  //write_table(TEST_HDF5_FILENAME, TEST_DATASET_NAME, h5table);
+  write_table(TEST_HDF5_FILENAME2, TEST_DATASET_NAME, h5table);
 
   return 0;
 }
