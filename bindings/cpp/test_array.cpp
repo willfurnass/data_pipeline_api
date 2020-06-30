@@ -1,9 +1,5 @@
 #include "array.h"
-//#include "datapipeline.hh"
-
-// this API in pipeline.hh must be changed before impl
-//void DataPipeline::write_array(const string &data_product, const string &component, vector<double> array);
-//void DataPipeline::read_array(const string &data_product, const string &component);
+#include "datapipeline.hh"
 
 #include <iostream>
 
@@ -16,18 +12,18 @@ using namespace pybind11::literals;
 const std::string TEST_HDF5_FILENAME = "test_npy.h5";
 const char *TEST_DATASET_NAME = "nparray";
 
-/// this can also be written in pure c++ conveniently
-void write_array_to_hdf5(const Array &da)
+/// std api applies here, but python open(hdf5 file is not impl, use h5py to open file
+void write_array(const string &data_product, const string &component, const Array &da)
 {
   py::module h5py = py::module::import("h5py");
   const py::array pya = da.encode();
-  py::print(pya);
-  auto h5file = h5py.attr("File")(TEST_HDF5_FILENAME, "w");
+  //py::print(pya);
+  auto h5file = h5py.attr("File")(data_product, "w");
 
   py::list shape = py::cast(da.shape());
   //auto tk = pya.dtype().kind(); // maybe must be a py::arg()
   //py::object dataset = h5file.attr("create_dataset")("nparray", shape, pya.dtype());
-  py::object dataset = h5file.attr("create_dataset")(TEST_DATASET_NAME, "data"_a = pya);
+  py::object dataset = h5file.attr("create_dataset")(component, "data"_a = pya);
   //
   dataset.attr("write_direct")(pya);
 
@@ -49,13 +45,12 @@ void write_array_to_hdf5(const Array &da)
 }
 
 template <typename DT>
-typename ArrayT<DT>::Ptr read_array_from_hdf5()
+typename ArrayT<DT>::Ptr read_array(const string &data_product, const string &component)
 {
   py::module h5py = py::module::import("h5py");
+  auto h5file = h5py.attr("File")(data_product, "r");
 
-  auto h5file = h5py.attr("File")(TEST_HDF5_FILENAME, "r");
-
-  py::object dataset = h5file[TEST_DATASET_NAME];
+  py::object dataset = h5file[py::str(component)];
   //py::print("get dataset ", dataset.get_type());  // fine here
 
   py::module np = py::module::import("numpy");
@@ -113,8 +108,8 @@ int main()
   ap->dim_values(0) = {1, 4};
 
   // write_array is working, confirmed by h5dump
-  write_array_to_hdf5(*ap);
-  read_array_from_hdf5<DT>();
+  write_array(TEST_HDF5_FILENAME, TEST_DATASET_NAME, *ap);
+  read_array<DT>(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
 
   return 0;
 }
