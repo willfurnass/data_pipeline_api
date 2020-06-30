@@ -101,18 +101,27 @@ void Table::add_column(const string &colname, const vector<T> &values)
   colnames.push_back(colname);
 }
 
+const string Table::get_column_type(const string &colname) const
+{
+  if (columns.find(colname) == columns.end())
+  {
+    throw out_of_range("There is no column named " + colname + " in this table");
+  }
+  return columns.at(colname)->get_dtype_name();
+}
+
 template <typename T>
-vector<T> &Table::get_column(const string &colname)
+const vector<T> &Table::get_column(const string &colname) const
 {
   if (columns.find(colname) == columns.end())
   {
     throw out_of_range("There is no column named " + colname + " in this table");
   }
 
-  return dynamic_cast<ColumnT<T> *>(&*columns[colname])->vals; // throws std::bad_cast if type mismatch
+  return dynamic_cast<const ColumnT<T> *>(&*columns.at(colname))->vals; // throws std::bad_cast if type mismatch
 }
 
-const vector<string> &Table::get_column_names()
+const vector<string> &Table::get_column_names() const
 {
   return colnames;
 }
@@ -165,17 +174,17 @@ string Table::to_string()
 
 /// I do not understand why this is needed, because, Column<T> is not in header file?
 template class ColumnT<double>;
-template vector<double> &Table::get_column(const string &colname);
+template const vector<double> &Table::get_column(const string &colname) const;
 template void Table::add_column(const string &colname, const vector<double> &values);
 
 template class ColumnT<int64_t>;
-template vector<int64_t> &Table::get_column(const string &colname);
+template const vector<int64_t> &Table::get_column(const string &colname) const;
 template void Table::add_column(const string &colname, const vector<int64_t> &values);
 
 template class ColumnT<bool>;
-template vector<bool> &Table::get_column(const string &colname);
+template const vector<bool> &Table::get_column(const string &colname) const;
 template void Table::add_column(const string &colname, const vector<bool> &values);
 
 template class ColumnT<string>;
-template vector<string> &Table::get_column(const string &colname);
+template const vector<string> &Table::get_column(const string &colname) const;
 template void Table::add_column(const string &colname, const vector<string> &values);
