@@ -41,13 +41,18 @@ int main()
 {
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-  DataPipeline dp("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+  DataPipeline dp("../../tests/data/config.yaml");
+
+  // read_estimate
+  cout << "  parameter/example-estimate -> " << dp.read_estimate("parameter", "example-estimate") << endl;
+  cout << "  parameter/example-distribution -> " << dp.read_estimate("parameter", "example-distribution") << endl;
+  cout << "  parameter/example-samples -> " << dp.read_estimate("parameter", "example-samples") << endl;
 
   // read_table
-  Table table = dp.read_table("human/mixing-matrix");
-  cout << "human/mixing-matrix:" << endl << table.to_string() << endl;
-  vector<double> mixing = table.get_column<double>("mixing");
-  cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
+  Table table = dp.read_table("object", "example-table");
+  cout << "object/example-table:" << endl << table.to_string() << endl;
+  // vector<double> mixing = table.get_column<double>("mixing");
+  // cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 
   Array<double>  a(2, {2,3});
 
@@ -57,9 +62,11 @@ int main()
     }
   }
 
-  test_array();
+  // Fails with ValueError: No name (no name) in h5py/h5g.pyx(161): h5py.h5g.create
+  //dp.write_array("human/test_array", "", a);
 
-  dp.write_array("human/test_array", "", a);
+  // Test array class
+  test_array();
 
   return 0;
 }

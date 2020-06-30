@@ -29,14 +29,11 @@ class DataPipeline
   void write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
   vector<double> read_array(const string &data_product, const string &component);
-  Table read_table(const string &data_product);
+  Table read_table(const string &data_product, const string &component);
   void write_array(const string &data_product, const string &component, const Array<double> &array);
   void write_table(const string &data_product, const string &component, const Table &table);
 
   private:
-  pybind11::object  pd;
-  pybind11::object  SimpleNetworkSimAPI;
   pybind11::object  api;
-  pybind11::object  StandardAPI;
   // TODO: fix "declared with greater visibility than the type of its field" warning
 };

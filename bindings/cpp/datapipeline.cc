@@ -11,23 +11,13 @@ namespace py = pybind11;
 
 DataPipeline::DataPipeline(const string &config_file)
 {
-  // TODO: tidy up these variable names
-  pd = py::module::import("pandas");
-
-  SimpleNetworkSimAPI = py::module::import(
-    "data_pipeline_api.simple_network_sim_api").attr("SimpleNetworkSimAPI");
-
-  api = SimpleNetworkSimAPI("repos/data_pipeline_api/examples/test_data_2/config.yaml");
-
-  py::object StandardAPIClass = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
-
-  StandardAPI = StandardAPIClass("repos/data_pipeline_api/examples/test_data_2/config.yaml");
+  api = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI")(config_file);
 }
 
 double DataPipeline::read_estimate(string data_product, const string &component)
 {
-  double est = py::float_ (StandardAPI.attr("read_estimate")(data_product));
-  // TODO: what about component?
+  // TODO: can we assume all estimate are floats? Should we check it?
+  double est = py::float_ (api.attr("read_estimate")(data_product, component));
   return est;
 }
 
@@ -35,8 +25,7 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 
 double DataPipeline::read_sample(const string *data_product, const string &component)
 {
-  double est = py::float_(StandardAPI.attr("read_sample")(data_product));
-  return est;
+  return py::float_(api.attr("read_sample")(data_product));
 }
 
 //void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate);
@@ -46,13 +35,13 @@ double DataPipeline::read_sample(const string *data_product, const string &compo
 
 //vector<double> DataPipeline::read_array(const string &data_product, const string &component);
 
-Table DataPipeline::read_table(const string &data_product)
+Table DataPipeline::read_table(const string &data_product, const string &component)
 {
 //  using namespace pyglobals;
 
   Table table;
 
-  py::object dataframe = api.attr("read_table")(data_product);
+  py::object dataframe = api.attr("read_table")(data_product, component);
 
   vector<string> colnames = dataframe.attr("columns").attr("tolist")().cast<vector<string>>();
 
@@ -63,6 +52,10 @@ Table DataPipeline::read_table(const string &data_product)
     if (dtype == "float64") {
       vector<double> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<double>>();
       table.add_column<double>(colname, values);
+    } else if (dtype == "int64") {
+      // TODO: long isn't 64 bits on Windows or 32 bit systems
+      vector<long> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<long>>();
+      table.add_column<long>(colname, values);
     } else {
       cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
 
@@ -99,7 +92,7 @@ void DataPipeline::write_array(const string &data_product, const string &compone
     throw domain_error("Unsupported array dimensionality in write_array");
   }
 
-   api.attr("write_array")(data_product, array_np);
+   api.attr("write_array")(data_product, component, array_np);
 }
 
 // void DataPipeline::write_table(const string &data_product, const string &component,
