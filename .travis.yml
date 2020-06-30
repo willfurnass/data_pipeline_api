@@ -11,7 +11,7 @@ matrix:
         - hash -r
         - conda config --set always_yes yes --set changeps1 no
         - conda update -q conda
-        - conda create --name data_pipeline_api --file environment.yml
+        - conda env create environment.yml
         - conda activate data_pipeline_api
       script:
         - pytest --cov=data_pipeline_api
