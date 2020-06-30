@@ -14,4 +14,7 @@ matrix:
         - conda create --name data_pipeline_api --file environment.yml
         - conda activate data_pipeline_api
       script:
-        - pytest ./data_pipeline_api/test_api.py
+        - pytest --cov=data_pipeline_api
+      after_success:
+        - coverage xml
+        - bash <(curl -s https://codecov.io/bash)
