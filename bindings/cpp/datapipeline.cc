@@ -23,9 +23,9 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 
 //Distribution DataPipeline::read_distribution(const string &data_product, const string &component);
 
-double DataPipeline::read_sample(const string *data_product, const string &component)
+double DataPipeline::read_sample(const string &data_product, const string &component)
 {
-  return py::float_(api.attr("read_sample")(data_product));
+  return py::float_(api.attr("read_sample")(data_product, component));
 }
 
 //void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate);

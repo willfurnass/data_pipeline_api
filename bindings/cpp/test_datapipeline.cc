@@ -55,6 +55,12 @@ int main()
   // Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
   // cout << "parameter/example-distribution = " << par_dist << endl;
 
+  // read_sample
+  cout << "read_sample:" << endl;
+  cout << "  parameter/example-estimate -> " << dp.read_sample("parameter", "example-estimate") << endl;
+  cout << "  parameter/example-distribution -> " << dp.read_sample("parameter", "example-distribution") << endl;
+  cout << "  parameter/example-samples -> " << dp.read_sample("parameter", "example-samples") << endl;
+
   // read_table
   Table table = dp.read_table("object", "example-table");
   cout << "object/example-table:" << endl << table.to_string() << endl;
