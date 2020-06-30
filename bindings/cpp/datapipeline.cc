@@ -84,7 +84,7 @@ void DataPipeline::write_array(const string &data_product, const string &compone
     case 2:
       for (int i = 0; i < shape.at(0); i++) {
         for (int j = 0; j < shape.at(1); j++) {
-          array_np.attr("itemset")(tuple<int,int>({i,j}), array(i,j));
+          array_np.attr("itemset")(tuple<int,int>({i,j}), array(i,j)); // TODO: check index ordering etc here
         }
       }
       break;
