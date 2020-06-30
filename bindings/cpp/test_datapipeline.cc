@@ -51,12 +51,21 @@ int main()
   cout << "  parameter/example-distribution -> " << dp.read_estimate("parameter", "example-distribution") << endl;
   cout << "  parameter/example-samples -> " << dp.read_estimate("parameter", "example-samples") << endl;
 
+  // read_distribution
+  // Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
+  // cout << "parameter/example-distribution = " << par_dist << endl;
+
   // read_table
   Table table = dp.read_table("object", "example-table");
   cout << "object/example-table:" << endl << table.to_string() << endl;
   // vector<double> mixing = table.get_column<double>("mixing");
   // cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 
+  // // read_array
+  // Array<double> array;
+  // dp.read_array("object", "example-array");
+
+  // write_array
   Array<double>  a(2, {2,3});
 
   for (int i = 0; i < 2; i++) {
