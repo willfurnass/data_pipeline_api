@@ -13,6 +13,9 @@ using namespace std;
 class Distribution;
 // TODO: define a representation for distributions
 
+template <typename T>
+class Array;
+
 class DataPipeline
 {
   public:
@@ -27,7 +30,7 @@ class DataPipeline
 
   vector<double> read_array(const string &data_product, const string &component);
   Table read_table(const string &data_product);
-  void write_array(const string &data_product, const string &component, vector<double> array);
+  void write_array(const string &data_product, const string &component, const Array<double> &array);
   void write_table(const string &data_product, const string &component, const Table &table);
 
   private:

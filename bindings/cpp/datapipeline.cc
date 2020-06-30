@@ -4,6 +4,7 @@
 #include "pybind11/stl.h"
 
 #include "datapipeline.hh"
+#include "array.hh"
 
 using namespace std;
 namespace py = pybind11;
@@ -73,8 +74,33 @@ Table DataPipeline::read_table(const string &data_product)
   return table;
 }
 
-//void DataPipeline::write_array(const string &data_product, const string &component, vector<double> array);
-// TODO: need to decide on a class for arrays.  Will return as vector of doubles for now
+// TODO: template this over the array type, though I suspect we only need doubles
+void DataPipeline::write_array(const string &data_product, const string &component, 
+                               const Array<double> &array)
+{
+  py::module np = py::module::import("numpy");
+  vector<int> shape = array.size();
+  const py::array array_np = np.attr("zeros")(shape,"float64");
+
+  switch(shape.size()) {
+    case 1:
+      for (int i = 0; i < shape.at(0); i++) {
+        array_np.attr("itemset")(i, array(i));
+      }
+      break;
+    case 2:
+      for (int i = 0; i < shape.at(0); i++) {
+        for (int j = 0; j < shape.at(1); j++) {
+          array_np.attr("itemset")(tuple<int,int>({i,j}), array(i,j));
+        }
+      }
+      break;
+  default:
+    throw domain_error("Unsupported array dimensionality in write_array");
+  }
+
+   api.attr("write_array")(data_product, array_np);
+}
 
 // void DataPipeline::write_table(const string &data_product, const string &component,
 //                                const Table &table)
