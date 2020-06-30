@@ -61,9 +61,17 @@ int main()
   // vector<double> mixing = table.get_column<double>("mixing");
   // cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 
-  // // read_array
-  // Array<double> array;
-  // dp.read_array("object", "example-array");
+  // read_array
+  Array<double> array = dp.read_array("object", "example-array");
+
+  vector<int> shape = array.size();
+
+  cout << "read_array -> " << "[";
+  for (int i = 0; i < shape.at(0); i++) {
+    cout << " " << array(i);
+  }
+  cout << " ]" << endl;
+    
 
   // write_array
   Array<double>  a(2, {2,3});
