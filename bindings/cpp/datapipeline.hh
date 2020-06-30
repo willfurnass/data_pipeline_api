@@ -28,7 +28,7 @@ class DataPipeline
                           const Distribution &d);
   void write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
-  vector<double> read_array(const string &data_product, const string &component);
+  Array<double> read_array(const string &data_product, const string &component);
   Table read_table(const string &data_product, const string &component);
   void write_array(const string &data_product, const string &component, const Array<double> &array);
   void write_table(const string &data_product, const string &component, const Table &table);
