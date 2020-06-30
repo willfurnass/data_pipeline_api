@@ -1,108 +1,136 @@
 from io import TextIOWrapper
 from pathlib import Path
-import toml
+from contextlib import contextmanager
+import numpy as np
+import pandas as pd
 from data_pipeline_api.file_api import FileAPI
-
-from typing import Union, TypeVar, Generic, Dict
-from scipy import stats
+from data_pipeline_api.file_formats import parameter_file, object_file
 
 
 class StandardAPI(FileAPI):
-    def read_estimate(self, data_product: str) -> float:
-        with TextIOWrapper(
-            self.open_for_read(data_product=data_product, extension="toml")
-        ) as toml_file:
-            return Estimate.read_parameter(toml.load(toml_file))
+    # ==================================================================================
+    # Parameter files
+    # ==================================================================================
 
-    def write_estimate(self, data_product: str, value: float):
+    @contextmanager
+    def open_parameter_file_for_read(self, data_product: str, component: str):
+        with TextIOWrapper(
+            self.open_for_read(data_product=data_product, component=component)
+        ) as parameter_file:
+            yield parameter_file
+
+    @contextmanager
+    def open_parameter_file_for_write(self, data_product: str, component: str):
         with TextIOWrapper(
             self.open_for_write(
-                data_product=data_product, run_id=1, extension="toml"
+                data_product=data_product, component=component, extension="toml"
             )
-        ) as toml_file:
-            toml.dump(Estimate.write_parameter(value), toml_file)
+        ) as parameter_file:
+            yield parameter_file
 
+    # ----------------------------------------------------------------------------------
+    # Estimate
+    # ----------------------------------------------------------------------------------
 
-T = TypeVar("T")
+    def read_estimate(
+        self, data_product: str, component: str
+    ) -> parameter_file.Estimate:
+        with self.open_parameter_file_for_read(data_product, component) as file:
+            parameter_type = parameter_file.read_type(file, component)
+            if parameter_type is parameter_file.Type.POINT_ESTIMATE:
+                return parameter_file.read_estimate(file, component)
+            elif parameter_type is parameter_file.Type.DISTRIBUTION:
+                return parameter_file.read_distribution(file, component).mean()
+            elif parameter_type is parameter_file.Type.SAMPLES:
+                return parameter_file.read_samples(file, component).mean()
+            else:
+                raise ValueError(f"unrecognised type {parameter_type}")
 
+    def write_estimate(
+        self, data_product: str, component: str, estimate: parameter_file.Estimate
+    ):
+        with self.open_parameter_file_for_write(data_product, component) as file:
+            parameter_file.write_estimate(file, component, estimate)
 
-class ParameterFile(Generic[T]):
-    @classmethod
-    def read_parameter(cls, data: Dict) -> T:
-        if len(data.keys()) != 1:
-            raise ValueError(
-                f"parameter data has more than one key: {tuple(data.keys())}"
-            )
-        parameter_type, parameter_data = next(iter(data.items()))
-        if parameter_type == "point-estimate":
-            return cls._read_point_estimate(parameter_data)
-        elif parameter_type == "distribution":
-            return cls._read_distribution(parameter_data)
-        else:
-            raise ValueError(f"don't know how to parse a {parameter_type} parameter")
+    # ----------------------------------------------------------------------------------
+    # Distribution
+    # ----------------------------------------------------------------------------------
 
-    @classmethod
-    def write_parameter(cls, value: T) -> Dict:
-        raise NotImplementedError
+    def read_distribution(
+        self, data_product: str, component: str
+    ) -> parameter_file.Distribution:
+        with self.open_parameter_file_for_read(data_product, component) as file:
+            parameter_type = parameter_file.read_type(file, component)
+            if parameter_type is parameter_file.Type.POINT_ESTIMATE:
+                raise ValueError("point-estimate cannot be read as a distribution")
+            elif parameter_type is parameter_file.Type.DISTRIBUTION:
+                return parameter_file.read_distribution(file, component)
+            elif parameter_type is parameter_file.Type.SAMPLES:
+                raise ValueError("samples cannot be read as a distribution")
+            else:
+                raise ValueError(f"unrecognised type {parameter_type}")
 
-    @staticmethod
-    def _parse_point_estimate(data) -> float:
-        return float(data["value"])
+    def write_distribution(
+        self,
+        data_product: str,
+        component: str,
+        distribution: parameter_file.Distribution,
+    ):
+        with self.open_parameter_file_for_write(data_product, component) as file:
+            parameter_file.write_distribution(file, component, distribution)
 
-    distribution_parsers = {
-        "gamma": lambda data: stats.gamma(a=data["shape"], scale=data["scale"]),
-    }
+    # ----------------------------------------------------------------------------------
+    # Samples
+    # ----------------------------------------------------------------------------------
 
-    @staticmethod
-    def _parse_distribution(data) -> Union[stats.rv_discrete, stats.rv_continuous]:
-        try:
-            return ParameterFile.distribution_parsers[data["distribution"]](data)
-        except KeyError:
-            raise ValueError(
-                f"don't know how to parse a {data['distribution']} distribution"
-            )
+    def read_sample(self, data_product: str, component: str) -> float:
+        with self.open_parameter_file_for_read(data_product, component) as file:
+            parameter_type = parameter_file.read_type(file, component)
+            if parameter_type is parameter_file.Type.POINT_ESTIMATE:
+                return parameter_file.read_estimate(file, component)
+            elif parameter_type is parameter_file.Type.DISTRIBUTION:
+                return parameter_file.read_distribution(file, component).rvs()
+            elif parameter_type is parameter_file.Type.SAMPLES:
+                return np.random.choice(parameter_file.read_samples(file, component))
+            else:
+                raise ValueError(f"unrecognised type {parameter_type}")
 
-    @classmethod
-    def _read_point_estimate(cls, parameter_data) -> T:
-        raise NotImplementedError
+    def write_samples(
+        self, data_product: str, component: str, samples: parameter_file.Samples
+    ):
+        with self.open_parameter_file_for_write(data_product, component) as file:
+            parameter_file.write_samples(file, component, samples)
 
-    @classmethod
-    def _read_distribution(cls, parameter_data) -> T:
-        raise NotImplementedError
+    # ==================================================================================
+    # Object (hdf5) files
+    # ==================================================================================
 
+    @contextmanager
+    def open_object_file_for_read(self, data_product: str, component: str):
+        with self.open_for_read(
+            data_product=data_product, component=component
+        ) as object_file:
+            yield object_file
 
-class Estimate(ParameterFile[float]):
-    @classmethod
-    def write_parameter(cls, value: float) -> Dict:
-        return {"point-estimate": {"value": value}}
+    @contextmanager
+    def open_object_file_for_write(self, data_product: str, component: str):
+        with self.open_for_write(
+            data_product=data_product, component=component, extension="h5"
+        ) as object_file:
+            yield object_file
 
-    @classmethod
-    def _read_point_estimate(cls, parameter_data):
-        return cls._parse_point_estimate(parameter_data)
+    def read_table(self, data_product: str, component: str) -> object_file.Table:
+        with self.open_object_file_for_read(data_product, component) as file:
+            return object_file.read_table(file, component)
 
-    @classmethod
-    def _read_distribution(cls, parameter_data):
-        return cls._parse_distribution(parameter_data).mean()
+    def write_table(self, data_product: str, component: str, table: object_file.Table):
+        with self.open_object_file_for_write(data_product, component) as file:
+            object_file.write_table(file, component, table)
 
+    def read_array(self, data_product: str, component: str) -> object_file.Array:
+        with self.open_object_file_for_read(data_product, component) as file:
+            return object_file.read_array(file, component)
 
-class Distribution(ParameterFile[Union[stats.rv_discrete, stats.rv_continuous]]):
-    @classmethod
-    def write_parameter(
-        cls, value: Union[stats.rv_discrete, stats.rv_continuous]
-    ) -> Dict:
-        shape, loc, scale = value.dist._parse_args(*value.args, **value.kwds)
-        return {
-            "distribution": {
-                "distribution": value.dist.name,
-                "shape": shape[0],
-                "scale": scale,
-            }
-        }
-
-    @classmethod
-    def _read_point_estimate(cls, parameter_data):
-        raise ValueError("Don't know how to build a distribution from a point estimate")
-
-    @classmethod
-    def _read_distribution(cls, parameter_data):
-        return cls._parse_distribution(parameter_data)
+    def write_array(self, data_product: str, component: str, array: object_file.Array):
+        with self.open_object_file_for_write(data_product, component) as file:
+            object_file.write_array(file, component, array)

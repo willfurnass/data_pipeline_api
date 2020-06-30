@@ -60,3 +60,5 @@ def test_write(tmp_path: Path, configuration_file: Path):
 # TODO : test access logging.
 # TODO : test configuration loading.
 # TODO : test metadata loading.
+# TODO : test for behaviour when we can't find a filename.
+# TODO : test for behaviour when we can't find a file.

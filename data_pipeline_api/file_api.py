@@ -19,15 +19,17 @@ class FileAPI:
         self._accesses = []
         config_filename = Path(config_filename)
 
-        # Compute a run_id.
-        with open(config_filename, "rb") as file:
-            m = sha1(file.read())
-        m.update(str(self._open_timestamp).encode())
-        self.run_id = m.hexdigest()
-
         try:
             with open(config_filename) as config_file:
                 config = yaml.safe_load(config_file)
+                if "run_id" in config:
+                    self.run_id = config["run_id"]
+                else:
+                    # Compute a run_id.
+                    with open(config_filename, "rb") as file:
+                        m = sha1(file.read())
+                    m.update(str(self._open_timestamp).encode())
+                    self.run_id = m.hexdigest()
                 self.data_directory = Path(config.get("data_directory", "."))
                 self.fail_on_hash_mismatch = config.get("fail_on_hash_mismatch", True)
                 self._read_overrides = Overrides(
@@ -55,8 +57,6 @@ class FileAPI:
 
         if not self.access_log_path.is_absolute():
             self.access_log_path = config_filename.parent / self.access_log_path
-        if self.access_log_path.exists():
-            raise ValueError(f"{self.access_log_path} already exists")
 
         with open(
             self.normalised_data_directory / "metadata.yaml"
