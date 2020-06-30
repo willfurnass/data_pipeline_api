@@ -55,7 +55,9 @@ def read_estimate(file: TextIOBase, component: str) -> Estimate:
 
 
 def write_estimate(file: TextIOBase, component: str, estimate: Estimate):
-    write_parameter(file, component, {"type": "point-estimate", "value": estimate})
+    write_parameter(
+        file, component, {"type": "point-estimate", "value": float(estimate)}
+    )
 
 
 # ======================================================================================
