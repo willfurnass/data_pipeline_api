@@ -82,7 +82,7 @@ def _get_input_url(
         DataRegistryFilter.name: component_name,
     }
     data_product_version_component = get_data(
-        query_data, DataRegistryTarget.data_product_version, data_registry_url, token
+        query_data, DataRegistryTarget.data_product_version_component, data_registry_url, token
     )
     return data_product_version_component["url"]
 
