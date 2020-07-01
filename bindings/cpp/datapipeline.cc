@@ -14,15 +14,16 @@ DataPipeline::DataPipeline(const string &config_file)
   pd = py::module::import("pandas");
 
   // TODO: StandardAPI needs here
-  SimpleNetworkSimAPI = py::module::import(
-                            "data_pipeline_api.simple_network_sim_api")
-                            .attr("SimpleNetworkSimAPI");
+  // SimpleNetworkSimAPI = py::module::import(
+  //                           "data_pipeline_api.simple_network_sim_api")
+  //                           .attr("SimpleNetworkSimAPI");
 
-  api = SimpleNetworkSimAPI(config_file);
+  // api = SimpleNetworkSimAPI(config_file);
 
   py::object StandardAPIClass = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
 
   StandardAPI = StandardAPIClass(config_file);
+  ObjectFileAPI = py::module::import("data_pipeline_api.standard_api").attr("object_file");
 }
 
 double DataPipeline::read_estimate(string data_product, const string &component)
@@ -45,38 +46,36 @@ double DataPipeline::read_sample(const string *data_product, const string &compo
 //                        const Distribution &d);
 //void DataPipeline::write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
-/// std api applies here, but python open(hdf5 file is not impl, use h5py to open file
 void DataPipeline::write_array(const string &data_product, const string &component, const Array &da)
 {
-  py::object group = api.attr("get_write_group")(data_product, component);
+  py::object group = ObjectFileAPI.attr("get_write_group")(data_product, component);
   da.encode(group);
 }
 
 template <typename DT>
 typename std::shared_ptr<ArrayT<DT>> DataPipeline::read_array_T(const string &data_product, const string &component)
 {
-  /// TODO:  file open should be done by python get_read_group(), to have access check
-  py::object group = api.attr("get_read_group")(data_product, component);
+  /// NOTE:  file open should be done by python get_read_group(), to have access check
+  py::object group = ObjectFileAPI.attr("get_read_group")(data_product, component);
 
   typename ArrayT<DT>::Ptr ap = ArrayT<DT>::decode(group);
 
-  // no need to close dataset?
-  //h5file.attr("close")();
+  // no need to close dataset? group
   return ap;
 }
 
 typename std::shared_ptr<Array> DataPipeline::read_array(const string &data_product, const string &component)
 {
-  py::object group = api.attr("get_read_group")(data_product, component);
+  py::object group = ObjectFileAPI.attr("get_read_group")(data_product, component);
   return DataDecoder::decode_array(group);
 }
 
-/// todo: use python standard API to write out
 Table DataPipeline::read_table(const string &data_product, const string &component)
 {
 
   Table table;
-  py::object dataframe = api.attr("read_table")(data_product, component);
+  /// TODO: StandardAPI.attr("read_table") may be not the appliable
+  py::object dataframe = StandardAPI.attr("read_table")(data_product, component + "/table");
 
   vector<string> colnames = dataframe.attr("columns").attr("tolist")().cast<vector<string>>();
 
@@ -118,7 +117,7 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
     }
   }
 
-  py::object group = api.attr("get_read_group")(data_product, component);
+  py::object group = ObjectFileAPI.attr("get_read_group")(data_product, component);
   /// TODO: Table has not define fields to save these meta data
   //py::str _title = group.attr("__getitem__")(py::str("row_title"));
   //py::list _names = group.attr("__getitem__")(py::str("row_names"));
@@ -162,13 +161,13 @@ void DataPipeline::write_table(const string &data_product, const string &compone
     }
     _map[colname] = l;
   }
-
-  // py::module pd = py::module::import("pandas");   // has been imported in Pipeline ctor()
   py::object _df = pd.attr("DataFrame")(_map);
-  //_df.attr("to_hdf")(data_product, component);
-  api.attr("write_table")(data_product, component, _df);
+  /// ObjectFileAPI has also the lower level API, write_table()
+  StandardAPI.attr("write_table")(data_product, component + "/table", _df);
 
-  py::object group = api.attr("get_write_group")(data_product, component);
+  /// BUG or improper usage of API,   can not write to this file, file exists
+  /// ObjectFileAPI may be not desired to be use directly?
+  py::object group = ObjectFileAPI.attr("get_write_group")(data_product, component);
   if (table.get_column_units().size() > 0)
   {
     py::list _units = py::cast(table.get_column_units());

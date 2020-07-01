@@ -67,6 +67,7 @@ int main()
   ap->dim_unit(1) = "mm";
   ap->dim_values(0) = {1, 4};
 
+  /// test without data pipeline
   // write_array is working, confirmed by h5dump
   write_array(TEST_HDF5_FILENAME, TEST_DATASET_NAME, *ap);
   read_array_T<DT>(TEST_HDF5_FILENAME, TEST_DATASET_NAME);

@@ -15,27 +15,12 @@ const std::string TEST_HDF5_FILENAME = "test_table.h5";
 const std::string TEST_HDF5_FILENAME2 = "test_table2.h5";
 const std::string TEST_DATASET_NAME = "table_ds";
 
-/// hdf5 impl can add attributes/metadata while csv can not
-void write_table_metadata_to_hdf5(const Table &table)
-{
-  // read back and append
-  py::module h5py = py::module::import("h5py");
-  auto h5file = h5py.attr("File")(TEST_HDF5_FILENAME, "w"); // a+ mode?
-  auto dataset = h5file.attr("__getitem__")(TEST_DATASET_NAME);
-  py::object attrs = dataset.attr("attrs");
-  //attrs.attr("__getitem__")(py::str("units"));
-}
-
 /// todo:  copy these 2 functions back to datapipeline.cc after testing
 Table read_table(const string &data_product, const string &component)
 {
-  //  using namespace pyglobals;
 
   Table table;
 
-  // pandas is cable to read HDF5, but need extra parameter, component
-  // need test the file format
-  //py::object dataframe = api.attr("read_table")(data_product);
   py::module pd = py::module::import("pandas");
   py::object dataframe = pd.attr("read_hdf")(data_product, component);
 
@@ -121,22 +106,9 @@ void write_table(const string &data_product, const string &component,
   //api.attr("write_table")(data_product, estc_df);
 }
 
-int main()
+/// test without data pipeline, test passed for std::string as column type
+void test_table()
 {
-  pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
-
-#if 0 // CSV test data, outdated API may not work with latest python API
-
-  // todo: a better way to get example data from the repo
-  DataPipeline dp("../../../examples/test_data_2/config.yaml");
-  // read_table
-  Table table = dp.read_table("human/mixing-matrix");
-  cout << "human/mixing-matrix:" << endl
-       << table.to_string() << endl;
-  vector<double> mixing = table.get_column<double>("mixing");
-  cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
-#endif
-
   py::exec("import pandas as pd\n"
            "df = pd.DataFrame([[1, 1.1, True, 'str1'], [2, 2.2,  False, 'str2']], columns=['x', 'y', 'z', 's'])\n"
            "df.to_hdf('" +
@@ -145,6 +117,45 @@ int main()
   Table h5table = read_table(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
   h5table.set_column_units({"unit1", "unit2", "unit3", "unit4"});
   write_table(TEST_HDF5_FILENAME2, TEST_DATASET_NAME, h5table);
+}
+
+void test_dp_table(DataPipeline &dp)
+{
+  const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
+  Table table;
+  table.add_column<int64_t>("int", {1, 2});
+  table.add_column<double>("double", {1.1, 2.2});
+  table.add_column<bool>("bool", {true, false});
+  // runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+  // because DataFrame is converted to_records() in write_table()
+  //table.add_column<std::string>("str", {"str1", "str2"});
+
+  table.set_column_units({"unit1", "unit2", "unit3"});
+  dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
+  //
+  Table h5table = dp.read_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
+}
+
+int main()
+{
+  pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
+
+  // todo: a better way to get example data from the repo
+  DataPipeline dp("../../../tests/data/config.yaml");
+
+#if 0 // CSV test data, outdated API may not work with latest python API
+  // read_table
+  Table table = dp.read_table("human/mixing-matrix");
+  cout << "human/mixing-matrix:" << endl
+       << table.to_string() << endl;
+  vector<double> mixing = table.get_column<double>("mixing");
+  cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
+#endif
+
+  //test_table();  // without data pipeline
+  test_dp_table(dp);
+
+  std::cout << "data pipeline C++ api tested\n";
 
   return 0;
 }

@@ -38,8 +38,8 @@ public:
 
 private:
   pybind11::object pd;
-  pybind11::object SimpleNetworkSimAPI;
-  pybind11::object api;
+  //pybind11::object SimpleNetworkSimAPI;
+  pybind11::object ObjectFileAPI;
   pybind11::object StandardAPI;
   // TODO: fix "declared with greater visibility than the type of its field" warning
 };
