@@ -48,14 +48,16 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
     """
     for method in ("PATCH", "POST"):
         data_list = config.get(method.lower(), [])
+        post = method == "POST"
         for data in data_list:
             target = data["target"]
             data = data["data"]
+            fail_fast = data.get("fail_fast", False)
             logger.info(f"Working on {method} for target '{target}'")
             data = resolve_references(data, data_registry_url, token)
             reference = get_reference(data, target, data_registry_url, token)
 
-            if method == "POST":
+            if post:
                 end_point = get_end_point(data_registry_url, target)
                 requests_func = requests.post
                 clear_cache = reference is None
@@ -67,7 +69,6 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
                 do_request = reference is not None
 
             if do_request:
-
                 if DataRegistryField.version_identifier in data:
                     try:
                         semver.parse_version_info(data[DataRegistryField.version_identifier])
@@ -81,6 +82,10 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
                 result = requests_func(end_point, data=data, headers=get_headers(token))
                 result.raise_for_status()
                 logger.info(f"{method} successful: {result.status_code}")
+            elif fail_fast and post:
+                raise ValueError(f"fail_fast POST was attempted but data already existed at {end_point}: {data}")
+            elif fail_fast:
+                raise ValueError(f"fail_fast PATCH was attempted but no data existed at {end_point}: {data}")
             else:
                 logger.info(f"Nothing to do for {method} for target '{target}'")
 
