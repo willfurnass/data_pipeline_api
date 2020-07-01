@@ -1,33 +1,3 @@
-# ModelRun
-# version from access.yaml?
-# responsible person from access.yaml?
-# model_config = config.yaml?
-# release_date from access.yaml
-# release_id from access.yaml?
-# description = run_id from access.yaml?
-
-
-# 2. write blocks -> outputs
-# get filename, upload it to configured store
-# check store type exists, post if not
-# check store root exists, post if not
-# post storage location
-# check data product type exists, post if not
-# check data product exists, post if not
-# post data_product_version, append run id as +build
-# - type: write
-#   timestamp: 2020-06-29 13:05:22.096348
-#   call_metadata:
-#     data_product: output-parameter
-#     component: example-estimate
-#     extension: toml
-#   access_metadata:
-#     data_product: output-parameter
-#     component: example-estimate
-#     extension: toml
-#     run_id: example
-#     filename: output-parameter/example.toml
-#     calculated_hash: d554b38e74648558a640e6d22fdc293d3ebc4f67
 import json
 import logging
 import logging.config
@@ -53,7 +23,7 @@ from data_pipeline_api.registry.common import (
     DataRegistryTarget,
     get_remote_filesystem_and_path,
 )
-from registry.upload import upload_from_config
+from data_pipeline_api.registry.upload import upload_from_config
 
 logger = logging.getLogger(__name__)
 
