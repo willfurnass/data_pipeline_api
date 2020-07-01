@@ -45,7 +45,7 @@ void write_array(const string &data_product, const string &component, const Arra
 }
 
 template <typename DT>
-typename ArrayT<DT>::Ptr read_array(const string &data_product, const string &component)
+typename ArrayT<DT>::Ptr read_array_T(const string &data_product, const string &component)
 {
   py::module h5py = py::module::import("h5py");
   auto h5file = h5py.attr("File")(data_product, "r");
@@ -109,7 +109,7 @@ int main()
 
   // write_array is working, confirmed by h5dump
   write_array(TEST_HDF5_FILENAME, TEST_DATASET_NAME, *ap);
-  read_array<DT>(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
+  read_array_T<DT>(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
 
   return 0;
 }

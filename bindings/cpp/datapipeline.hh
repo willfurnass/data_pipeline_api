@@ -27,8 +27,9 @@ public:
                           const Distribution &d);
   void write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
+  std::shared_ptr<Array> read_array(const string &data_product, const string &component);
   template <typename DT>
-  typename std::shared_ptr<ArrayT<DT>> read_array(const string &data_product, const string &component);
+  typename std::shared_ptr<ArrayT<DT>> read_array_T(const string &data_product, const string &component);
   void write_array(const string &data_product, const string &component, Array::Ptr array);
 
   Table read_table(const string &data_product);

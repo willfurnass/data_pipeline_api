@@ -60,7 +60,9 @@ This should output
 
 ## Building the C++ wrapper
 
-Dependencies: `python3-dev python3-pybind11`  (ubuntu package name)
+Dependencies: 
+`apt install python3-dev python3-pybind11`  (ubuntu package name)
+`pip3 install h5py` tested, `apt install python3-h5py` should also work.
 
 ### Unix Makefile
 Now build the C++ test program:
@@ -96,7 +98,7 @@ https://github.com/jkhoogland/FindPythonAnaconda
 
 In order to run the C++ test program, **python_pipeline_api/src**  python modules must be on `PYTHONPATH`, **data_pipeline_api** can be installed by `pip3 + git`  or conda (later). 
 
-Without installation, just download/git-clone the repository, and  `export PYTHONPATH=path_to_data_pipeline_api/src:$PYTHONPATH`. Adjust the path depend on where **data_pipeline_api** repository directory locates.
+Without installation, just download/git-clone the repository, and  `export PYTHONPATH=path_to_data_pipeline_api_repo/data_pipeline_api:$PYTHONPATH`. Adjust the path depend on where **data_pipeline_api** repository directory locates.
 
 ### Run the tests
 The test program for the wrapper can be run as:
@@ -106,6 +108,15 @@ The test program for the wrapper can be run as:
 
 It should run without producing an error (you might get warnings about
 YAML) and output some data from the data repository.
+
+
+### Notes on read_table() and write_table()
+
+`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.
+
+Limited C++ scalar types, `double, int64_t, bool` are supported, but `std::string` is notoriously hard to be supported.
+
+There is `RowTable<RowType>` class which can save any RowType data class as a row in HDF5 dataset, assisted by a code generator.  While this is not standard API, `write_rtable(std::vector<RowType>)` is not added yet.
 
 ## Notes for installation on DiRAC CSD3
 
