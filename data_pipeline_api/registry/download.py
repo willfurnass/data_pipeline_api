@@ -53,8 +53,8 @@ def _parse_read_config(read_config: ReadConfig, data_registry_url: str, token: s
     """
     if "where" not in read_config:
         raise ValueError(f"No where specified in read_config {read_config}")
-    config = read_config.get("use", {}).copy()
-    config.update(read_config["where"])  # override the use block with the where block contents
+    config = read_config["where"].copy()
+    config.update(read_config.get("use", {}))  # override the where block with the use block contents
     if "data_product" not in read_config["where"]:
         raise ValueError(f"No data_product specified in where clause of read_config {read_config}")
     data_product_name = config["data_product"]
