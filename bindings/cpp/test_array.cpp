@@ -10,7 +10,6 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 const std::string TEST_HDF5_FILENAME = "test_npy.h5";
-const std::string TEST_HDF5_FILENAME2 = "test_npy2.h5";
 const char *TEST_DATASET_NAME = "nparray";
 
 /// std api applies here, but python open(hdf5 file is not impl, use h5py to open file

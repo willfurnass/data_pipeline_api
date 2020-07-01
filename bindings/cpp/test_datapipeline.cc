@@ -9,6 +9,8 @@ using namespace pybind11::literals;
 #include "table.hh"
 #include "datapipeline.hh"
 
+#include "array.h"
+
 using namespace std;
 
 const std::string TEST_HDF5_FILENAME = "test_table.h5";
@@ -136,6 +138,37 @@ void test_dp_table(DataPipeline &dp)
   Table h5table = dp.read_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
 }
 
+void test_dp_array(DataPipeline &dp)
+{
+  // make test input array data by py
+  py::module np = py::module::import("numpy");
+  typedef int64_t DT;
+  // np.arange()  return the int64_t type? not double
+  py::array a = np.attr("arange")(12); // implicitly downcast from py::object to py::array
+  std::vector<size_t> _s = {3, 4};
+  py::list s = py::cast(_s);
+  py::array mat = np.attr("reshape")(a, s);
+  // np.attr("ascontiguousarray")();  make no diff
+  // Return a contiguous array (ndim >= 1) in memory (C order), x.flags['C_CONTIGUOUS']
+  py::print(mat.dtype().kind(), mat.nbytes(), mat);
+
+  // py::array to Array<T> bug !  first 2 rows correct, but third all zero
+  ArrayT<DT>::Ptr ap = ArrayT<DT>::decode_array(mat);
+  std::cout << "decoded Array from NumpyArray with dim = " << ap->dimension() << std::endl;
+  std::cout << "values of the Array<> : " << (*ap)[0] << (*ap)(1, 0) << std::endl;
+  ap->unit() = "unknown";
+  ap->dim_unit(0) = "second";
+  ap->dim_unit(1) = "mm";
+  ap->dim_values(0) = {1, 4};
+
+  const std::string TEST_HDF5_DATAPRODUCT = "test_npy";
+  // error: Unable to create link (name already exists)
+  // when I create_dataset from the given group object,  it may be caused by
+  // `get_write_group()`
+  dp.write_array(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, *ap);
+  dp.read_array(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
+}
+
 int main()
 {
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
@@ -152,6 +185,7 @@ int main()
   cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 #endif
 
+  test_dp_array(dp);
   //test_table();  // without data pipeline
   test_dp_table(dp);
 
