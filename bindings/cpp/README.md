@@ -20,7 +20,7 @@ required packages:
    installed packages if it doesn't work, just ensure you have the
    required packages installed, e.g. using pip3:
    ```
-   pip3 install pybind11 pyyaml pandas scipy toml
+   pip3 install pybind11 pyyaml pandas scipy toml semver
    ```
    Add --user if needed.
 2. Automatic: Giving up on any existing installation, we can build our
@@ -106,15 +106,20 @@ The test program for the wrapper can be run as:
 ./test_datapipeline
 ```
 
+Todo: provide config_file_path as command line parameter, otherwise, default config path coded into the cpp may not work, depending where you run the test program.
+
 It should run without producing an error (you might get warnings about
 YAML) and output some data from the data repository.
 
 
 ### Notes on read_table() and write_table()
 
-`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.
+`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.  Limited C++ scalar types, `double, int64_t, bool` are supported, but `std::string` is supported without using data pipeline API.
 
-Limited C++ scalar types, `double, int64_t, bool` are supported, but `std::string` is notoriously hard to be supported.
+The python pipeline API, converts DataFrame into records then write to hdf5, data table are in tabular data format, but "std::string" as column data format are not supported.
+> runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+
+There is another problem when writing table metadata, "get_write_group()" is not available in standard_api.py.
 
 There is `RowTable<RowType>` class which can save any RowType data class as a row in HDF5 dataset, assisted by a code generator.  While this is not standard API, `write_rtable(std::vector<RowType>)` is not added yet.
 
