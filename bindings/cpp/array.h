@@ -11,6 +11,7 @@
 #include <stdexcept>
 
 #include "pybind11/numpy.h"
+#include "pybind11/stl.h"
 namespace py = pybind11;
 
 // todo:   encoding decoding from python.array
@@ -101,7 +102,7 @@ public:
                           int64_t i5 = -1, int64_t i6 = -1, int64_t i7 = -1, int64_t i8 = -1,
                           int64_t i9 = -1) = 0;
 
-    virtual const py::object encode() const = 0;
+    virtual void encode(py::object &group) const = 0;
     /// @}
 protected:
     uint8_t m_dimension; // CONSIDER: size_t otherwise lots of compiler warning
@@ -421,16 +422,36 @@ public:
     }
 
     /// return a const object, for just write out
-    virtual const py::object encode() const override
+    virtual void encode(py::object &group) const override
     {
+        using namespace pybind11::literals;
         py::dtype dt = py::dtype::of<T>();
         //py::list s = py::cast(this->shape());
         ShapeType _strides; // empty as the default, C_stride
         const py::array pya(dt, this->m_shape, _strides, this->m_data.data());
-        return pya;
+
+        py::list shape = py::cast(m_shape);
+        py::object dataset = group.attr("create_dataset")(py::str("array"), "data"_a = pya);
+        dataset.attr("write_direct")(pya);
+        encode_metadata(group);
     }
 
-    static typename ArrayT<T>::Ptr decode(const py::array &pya)
+    void encode_metadata(py::object &group) const
+    {
+        group.attr("__setitem__")(py::str("unit"), unit());
+        //  attrs.attr("__setitem__")(py::str("title"), da.title());
+        for (size_t i = 0; i < m_dims.size(); i++)
+        {
+            std::string dn = "Dimension_" + std::to_string(i);
+            py::array _dv = py::cast(m_dims[i].values);
+            group.attr("__setitem__")(py::str(dn + "_values"), _dv);
+            group.attr("__setitem__")(py::str(dn + "_unit"), py::cast(m_dims[i].unit));
+            py::str dtitle = py::cast(m_dims[i].title);
+            group.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+        }
+    }
+
+    static typename ArrayT<T>::Ptr decode_array(const py::array pya)
     {
         // todo: detect if numpy array is C row-major, then memcpy
         /// NOTE: all size dim in python are signed integer!, ssize_t
@@ -443,6 +464,35 @@ public:
         //std::cout << "pya.itemsize() = " << pya.itemsize() << std::endl; // sizeof(element_type)
         //std::cout << "pya.size() = " << pya.size() << std::endl;  // this is element count
         std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.size(), arr->m_data.begin());
+        return arr;
+    }
+
+    static typename ArrayT<T>::Ptr decode(const py::object group)
+    {
+        using namespace pybind11::literals;
+        auto dataset = group.attr("__getitem__")(py::str("array"));
+
+        py::module np = py::module::import("numpy");
+        const py::array pya = np.attr("zeros")(dataset.attr("shape"),
+                                               "dtype"_a = dataset.attr("dtype"));
+        dataset.attr("read_direct")(pya);
+
+        auto arr = ArrayT<T>::decode_array(pya);
+
+        /// read meta data for the array, currently, it is attached to dataset
+        py::object attrs = group;
+        py::str _unit = attrs.attr("__getitem__")(py::str("unit"));
+        arr->unit() = _unit;
+        for (size_t i = 0; i < pya.ndim(); i++)
+        {
+            std::string dn = "Dimension_" + std::to_string(i);
+            py::str dtitle = attrs.attr("__getitem__")(py::str(dn + "_title"));
+            py::array _dv = attrs.attr("__getitem__")(py::str(dn + "_values"));
+            py::str dunit = attrs.attr("__getitem__")(py::str(dn + "_unit"));
+            Dimension<T> d{dtitle, _dv.cast<std::vector<T>>(), dunit};
+            arr->dims().push_back(d);
+        }
+
         return arr;
     }
 
@@ -467,6 +517,8 @@ typedef ArrayT<uint64_t> UInt64Array;
 typedef ArrayT<float> Float32Array;
 typedef ArrayT<double> Float64Array;
 
+typedef ArrayT<bool> BoolArray;
+
 class DataDecoder
 {
 public:
@@ -477,8 +529,6 @@ public:
         /** attribute identifier strings in encoded pyo objects
              those type name should equal to `numpy.typename`
             see: https://numpy.org/devdocs/user/basics.types.html
-            because they can be shared by both C adn C++.
-            why not `const char*` instead of `char[]`, maybe caused by Poco::pyo
         */
         static char TYPE_NAME_INT8[] = "int8";
         static char TYPE_NAME_INT16[] = "int16";
@@ -493,7 +543,9 @@ public:
         static char TYPE_NAME_BOOL[] = "bool";
         static char TYPE_NAME_STRING[] = "string"; // may not support
 
-        auto dt = pyo.dtype();
+        auto dataset = pyo.attr("__getitem__")(py::str("array"));
+
+        auto dt = dataset.attr("dtype")();
         std::string el_type_name = py::str(dt.attr("name")).cast<std::string>();
         // py::print("el_type_name = ", el_type_name);  // correct here
 
@@ -519,18 +571,8 @@ public:
         else if (el_type_name == TYPE_NAME_FLOAT64)
             return Float64Array::decode(pyo);
         //else if (el_type_name == TYPE_NAME_BOOL)
-        //    return BoolArray::decode(pyo); // TODO:
+        //    return BoolArray::decode(pyo); // TODO: does not compile
         else
             throw std::runtime_error("data type string `" + el_type_name + "` is not supported");
     }
 };
-
-/*
-/// Array wrapper with meta data like dims and unit
-struct DataArray
-{
-    std::vector<Dimension> dims;
-    std::string unit;
-    IArray::Ptr dp; // can be changed to xtensor
-};
-*/

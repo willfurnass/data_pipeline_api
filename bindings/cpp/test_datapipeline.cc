@@ -126,10 +126,10 @@ int main()
 {
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-#if 0 // 
+#if 0 // CSV test data, outdated API may not work with latest python API
+
   // todo: a better way to get example data from the repo
   DataPipeline dp("../../../examples/test_data_2/config.yaml");
-
   // read_table
   Table table = dp.read_table("human/mixing-matrix");
   cout << "human/mixing-matrix:" << endl

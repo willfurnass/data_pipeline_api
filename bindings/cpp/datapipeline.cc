@@ -45,17 +45,38 @@ double DataPipeline::read_sample(const string *data_product, const string &compo
 //                        const Distribution &d);
 //void DataPipeline::write_sample(const string &data_product, const string &component, const vector<double> &samples);
 
-//vector<double> DataPipeline::read_array(const string &data_product, const string &component);
-
-Table DataPipeline::read_table(const string &data_product)
+/// std api applies here, but python open(hdf5 file is not impl, use h5py to open file
+void DataPipeline::write_array(const string &data_product, const string &component, const Array &da)
 {
-  //  using namespace pyglobals;
+  py::object group = api.attr("get_write_group")(data_product, component);
+  da.encode(group);
+}
+
+template <typename DT>
+typename std::shared_ptr<ArrayT<DT>> DataPipeline::read_array_T(const string &data_product, const string &component)
+{
+  /// TODO:  file open should be done by python get_read_group(), to have access check
+  py::object group = api.attr("get_read_group")(data_product, component);
+
+  typename ArrayT<DT>::Ptr ap = ArrayT<DT>::decode(group);
+
+  // no need to close dataset?
+  //h5file.attr("close")();
+  return ap;
+}
+
+typename std::shared_ptr<Array> DataPipeline::read_array(const string &data_product, const string &component)
+{
+  py::object group = api.attr("get_read_group")(data_product, component);
+  return DataDecoder::decode_array(group);
+}
+
+/// todo: use python standard API to write out
+Table DataPipeline::read_table(const string &data_product, const string &component)
+{
 
   Table table;
-
-  // pandas is cable to read HDF5, but need extra parameter, component
-  // need test the file format
-  py::object dataframe = api.attr("read_table")(data_product);
+  py::object dataframe = api.attr("read_table")(data_product, component);
 
   vector<string> colnames = dataframe.attr("columns").attr("tolist")().cast<vector<string>>();
 
@@ -89,23 +110,58 @@ Table DataPipeline::read_table(const string &data_product)
     {
       cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
 
+      /// TODO:  this cast to string does not work, just skip the column
       //vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
       //table.add_column<string>(colname, values);
     }
   }
 
+  py::object group = api.attr("get_read_group")(data_product, component);
+  py::str _title = group.attr("__getitem__")(py::str("row_title"));
+  py::array _names = group.attr("__getitem__")(py::str("row_names"));
+  py::str _units = group.attr("__getitem__")(py::str("column_units"));
+  /// TODO: Table has not define fields to save these meta data
+
   return table;
 }
 
-// void DataPipeline::write_table(const string &data_product, const string &component,
-//                                const Table &table)
-// {
-//   map<string, vector<double>> estc_map; // pybind automatically recognises a map as a dict
+void DataPipeline::write_table(const string &data_product, const string &component,
+                               const Table &table)
+{
+  map<string, py::array> _map; // pybind automatically recognises a map as a dict
 
-//   estc_map["a"] = vector<double>{1, 2};
-//   estc_map["b"] = vector<double>{3, 4};
+  for (const auto &colname : table.get_column_names())
+  {
 
-//   py::object estc_df = pd.attr("DataFrame")(estc_map);
+    string dtype = table.get_column_type(colname);
+    py::list l;
+    if (dtype == "float64")
+    {
+      l = py::cast(table.get_column<double>(colname));
+    }
+    else if (dtype == "int64")
+    {
+      l = py::cast(table.get_column<int64_t>(colname));
+    }
+    else if (dtype == "bool")
+    {
+      l = py::cast(table.get_column<bool>(colname));
+    }
+    // else if (dtype == "string"  || dtype == "object")
+    // {
+    //   l = py::cast(table.get_column<std::string>(colname));
+    // }
+    else
+    {
+      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+    }
+    _map[colname] = l;
+  }
 
-//   api.attr("write_table")(data_product, estc_df);
-// }
+  // py::module pd = py::module::import("pandas");   // has been imported in Pipeline ctor()
+  py::object _df = pd.attr("DataFrame")(_map);
+  //_df.attr("to_hdf")(data_product, component);
+  api.attr("write_table")(data_product, component, _df);
+
+  /// TODO: meta data saving
+}

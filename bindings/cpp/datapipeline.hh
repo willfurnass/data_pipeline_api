@@ -30,9 +30,10 @@ public:
   std::shared_ptr<Array> read_array(const string &data_product, const string &component);
   template <typename DT>
   typename std::shared_ptr<ArrayT<DT>> read_array_T(const string &data_product, const string &component);
-  void write_array(const string &data_product, const string &component, Array::Ptr array);
+  void write_array(const string &data_product, const string &component, const Array &array);
 
-  Table read_table(const string &data_product);
+  /// HDF5 format and CSV
+  Table read_table(const string &data_product, const string &component);
   void write_table(const string &data_product, const string &component, const Table &table);
 
 private:
