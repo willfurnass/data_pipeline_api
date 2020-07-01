@@ -116,11 +116,10 @@ def upload_from_config_file(config_filename: Union[Path, str], data_registry_url
 @click.option(
     "--token",
     type=str,
-    help=f"github personal access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
-    f"Personal access tokens can be created from https://github.com/settings/tokens, only read:org "
-    f"permissions are required.",
+    help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
+    f" access tokens can be created from the data registry's get-token end point",
 )
-def registry_upload_cli(config, data_registry, token):
+def upload_cli(config, data_registry, token):
     configure_cli_logging()
     data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
     token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
@@ -134,4 +133,4 @@ def registry_upload_cli(config, data_registry, token):
 
 if __name__ == "__main__":
     logger = logging.getLogger(f"{__package__}.{__name__}")
-    registry_upload_cli()
+    upload_cli()

@@ -292,6 +292,8 @@ def download_from_config_file(config_filename: Union[Path, str], data_registry_u
     with open(config_filename, "r") as cf:
         config = yaml.safe_load(cf)
     data_directory = Path(config.get("data_directory", "."))
+    if not data_directory.is_absolute():
+        data_directory = config_filename.parent / data_directory
     read_configs = config.get("read")
     if not read_configs:
         raise ValueError("No read config specified in configuration file")
@@ -312,9 +314,8 @@ def download_from_config_file(config_filename: Union[Path, str], data_registry_u
 @click.option(
     "--token",
     type=str,
-    help=f"github personal access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
-    f"Personal access tokens can be created from https://github.com/settings/tokens, only read:org "
-    f"permissions are required.",
+    help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
+    f" access tokens can be created from the data registry's get-token end point",
 )
 def download_cli(config, data_registry, token):
     configure_cli_logging()

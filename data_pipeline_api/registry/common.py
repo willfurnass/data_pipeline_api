@@ -1,9 +1,19 @@
+import re
 import urllib
-from typing import Optional, Dict, Union, List
+from pathlib import Path
+from typing import Optional, Dict, Union, List, Any, Tuple
 import requests
 import logging
 import logging.config
 from functools import lru_cache
+
+from fsspec import AbstractFileSystem
+from fsspec.implementations.ftp import FTPFileSystem
+from fsspec.implementations.github import GithubFileSystem
+from fsspec.implementations.http import HTTPFileSystem
+from fsspec.implementations.local import LocalFileSystem
+from fsspec.utils import infer_storage_options
+from s3fs import S3FileSystem
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +56,14 @@ class DataRegistryField:
     """
     Incomplete set of Data Registry Fields - only those that are being used as constants
     """
+    inputs = "inputs"
+    outputs = "outputs"
+    supersedes = "supersedes"
+    submission_script = "submission_script"
+    model_config = "model_config"
+    description = "description"
+    release_id = "release_id"
+    responsible_person = "responsible_person"
     name = "name"
     components = "components"
     version_identifier = "version_identifier"
@@ -85,6 +103,39 @@ class DataRegistryFilter:
 FILTERS = set([a for a, v in DataRegistryFilter.__dict__.items()
                if not a.startswith('__')
                and not callable(getattr(DataRegistryFilter, a))])
+
+
+def get_remote_filesystem_and_path(protocol: str, uri: str, path: str, storage_options: Dict[str, Any] = None) -> Tuple[AbstractFileSystem, str]:
+    storage_options = {} if storage_options is None else storage_options
+    if protocol == "github" and re.match(r"\w+/\w+", uri):
+        uri = f"github://{uri.split('/')[0]}:{uri.split('/')[1]}@master/"
+    if protocol == "file":
+        storage_options.setdefault("auto_mkdir", True)
+        uri = Path(urllib.parse.urlsplit(uri).netloc) / Path(path)
+        uri.parent.mkdir(parents=True, exist_ok=True)
+        return LocalFileSystem(**storage_options), uri.as_posix()
+    elif protocol in {"http", "https"}:
+        # storage_options are parameters passed to request
+        uri = urllib.parse.urljoin(uri, path)
+        return HTTPFileSystem(**storage_options), uri
+    elif protocol == "ftp":
+        inferred_options = infer_storage_options(uri)
+        username = storage_options.pop("username", None) or inferred_options.get("username")
+        password = storage_options.pop("password", None) or inferred_options.get("password")
+        return FTPFileSystem(host=inferred_options["host"], username=username, password=password, **storage_options), inferred_options["path"]
+    elif protocol == "github":
+        # infer options on a github uri reads the org, repo and sha incorrectly (as if it were an ftp uri)
+        # this is because it uses urllib.parse.urlsplit under the hood
+        inferred_options = infer_storage_options(uri)
+        org = inferred_options.get("username")
+        repo = inferred_options.get("password")
+        sha = inferred_options.get("host") or "master"
+        return GithubFileSystem(org=org, repo=repo, sha=sha, **storage_options), inferred_options.get("path")
+    elif protocol == "s3":
+        uri = urllib.parse.urljoin(uri, path)
+        return S3FileSystem(**storage_options), uri
+    else:
+        raise NotImplementedError(f"Unsupported remote filesystem {protocol}:{uri}")
 
 
 def get_end_point(data_registry_url: str, target: str) -> str:

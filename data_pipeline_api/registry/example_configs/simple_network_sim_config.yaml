@@ -1,4 +1,4 @@
-data_directory: .
+data_directory: data
 access_log: access-{run_id}.yaml
 fail_on_hash_mismatch: True
 

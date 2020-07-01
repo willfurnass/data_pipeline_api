@@ -28,7 +28,7 @@ def configuration_file(tmp_path: Path) -> Path:
 """
         )
 
-    configuration_file = tmp_path / "simple_network_sim_config.yaml"
+    configuration_file = tmp_path / "config.yaml"
     with open(configuration_file, "w") as file:
         file.write(
             """
