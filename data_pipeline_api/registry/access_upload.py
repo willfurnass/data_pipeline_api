@@ -66,7 +66,13 @@ def _get_input_url(
     data_product_name: str, version: str, component_name: str, data_registry_url: str, token: str
 ) -> str:
     query_data = {
-        DataRegistryFilter.data_product: data_product_name,
+        DataRegistryFilter.name: data_product_name,
+    }
+
+    data_product = get_data(query_data, DataRegistryTarget.data_product, data_registry_url, token)
+
+    query_data = {
+        DataRegistryFilter.data_product: data_product["url"],
         DataRegistryFilter.version_identifier: version,
     }
 
