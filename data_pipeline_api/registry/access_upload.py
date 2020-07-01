@@ -217,8 +217,6 @@ def upload_model_run(
             outputs.append(data_product_version_component)
             posts.extend(
                 [
-                    scheme,
-                    storage_root_name,
                     storage_location,
                     data_product_type,
                     data_product,
