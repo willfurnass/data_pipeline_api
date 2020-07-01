@@ -270,6 +270,7 @@ def upload_model_run(
 @click.option(
     "--accessibility",
     type=str,
+    default="public",
     help=f"accessibility of the data, defaults to public"
 )
 @click.option(
