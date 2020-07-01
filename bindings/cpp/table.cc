@@ -121,6 +121,20 @@ const vector<T> &Table::get_column(const string &colname) const
   return dynamic_cast<const ColumnT<T> *>(&*columns.at(colname))->vals; // throws std::bad_cast if type mismatch
 }
 
+const vector<string> &Table::get_column_units() const
+{
+  return units;
+}
+
+void Table::set_column_units(const vector<string> &_units)
+{
+  if (_units.size() != colnames.size())
+  {
+    throw invalid_argument("Column count mismatches input unit string vector size");
+  }
+  units = _units;
+}
+
 const vector<string> &Table::get_column_names() const
 {
   return colnames;
@@ -173,6 +187,7 @@ string Table::to_string()
 }
 
 /// I do not understand why this is needed, because, Column<T> is not in header file?
+/// Ian has a macro to support more types
 template class ColumnT<double>;
 template const vector<double> &Table::get_column(const string &colname) const;
 template void Table::add_column(const string &colname, const vector<double> &values);

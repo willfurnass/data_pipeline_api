@@ -68,19 +68,19 @@ Table read_table(const string &data_product, const string &component)
     }
     else
     {
-      cout << "WARNING: skip the column " << colname << " for unsupported type " << dtype << endl;
-      // cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
-      // this cast to string does not compile, just skip the column
-      //vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
-      //table.add_column<string>(colname, values);
+      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+      vector<string> values;
+      py::list l = dataframe[colname.c_str()].attr("tolist")();
+      for (const auto &it : l)
+      {
+        values.push_back(py::str(it));
+      }
+      table.add_column<string>(colname, values);
     }
   }
 
   return table;
 }
-
-//void DataPipeline::write_array(const string &data_product, const string &component, vector<double> array);
-// TODO: need to decide on a class for arrays.  Will return as vector of doubles for now
 
 void write_table(const string &data_product, const string &component,
                  const Table &table)
@@ -137,13 +137,13 @@ int main()
   cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 #endif
 
-  // python API does not support hdf5 read and write yet
   py::exec("import pandas as pd\n"
            "df = pd.DataFrame([[1, 1.1, True, 'str1'], [2, 2.2,  False, 'str2']], columns=['x', 'y', 'z', 's'])\n"
            "df.to_hdf('" +
            TEST_HDF5_FILENAME + "', '" + TEST_DATASET_NAME + "')\n");
 
   Table h5table = read_table(TEST_HDF5_FILENAME, TEST_DATASET_NAME);
+  h5table.set_column_units({"unit1", "unit2", "unit3", "unit4"});
   write_table(TEST_HDF5_FILENAME2, TEST_DATASET_NAME, h5table);
 
   return 0;

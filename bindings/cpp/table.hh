@@ -25,6 +25,10 @@ public:
   const vector<T> &get_column(const string &colname) const;
 
   const vector<string> &get_column_names() const;
+  /// row_title and row_names, should be the index column
+  const vector<string> &get_column_units() const;
+  void set_column_units(const vector<string> &);
+
   const string get_column_type(const string &colname) const;
 
   string to_string();
@@ -32,5 +36,6 @@ public:
 private:
   map<string, shared_ptr<Column>> columns;
   vector<string> colnames;
+  vector<string> units;
   size_t m_size;
 };

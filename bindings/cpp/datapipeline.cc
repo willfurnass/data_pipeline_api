@@ -107,19 +107,26 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
     }
     else
     {
-      cout << "WARNING: skip the column " << colname << " for unsupported type " << dtype << endl;
-      // cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
-      // this cast to string does not compile, just skip the column
-      //vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
-      //table.add_column<string>(colname, values);
+      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+      vector<string> values;
+      py::list l = dataframe[colname.c_str()].attr("tolist")();
+      for (const auto &it : l)
+      {
+        values.push_back(py::str(it));
+      }
+      table.add_column<string>(colname, values);
     }
   }
 
   py::object group = api.attr("get_read_group")(data_product, component);
-  py::str _title = group.attr("__getitem__")(py::str("row_title"));
-  py::array _names = group.attr("__getitem__")(py::str("row_names"));
-  py::str _units = group.attr("__getitem__")(py::str("column_units"));
   /// TODO: Table has not define fields to save these meta data
+  //py::str _title = group.attr("__getitem__")(py::str("row_title"));
+  //py::list _names = group.attr("__getitem__")(py::str("row_names"));
+  if (group.attr("contains")(py::str("column_units")))
+  {
+    py::list _units = group.attr("__getitem__")(py::str("column_units"));
+    table.set_column_units(_units.cast<std::vector<std::string>>());
+  }
 
   return table;
 }
@@ -162,5 +169,9 @@ void DataPipeline::write_table(const string &data_product, const string &compone
   api.attr("write_table")(data_product, component, _df);
 
   py::object group = api.attr("get_write_group")(data_product, component);
-  /// TODO: meta data saving
+  if (table.get_column_units().size() > 0)
+  {
+    py::list _units = py::cast(table.get_column_units());
+    group.attr("__setitem__")(py::str("column_units"), _units);
+  }
 }
