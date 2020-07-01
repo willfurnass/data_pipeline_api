@@ -61,17 +61,16 @@ Table read_table(const string &data_product, const string &component)
       vector<bool> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<bool>>();
       table.add_column<bool>(colname, values);
     }
-    /// TODO: this probably not working for std::string
-    // if (dtype == "object")
-    // {
-    //   vector<std::string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<std::string>>();
-    //   table.add_column<std::string>(colname, values);
-    // }
+    else if (dtype == "string" || dtype == "object") // tested working
+    {
+      vector<std::string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<std::string>>();
+      table.add_column<std::string>(colname, values);
+    }
     else
     {
-      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
-
-      // this cast to string does not work, just skip the column
+      cout << "WARNING: skip the column " << colname << " for unsupported type " << dtype << endl;
+      // cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+      // this cast to string does not compile, just skip the column
       //vector<string> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<string>>();
       //table.add_column<string>(colname, values);
     }
@@ -105,13 +104,13 @@ void write_table(const string &data_product, const string &component,
     {
       l = py::cast(table.get_column<bool>(colname));
     }
-    // else if (dtype == "string"  || dtype == "object")
-    // {
-    //   l = py::cast(table.get_column<std::string>(colname));
-    // }
+    else if (dtype == "string" || dtype == "object")
+    {
+      l = py::cast(table.get_column<std::string>(colname));
+    }
     else
     {
-      cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
+      cout << "WARNING: skip column " << colname << " from unsupported type " << dtype << endl;
     }
     _map[colname] = l;
   }
