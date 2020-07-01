@@ -35,7 +35,7 @@ import os
 import urllib
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Union, List, Any
+from typing import Dict, Union, List, Any, Tuple
 from datetime import datetime as dt
 
 import click
@@ -90,13 +90,141 @@ def _verify_hash(filename: Path, access_calculated_hash: str) -> None:
         )
 
 
-def upload_to_storage(
-    protocol: str, uri: str, storage_options: Dict[str, Any], data_directory: Path, filename: Path
-) -> str:
+def upload_to_storage(uri: str, storage_options: Dict[str, Any], data_directory: Path, filename: Path) -> str:
+    protocol = urllib.parse.urlsplit(uri).scheme
     upload_path = filename.absolute().relative_to(data_directory.absolute()).as_posix()
     fs, path = get_remote_filesystem_and_path(protocol, uri, upload_path, storage_options)
     fs.upload(filename.as_posix(), path)
     return path
+
+
+def _add_storage_type_and_root(
+    posts: List[YamlDict], remote_uri: str, data_registry_url: str, token: str
+) -> Tuple[YamlDict, YamlDict]:
+    scheme = urllib.parse.urlsplit(remote_uri).scheme
+    storage_type = get_data(
+        {DataRegistryFilter.name: scheme}, DataRegistryTarget.storage_type, data_registry_url, token
+    )
+    storage_root = None
+    if storage_type is None:
+        storage_type = _create_target_data_dict(
+            DataRegistryTarget.storage_type, {DataRegistryField.name: scheme, DataRegistryField.description: scheme}
+        )
+        storage_root = _create_target_data_dict(
+            DataRegistryTarget.storage_root,
+            {
+                DataRegistryField.name: remote_uri,
+                DataRegistryField.uri: remote_uri,
+                DataRegistryField.description: remote_uri,
+                DataRegistryField.type: storage_type,
+            },
+        )
+        posts.extend([storage_type, storage_root])
+    else:
+        storage_roots = get_data({}, DataRegistryTarget.storage_root, data_registry_url, token, exact=False)
+        for root in storage_roots:
+            if root["type"] == storage_type["url"] and root["uri"] == remote_uri:
+                storage_root = root
+                break
+    return storage_type, storage_root
+
+
+def _add_data_registry_posts(
+    posts: List[YamlDict],
+    path: str,
+    data_product_name: str,
+    model_version_str: str,
+    run_id: str,
+    component_name: str,
+    accessibility: str,
+    calculated_hash: str,
+    responsible_person: str,
+    storage_root: YamlDict,
+) -> YamlDict:
+    storage_location = _create_target_data_dict(
+        DataRegistryTarget.storage_location,
+        {
+            DataRegistryField.name: path,
+            DataRegistryField.path: path,
+            DataRegistryField.hash: calculated_hash,
+            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.store_root: storage_root,
+        },
+    )
+    data_product_type = _create_target_data_dict(
+        DataRegistryTarget.data_product_type, {DataRegistryField.name: "output"}
+    )
+    data_product = _create_target_data_dict(
+        DataRegistryTarget.data_product,
+        {
+            DataRegistryField.name: data_product_name,
+            DataRegistryField.type: data_product_type,
+            DataRegistryField.responsible_person: responsible_person,
+        },
+    )
+    data_product_version = _create_target_data_dict(
+        DataRegistryTarget.data_product_version,
+        {
+            DataRegistryField.version_identifier: f"{model_version_str}+{run_id}",
+            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.data_product: data_product,
+            DataRegistryField.store: storage_location,
+            DataRegistryField.accessibility: accessibility,
+        },
+    )
+    data_product_version_component = _create_target_data_dict(
+        DataRegistryTarget.data_product_version_component,
+        {
+            DataRegistryField.name: component_name if component_name else data_product_name,
+            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.data_product_version: data_product_version,
+        },
+    )
+    posts.extend(
+        [storage_location, data_product_type, data_product, data_product_version, data_product_version_component,]
+    )
+    return data_product_version_component
+
+
+def _add_model_run(
+    posts: List[YamlDict],
+    model_version_str: str,
+    model_name: str,
+    run_id: str,
+    responsible_person: str,
+    inputs: List[str],
+    outputs: List[YamlDict],
+    data_registry_url: str,
+    token: str,
+) -> None:
+    model = get_data({DataRegistryFilter.name: model_name}, DataRegistryTarget.model, data_registry_url, token)
+    model_version = get_data(
+        {DataRegistryFilter.version_identifier: model_version_str, DataRegistryFilter.model: model["url"]},
+        DataRegistryTarget.model_version,
+        data_registry_url,
+        token,
+    )
+    model_run = _create_target_data_dict(
+        DataRegistryTarget.model_run,
+        {
+            DataRegistryField.release_id: run_id,
+            DataRegistryField.release_date: dt.now(),
+            DataRegistryField.description: run_id,
+            DataRegistryField.model_config: "",
+            DataRegistryField.submission_script: "",
+            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.model_version: model_version["url"],
+            DataRegistryField.supersedes: "",
+            DataRegistryField.inputs: inputs,
+            DataRegistryField.outputs: outputs,
+        },
+    )
+    posts.append(model_run)
+
+
+def unique_posts(posts: List[YamlDict]) -> List[YamlDict]:
+    set_of_jsons = {json.dumps(d, sort_keys=True) for d in posts}
+    return [json.loads(t) for t in set_of_jsons]
 
 
 def upload_model_run(
@@ -134,38 +262,14 @@ def upload_model_run(
     outputs = []
     posts = []
 
-    scheme = urllib.parse.urlsplit(remote_uri).scheme
-    storage_type = get_data(
-        {DataRegistryFilter.name: scheme}, DataRegistryTarget.storage_type, data_registry_url, token
-    )
-    storage_root = None
-    if storage_type is None:
-        storage_type = _create_target_data_dict(
-            DataRegistryTarget.storage_type, {DataRegistryField.name: scheme, DataRegistryField.description: scheme}
-        )
-        storage_root = _create_target_data_dict(
-            DataRegistryTarget.storage_root,
-            {
-                DataRegistryField.name: remote_uri,
-                DataRegistryField.uri: remote_uri,
-                DataRegistryField.description: remote_uri,
-                DataRegistryField.type: storage_type,
-            },
-        )
-        posts.extend([storage_type, storage_root])
-    else:
-        storage_roots = get_data({}, DataRegistryTarget.storage_root, data_registry_url, token, exact=False)
-        for root in storage_roots:
-            if root["type"] == storage_type["url"] and root["uri"] == remote_uri:
-                storage_root = root
-                break
+    storage_type, storage_root = _add_storage_type_and_root(posts, remote_uri, data_registry_url, token)
 
     for event in config["io"]:
         read = event["type"] == "read"
         metadata = event["access_metadata"]
         data_product_name = metadata["data_product"]
         component = metadata.get("component")
-        version = metadata["version"]
+        version = metadata.get("version", "")
         access_calculated_hash = metadata["calculated_hash"]
         filename = data_directory / Path(metadata["filename"])
         if read:
@@ -173,82 +277,28 @@ def upload_model_run(
         else:
             _verify_hash(filename, access_calculated_hash)
 
-            path = upload_to_storage(scheme, remote_uri, storage_options, data_directory, filename)
-            storage_location = path
-            storage_location = _create_target_data_dict(
-                DataRegistryTarget.storage_location,
-                {
-                    DataRegistryField.name: storage_location,
-                    DataRegistryField.path: path,
-                    DataRegistryField.hash: access_calculated_hash,
-                    DataRegistryField.responsible_person: responsible_person,
-                    DataRegistryField.store_root: storage_root,
-                },
+            path = upload_to_storage(remote_uri, storage_options, data_directory, filename)
+
+            data_product_component_version = _add_data_registry_posts(
+                posts,
+                path,
+                data_product_name,
+                model_version_str,
+                run_id,
+                component,
+                accessibility,
+                access_calculated_hash,
+                responsible_person,
+                storage_root,
             )
-            data_product_type = _create_target_data_dict(
-                DataRegistryTarget.data_product_type, {DataRegistryField.name: "output"}
-            )
-            data_product = _create_target_data_dict(
-                DataRegistryTarget.data_product,
-                {
-                    DataRegistryField.name: data_product_name,
-                    DataRegistryField.type: data_product_type,
-                    DataRegistryField.responsible_person: responsible_person,
-                },
-            )
-            data_product_version = _create_target_data_dict(
-                DataRegistryTarget.data_product_version,
-                {
-                    DataRegistryField.version_identifier: f"{model_version_str}+{run_id}",
-                    DataRegistryField.responsible_person: responsible_person,
-                    DataRegistryField.data_product: data_product,
-                    DataRegistryField.store: storage_location,
-                    DataRegistryField.accessibility: accessibility,
-                },
-            )
-            data_product_version_component = _create_target_data_dict(
-                DataRegistryTarget.data_product_version_component,
-                {
-                    DataRegistryField.name: component if component else data_product_name,
-                    DataRegistryField.responsible_person: responsible_person,
-                    DataRegistryField.data_product_version: data_product_version,
-                },
-            )
-            outputs.append(data_product_version_component)
-            posts.extend(
-                [
-                    storage_location,
-                    data_product_type,
-                    data_product,
-                    data_product_version,
-                    data_product_version_component,
-                ]
-            )
-    model = get_data({DataRegistryFilter.name: model_name}, DataRegistryTarget.model, data_registry_url, token)
-    model_version = get_data(
-        {DataRegistryFilter.version_identifier: model_version_str, DataRegistryFilter.model: model["url"]},
-        DataRegistryTarget.model_version,
-        data_registry_url,
-        token,
+            outputs.append(data_product_component_version)
+
+    _add_model_run(
+        posts, model_version_str, model_name, run_id, responsible_person, inputs, outputs, data_registry_url, token
     )
-    model_run = _create_target_data_dict(
-        DataRegistryTarget.model_run,
-        {
-            DataRegistryField.release_id: run_id,
-            DataRegistryField.release_date: dt.now(),
-            DataRegistryField.description: run_id,
-            DataRegistryField.model_config: "",
-            DataRegistryField.submission_script: "",
-            DataRegistryField.responsible_person: responsible_person,
-            DataRegistryField.model_version: model_version["url"],
-            DataRegistryField.supersedes: "",
-            DataRegistryField.inputs: inputs,
-            DataRegistryField.outputs: outputs,
-        },
-    )
-    posts.append(model_run)
-    set_of_jsons = {json.dumps(d, sort_keys=True) for d in posts}
-    posts = [json.loads(t) for t in set_of_jsons]
+
+    posts = unique_posts(posts)
+
     upload_from_config({"post": posts}, data_registry_url, token)
 
 
@@ -265,12 +315,7 @@ def upload_model_run(
     type=click.Tuple([str, str]),
     help="(key, value) pairs that are passed to the remote storage, e.g. credentials",
 )
-@click.option(
-    "--accessibility",
-    type=str,
-    default="public",
-    help=f"accessibility of the data, defaults to public"
-)
+@click.option("--accessibility", type=str, default="public", help=f"accessibility of the data, defaults to public")
 @click.option(
     "--data-registry",
     type=str,
