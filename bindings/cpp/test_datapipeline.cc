@@ -174,7 +174,7 @@ int main()
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
   // todo: a better way to get example data from the repo
-  DataPipeline dp("../../../tests/data/config.yaml");
+  DataPipeline dp("../../tests/data/config.yaml");
 
 #if 0 // CSV test data, outdated API may not work with latest python API
   // read_table

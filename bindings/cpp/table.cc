@@ -186,6 +186,19 @@ string Table::to_string()
   return ss.str();
 }
 
+#if 0
+#define INSTANTIATE_TABLE(type) \
+template class ColumnT<type>; \
+template vector<type> &Table::get_column<type>(const string &colname); \
+template void Table::add_column<type>(const string &colname, const vector<type> &values);
+
+INSTANTIATE_TABLE(double);
+INSTANTIATE_TABLE(int64_t);
+INSTANTIATE_TABLE(bool);
+INSTANTIATE_TABLE(string);
+INSTANTIATE_TABLE(long);
+#endif
+
 /// I do not understand why this is needed, because, Column<T> is not in header file?
 /// Ian has a macro to support more types
 template class ColumnT<double>;
