@@ -24,13 +24,16 @@ def resolve_references(data: YamlDict, data_registry_url: str, token: str) -> Di
     :param token: github personal access token
     :return: A new dict of data that will have been flatted to Dict[str, str] with references resolved to urls
     """
-
+    logger.info(f"Resolving references for {data}")
     def resolve(value):
+        logger.info(f"Resolving {value}")
         if isinstance(value, dict):
             nested_target = value["target"]
             nested_data = value["data"]
             nested_data = resolve_references(nested_data, data_registry_url, token)
             return get_reference(nested_data, nested_target, data_registry_url, token)
+        elif isinstance(value, List):
+            return [resolve(inner_value) for inner_value in value]
         else:
             return value.strip()
 

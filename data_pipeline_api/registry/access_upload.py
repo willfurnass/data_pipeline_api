@@ -100,7 +100,7 @@ def _add_storage_type_and_root(
         storage_roots = get_data({}, DataRegistryTarget.storage_root, data_registry_url, token, exact=False)
         for root in storage_roots:
             if root["type"] == storage_type["url"] and root["uri"] == remote_uri:
-                storage_root = root
+                storage_root = root["url"]
                 break
         if storage_root is None:
             storage_root = _create_target_data_dict(
@@ -128,13 +128,26 @@ def _add_data_registry_posts(
     responsible_person: str,
     storage_root: YamlDict,
 ) -> YamlDict:
+    responsible_person_d = _create_target_data_dict(
+        DataRegistryTarget.users,
+        {
+            DataRegistryField.username: responsible_person,
+        },
+    )
+    accessibility_d = _create_target_data_dict(
+        DataRegistryTarget.accessibility,
+        {
+            DataRegistryField.name: accessibility
+        }
+    )
+
     storage_location = _create_target_data_dict(
         DataRegistryTarget.storage_location,
         {
             DataRegistryField.name: path,
             DataRegistryField.path: path,
             DataRegistryField.hash: calculated_hash,
-            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.responsible_person: responsible_person_d,
             DataRegistryField.store_root: storage_root,
         },
     )
@@ -146,24 +159,26 @@ def _add_data_registry_posts(
         {
             DataRegistryField.name: data_product_name,
             DataRegistryField.type: data_product_type,
-            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.responsible_person: responsible_person_d,
+            DataRegistryField.description: data_product_name,
         },
     )
     data_product_version = _create_target_data_dict(
         DataRegistryTarget.data_product_version,
         {
             DataRegistryField.version_identifier: f"{model_version_str}+{run_id}",
-            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.responsible_person: responsible_person_d,
             DataRegistryField.data_product: data_product,
             DataRegistryField.store: storage_location,
-            DataRegistryField.accessibility: accessibility,
+            DataRegistryField.accessibility: accessibility_d,
+            DataRegistryField.description: f"{data_product_name} {model_version_str}+{run_id}",
         },
     )
     data_product_version_component = _create_target_data_dict(
         DataRegistryTarget.data_product_version_component,
         {
             DataRegistryField.name: component_name if component_name else data_product_name,
-            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.responsible_person: responsible_person_d,
             DataRegistryField.data_product_version: data_product_version,
         },
     )
@@ -184,6 +199,12 @@ def _add_model_run(
     data_registry_url: str,
     token: str,
 ) -> None:
+    responsible_person_d = _create_target_data_dict(
+        DataRegistryTarget.users,
+        {
+            DataRegistryField.username: responsible_person,
+        },
+    )
     model = get_data({DataRegistryFilter.name: model_name}, DataRegistryTarget.model, data_registry_url, token)
     model_version = get_data(
         {DataRegistryFilter.version_identifier: model_version_str, DataRegistryFilter.model: model["url"]},
@@ -194,12 +215,12 @@ def _add_model_run(
     model_run = _create_target_data_dict(
         DataRegistryTarget.model_run,
         {
-            DataRegistryField.release_id: run_id,
-            DataRegistryField.release_date: dt.now(),
+            DataRegistryField.run_id: run_id,
+            DataRegistryField.run_date: dt.now().isoformat() + "Z",
             DataRegistryField.description: run_id,
             DataRegistryField.model_config: "",
             DataRegistryField.submission_script: "",
-            DataRegistryField.responsible_person: responsible_person,
+            DataRegistryField.responsible_person: responsible_person_d,
             DataRegistryField.model_version: model_version["url"],
             DataRegistryField.supersedes: "",
             DataRegistryField.inputs: inputs,
@@ -210,8 +231,8 @@ def _add_model_run(
 
 
 def unique_posts(posts: List[YamlDict]) -> List[YamlDict]:
-    set_of_jsons = {json.dumps(d, sort_keys=True) for d in posts}
-    return [json.loads(t) for t in set_of_jsons]
+    dict_of_jsons = {yaml.safe_dump(d): None for d in posts}
+    return [yaml.safe_load(t) for t in dict_of_jsons.keys()]
 
 
 def upload_model_run(

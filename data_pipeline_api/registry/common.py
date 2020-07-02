@@ -62,7 +62,7 @@ class DataRegistryField:
     submission_script = "submission_script"
     model_config = "model_config"
     description = "description"
-    release_id = "release_id"
+    run_id = "run_id"
     responsible_person = "responsible_person"
     name = "name"
     components = "components"
@@ -71,7 +71,7 @@ class DataRegistryField:
     processing_script = "processing_script"
     source = "source"
     data_product = "data_product"
-    release_date = "release_date"
+    run_date = "run_date"
     model_version = "model_version"
     data_product_version = "data_product_version"
     username = "username"
@@ -93,7 +93,7 @@ class DataRegistryFilter:
     processing_script = DataRegistryField.processing_script
     source = DataRegistryField.source
     data_product = DataRegistryField.data_product
-    release_date = DataRegistryField.release_date
+    run_date = DataRegistryField.run_date
     model_version = DataRegistryField.model_version
     data_product_version = DataRegistryField.data_product_version
     name = DataRegistryField.name
