@@ -1,4 +1,5 @@
 /cppbindings
 *.dSYM
-
 build/*
+third-party/*
+test_datapipeline
