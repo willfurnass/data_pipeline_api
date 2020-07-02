@@ -5,10 +5,8 @@
 
 This directory contains C++ bindings for the Python data pipeline API.
 
-Temporay note:  this should be fixed very soon
-clone only the branch, wihch conflicts with master 
-`git clone -b cppbindings --single-branch git@github.com:ScottishCovidResponse/data_pipeline_api.git`
-
+NOTE: if you have done single-branch, clone, there is some troubles to rebase
+you can either redo the git clone, or fix it by <https://stackoverflow.com/questions/17714159/how-do-i-undo-a-single-branch-clone>
 
 ## Requirements
 
@@ -39,8 +37,8 @@ The Python example:
 
 ```
 cd data_pipeline_api
-export PYTHONPATH=$PWD/src:$PYTHONPATH
-python3 examples/data_access.py
+export PYTHONPATH=$PWD/datapipeline:$PYTHONPATH
+python3 tests/data_access.py
 ```
 This should output
 
@@ -58,11 +56,15 @@ This should output
 ```
 (You might also get some YAML warnings.)
 
+There is another example: `python3 tests/standard_api_usage.py`
+
 ## Building the C++ wrapper
 
 Dependencies: 
 `apt install python3-dev python3-pybind11`  (ubuntu package name)
 `pip3 install h5py` tested, `apt install python3-h5py` should also work.
+
+Choose one of the build methods: Unix Makefile or CMake
 
 ### Unix Makefile
 Now build the C++ test program:
@@ -96,9 +98,11 @@ https://github.com/jkhoogland/FindPythonAnaconda
 
 ### Make **data_pipeline_api** on `PYTHONPATH`
 
-In order to run the C++ test program, **python_pipeline_api/src**  python modules must be on `PYTHONPATH`, **data_pipeline_api** can be installed by `pip3 + git`  or conda (later). 
+In order to run the C++ test program, **python_pipeline_api**  python modules must be on `PYTHONPATH`, **data_pipeline_api(repo path)** can be installed by `pip3 + git`  or conda (later). 
 
 Without installation, just download/git-clone the repository, and  `export PYTHONPATH=path_to_data_pipeline_api_repo/data_pipeline_api:$PYTHONPATH`. Adjust the path depend on where **data_pipeline_api** repository directory locates.
+
+NOTE:  **python_pipeline_api** is the repo name/path, it has a folder called **python_pipeline_api** contains all *.py files. set `PYTHONPATH` to **data_pipeline_api(repo path)**. 
 
 ### Run the tests
 The test program for the wrapper can be run as:
@@ -110,6 +114,27 @@ Todo: provide config_file_path as command line parameter, otherwise, default con
 
 It should run without producing an error (you might get warnings about
 YAML) and output some data from the data repository.
+
+
+## Documentation
+
+"test_datapipeline.cpp" have some demo to construct Array and Table class instance in C++, model developer may 
+
+```cpp
+  const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
+  Table table;
+  table.add_column<int64_t>("int", {1, 2});
+  table.add_column<double>("double", {1.1, 2.2});
+  table.add_column<bool>("bool", {true, false});
+  // runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+  // because DataFrame is converted to_records() in write_table()
+  //table.add_column<std::string>("str", {"str1", "str2"});
+
+  table.set_column_units({"unit1", "unit2", "unit3"});
+  dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
+```
+
+Array examle will come soon,  it is inside `void test_dp_array(DataPipeline &dp)` 
 
 
 ### Notes on read_table() and write_table()
