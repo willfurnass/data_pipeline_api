@@ -21,30 +21,37 @@ class FileAPI:
 
         try:
             with open(config_filename) as config_file:
-                config = yaml.safe_load(config_file)
-                if "run_id" in config:
-                    self.run_id = config["run_id"]
+                self._config = yaml.safe_load(config_file)
+                if "run_id" in self._config:
+                    self.run_id = self._config["run_id"]
                 else:
                     # Compute a run_id.
                     with open(config_filename, "rb") as file:
                         m = sha1(file.read())
                     m.update(str(self._open_timestamp).encode())
                     self.run_id = m.hexdigest()
-                self.data_directory = Path(config.get("data_directory", "."))
-                self.fail_on_hash_mismatch = config.get("fail_on_hash_mismatch", True)
+                self.data_directory = Path(self._config.get("data_directory", "."))
+                self.fail_on_hash_mismatch = self._config.get(
+                    "fail_on_hash_mismatch", True
+                )
                 self._read_overrides = Overrides(
                     (override.get("where", {}), override.get("use", {}))
-                    for override in config.get("read", ())
+                    for override in self._config.get("read", ())
                 )
                 self._write_overrides = Overrides(
                     (override.get("where", {}), override.get("use", {}))
-                    for override in config.get("write", ())
+                    for override in self._config.get("write", ())
                 )
-                self.access_log_path = Path(
-                    config.get("access_log", "access-{run_id}.yaml").format(
-                        run_id=self.run_id
-                    )
-                )
+                access_log = self._config.get("access_log", "access-{run_id}.yaml")
+                if access_log is False:
+                    self.access_log_path = None
+                else:
+                    self.access_log_path = Path(access_log.format(run_id=self.run_id))
+                    if not self.access_log_path.is_absolute():
+                        self.access_log_path = (
+                            config_filename.parent / self.access_log_path
+                        )
+
         except Exception as exception:
             raise ValueError("could not parse config file") from exception
 
@@ -55,13 +62,13 @@ class FileAPI:
                 config_filename.parent / self.data_directory
             )
 
-        if not self.access_log_path.is_absolute():
-            self.access_log_path = config_filename.parent / self.access_log_path
-
-        with open(
-            self.normalised_data_directory / "metadata.yaml"
-        ) as metadata_store_file:
-            self._metadata_store = MetadataStore(yaml.safe_load(metadata_store_file))
+        metadata_filename = self.normalised_data_directory / "metadata.yaml"
+        if metadata_filename.exists():
+            with open(metadata_filename) as metadata_store_file:
+                metadata_store = yaml.safe_load(metadata_store_file)
+        else:
+            metadata_store = {}
+        self._metadata_store = MetadataStore(metadata_store)
 
     def _record_access(
         self,
@@ -102,7 +109,6 @@ class FileAPI:
         read_metadata = metadata.copy()
         self._read_overrides.apply(read_metadata)
         read_metadata = self._metadata_store.find(read_metadata) or read_metadata
-        read_metadata[MetadataKey.run_id] = self.run_id
         try:
             filename = Path(read_metadata[MetadataKey.filename])
         except KeyError:
@@ -125,14 +131,10 @@ class FileAPI:
         """
         write_metadata = metadata.copy()
         self._write_overrides.apply(write_metadata)
-        write_metadata[MetadataKey.run_id] = self.run_id
         if MetadataKey.filename not in write_metadata:
             write_metadata[MetadataKey.filename] = str(
                 Path(write_metadata[MetadataKey.data_product])
-                / "{}.{}".format(
-                    write_metadata[MetadataKey.run_id],
-                    write_metadata[MetadataKey.extension],
-                )
+                / "{}.{}".format(self.run_id, write_metadata[MetadataKey.extension],)
             )
 
         path = self.normalised_data_directory / write_metadata[MetadataKey.filename]
@@ -156,17 +158,20 @@ class FileAPI:
     def close(self):
         """Close the session and write the access log.
         """
-        with open(self.access_log_path, "w") as output_file:
-            yaml.dump(
-                {
-                    "data_directory": str(self.data_directory),
-                    "open_timestamp": self._open_timestamp,
-                    "close_timestamp": datetime.now(),
-                    "io": self._accesses,
-                },
-                output_file,
-                sort_keys=False,
-            )
+        if self.access_log_path:
+            with open(self.access_log_path, "w") as output_file:
+                yaml.dump(
+                    {
+                        "data_directory": str(self.data_directory),
+                        "open_timestamp": self._open_timestamp,
+                        "close_timestamp": datetime.now(),
+                        "run_id": self.run_id,
+                        "config": self._config,
+                        "io": self._accesses,
+                    },
+                    output_file,
+                    sort_keys=False,
+                )
 
     def __enter__(self):
         return self
