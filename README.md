@@ -1,4 +1,7 @@
 # data_pipeline_api
+
+> :warning: **The code and data in this repository are currently for testing and development purposes only.**
+
 [![Build Status](https://travis-ci.org/ScottishCovidResponse/data_pipeline_api.svg?branch=master)](https://travis-ci.org/ScottishCovidResponse/data_pipeline_api)
 [![Code Coverage](https://codecov.io/github/ScottishCovidResponse/data_pipeline_api/coverage.svg?branch=master&token=)](https://codecov.io/gh/ScottishCovidResponse/data_pipeline_api)
 [![Anaconda-Server Badge](https://anaconda.org/scottishcovidresponse/data_pipeline_api/badges/version.svg)](https://anaconda.org/scottishcovidresponse/data_pipeline_api)
