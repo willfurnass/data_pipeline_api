@@ -430,15 +430,19 @@ public:
         ShapeType _strides; // empty as the default, C_stride
         const py::array pya(dt, this->m_shape, _strides, this->m_data.data());
 
-        py::list shape = py::cast(m_shape);
-        py::object dataset = group.attr("create_dataset")(py::str("array"), "data"_a = pya);
+        py::tuple shape = py::cast(m_shape);
+        py::object dataset = group.attr("require_dataset")(py::str("array"),
+                                                           "shape"_a = shape, "dtype"_a = dt);
         dataset.attr("write_direct")(pya);
+
+        //group.attr("__setitem__")(py::str("array"), pya);
+
         encode_metadata(group);
     }
 
     void encode_metadata(py::object &group) const
     {
-        group.attr("__setitem__")(py::str("unit"), unit());
+        group.attr("__setitem__")(py::str("units"), unit());
         //  attrs.attr("__setitem__")(py::str("title"), da.title());
         for (size_t i = 0; i < m_dims.size(); i++)
         {
@@ -481,7 +485,7 @@ public:
 
         /// read meta data for the array, currently, it is attached to dataset
         py::object attrs = group;
-        py::str _unit = attrs.attr("__getitem__")(py::str("unit"));
+        py::str _unit = attrs.attr("__getitem__")(py::str("units"));
         arr->unit() = _unit;
         for (size_t i = 0; i < pya.ndim(); i++)
         {
