@@ -102,6 +102,17 @@ def _add_storage_type_and_root(
             if root["type"] == storage_type["url"] and root["uri"] == remote_uri:
                 storage_root = root
                 break
+        if storage_root is None:
+            storage_root = _create_target_data_dict(
+                DataRegistryTarget.storage_root,
+                {
+                    DataRegistryField.name: remote_uri,
+                    DataRegistryField.uri: remote_uri,
+                    DataRegistryField.description: remote_uri,
+                    DataRegistryField.type: storage_type["url"],
+                },
+            )
+            posts.append(storage_root)
     return storage_type, storage_root
 
 
