@@ -32,7 +32,7 @@ cd ${python_name}
 make -j 8 install
 
 export PATH=${dest}/${python_name}/bin:$PATH
-pip3 install --upgrade pip pybind11 pyyaml pandas scipy toml
+pip3 install --upgrade pip pybind11 pyyaml pandas scipy toml semver
 
 echo
 echo "Select this Python installation using:"
