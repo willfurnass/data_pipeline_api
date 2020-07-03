@@ -1,26 +1,29 @@
+{% set data = load_setup_py_data(from_recipe_dir=True, recipe_dir="..") %}
+
 package:
   name: data_pipeline_api
-  version: 0.1.0
+  version: {{ TAG }}
 
 source:
-  git_url: ..
+  path: ../dist
 
 build:
   noarch: python
+  script: pip install --no-deps *.whl
 
 requirements:
   build:
     - python
-    - PyYaml
+    - pip
+    - setuptools_scm
+    - pyyaml
 
   run:
-    - python=3.7
-    - h5py>=2.9.0
-    - toml>=0.9.4
-    - scipy>=1.4.1
-    - pandas>=1.0.3
-    - pyyaml>=5.3.1
-    - semver>=2.9.0
+    - python
+  {% for package in data.get("install_requires") %}
+    - {{ package }}
+  {% endfor %}
+
 
 test:
   imports:

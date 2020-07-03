@@ -38,6 +38,15 @@ def test_estimate_roundtrip(tmp_path):
         assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
 
 
+def test_write_np_float_estimate(tmp_path):
+    estimate = np.float64(3)
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_estimate(TextIOWrapper(file), "test", estimate)
+    with open(tmp_path / "test.toml", "r+b") as file:
+        assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
+
+
+
 def test_distribution_roundtrip(tmp_path):
     distribution = stats.gamma(1, scale=2)
     with open(tmp_path / "test.toml", "w+b") as file:
