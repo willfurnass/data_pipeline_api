@@ -16,14 +16,14 @@
 #include "pybind11/stl.h"
 namespace py = pybind11;
 
-/// HDF5 C-API has DimensionScaled
+/// HDF5 C-API has DimensionScaled, but not used in HDF5 IO
 template <typename DT>
 struct Dimension
 {
     std::string title;
-    //std::vector<std::string> names;
-    std::vector<DT> values; // ticks can be a better name
-    std::string unit;
+    std::vector<std::string> names; // tick names as in matplotlib, optional
+    std::vector<DT> values;         // ticks can be a better name
+    std::string units;
 };
 
 /// a typedef to ease future refactoring on data structure
@@ -70,11 +70,11 @@ public:
         return this->m_strides;
     };
 
-    std::string &unit()
+    std::string &units()
     {
         return m_unit;
     }
-    const std::string &unit() const
+    const std::string &units() const
     {
         return m_unit;
     }
@@ -153,7 +153,7 @@ No default constructor without parameter is allowed, at least give the shape
 so shape of the array, as std::vector<uint64_t>,  
 consistent with python numpy.array' dtypne's name
 */
-template <class T>
+template <class T, typename = std::enable_if<!std::is_same<bool, T>::value>>
 class ArrayT : public Array
 {
 
@@ -231,12 +231,12 @@ public:
     {
         if (m_dims.size() < i + 1)
             m_dims.push_back(Dimension<T>());
-        return m_dims[i].unit;
+        return m_dims[i].units;
     }
     // must exist before read this field
     const std::string &dim_unit(int i) const
     {
-        return m_dims[i].unit;
+        return m_dims[i].units;
     }
 
     std::string &dim_title(int i)
@@ -259,6 +259,17 @@ public:
     const std::vector<T> &dim_values(int i) const
     {
         return m_dims[i].values;
+    }
+
+    std::vector<std::string> &dim_names(int i)
+    {
+        if (m_dims.size() < i + 1)
+            m_dims.push_back(Dimension<T>());
+        return m_dims[i].names;
+    }
+    const std::vector<std::string> &dim_names(int i) const
+    {
+        return m_dims[i].names;
     }
 
     template <typename DT = T>
@@ -432,20 +443,50 @@ public:
 
         //group.attr("__setitem__")(py::str("array"), pya);  // equal to the 3 lines above
 
+        /// read meta data for the array, currently, it is attached to group as dataset
+        /// it may also be possible to attached to a DataSet's AttributeProxy
+        // py::object attrs = array_dataset.attr("attrs");
         encode_metadata(group);
     }
 
-    void encode_metadata(py::object &group) const
+    void encode_metadata(py::object &attrs) const
     {
-        group.attr("__setitem__")(py::str("units"), unit());
+        using namespace pybind11::literals;
+        //py::module np = py::module::import("numpy");
+        py::module h5py = py::module::import("h5py");
+
+        attrs.attr("__setitem__")(py::str("units"), units());
         for (size_t i = 0; i < m_dims.size(); i++)
         {
             std::string dn = "Dimension_" + std::to_string(i);
             py::array _dv = py::cast(m_dims[i].values);
-            group.attr("__setitem__")(py::str(dn + "_values"), _dv);
-            group.attr("__setitem__")(py::str(dn + "_units"), py::cast(m_dims[i].unit));
+            attrs.attr("__setitem__")(py::str(dn + "_values"), _dv);
+            attrs.attr("__setitem__")(py::str(dn + "_units"), py::cast(m_dims[i].units));
             py::str dtitle = py::cast(m_dims[i].title);
-            group.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+            attrs.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+            if (m_dims[i].names.size() > 0)
+            {
+                auto dt = h5py.attr("string_dtype")(); // encoding='utf-8'
+                py::tuple s = py::cast(std::vector<size_t>({m_dims[i].names.size(), 1}));
+                auto ds = attrs.attr("create_dataset")(py::str(dn + "_names"),
+                                                       s, "dtype"_a = dt);
+                int ind = 0;
+                for (const auto &it : m_dims[i].names)
+                {
+                    ds.attr("__setitem__")(ind, py::str(it));
+                    ind++;
+                }
+
+                // TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+                //py::array dnames = np.attr("array")(_dnames, "dtype"_a = py::dtype("object"));
+
+                // Chris python data pipeline impl, but it does not work in C++
+                //py::array encoded_names = np.attr("char").attr("encode")(_dnames);
+
+                //py::array dnames(_dnames, "dtype"_a = py::dtype("object"));  // C++ has no such ctor
+
+                //attrs.attr("__setitem__")(py::str(dn + "_names"), encoded_names);
+            }
         }
     }
 
@@ -458,7 +499,7 @@ public:
         {
             shape[i] = pya.shape()[i];
         }
-        ArrayT<T>::Ptr arr = std::make_shared<ArrayT<T>>(shape);
+        typename ArrayT<T>::Ptr arr = std::make_shared<ArrayT<T>>(shape);
         //std::cout << "pya.itemsize() = " << pya.itemsize() << std::endl; // sizeof(element_type)
         //std::cout << "pya.size() = " << pya.size() << std::endl;  // this is element count
         std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.size(), arr->m_data.begin());
@@ -467,17 +508,42 @@ public:
 
     static void decode_metadata(const py::object group, typename ArrayT<T>::Ptr arr)
     {
-        /// read meta data for the array, currently, it is attached to dataset
+        using namespace pybind11::literals;
+        py::module h5py = py::module::import("h5py");
+
+        /// read meta data for the array, currently, it is attached to group as dataset
+        /// it may also be possible to attached to a DataSet's AttributeProxy
+        // py::object attrs = array_dataset.attr("attrs");
         py::object attrs = group;
         py::str _unit = attrs.attr("__getitem__")(py::str("units"));
-        arr->unit() = _unit;
+        arr->units() = _unit;
+
+        py::module np = py::module::import("numpy");
+
         for (size_t i = 0; i < arr->shape().size(); i++)
         {
             std::string dn = "Dimension_" + std::to_string(i);
             py::str dtitle = attrs.attr("__getitem__")(py::str(dn + "_title"));
             py::array _dv = attrs.attr("__getitem__")(py::str(dn + "_values"));
             py::str dunit = attrs.attr("__getitem__")(py::str(dn + "_units"));
-            Dimension<T> d{dtitle, _dv.cast<std::vector<T>>(), dunit};
+            std::vector<std::string> _dnames;
+            size_t sz = _dv.size();
+            /// NOTE: if (e) is alwasy true
+            auto e = attrs.attr("__contains__")(py::str(dn + "_names"));
+            if (py::bool_(e).cast<bool>())
+            {
+                auto dt = h5py.attr("string_dtype")(); // encoding='utf-8'
+                py::tuple s = py::cast(std::vector<size_t>({sz, 1}));
+                auto ds = attrs.attr("require_dataset")(py::str(dn + "_names"),
+                                                        "shape"_a = s, "dtype"_a = dt);
+
+                for (int ind = 0; ind < sz; ind++)
+                {
+                    std::string s = py::str(ds.attr("__getitem__")(ind)).cast<std::string>();
+                    _dnames.push_back(s);
+                }
+            }
+            Dimension<T> d{dtitle, _dnames, _dv.cast<std::vector<T>>(), dunit};
             arr->dims().push_back(d);
         }
     }

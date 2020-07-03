@@ -11,7 +11,7 @@ using namespace pybind11::literals;
 
 DataPipeline::DataPipeline(const string &config_file)
 {
-  // TODO: tidy up these variable names
+
   pd = py::module::import("pandas");
 
   py::object StandardAPIClass = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI");
@@ -24,7 +24,7 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 {
   // TODO: what about component?
   double est = py::float_(StandardAPI.attr("read_estimate")(data_product));
-  
+
   return est;
 }
 
@@ -33,7 +33,7 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 double DataPipeline::read_sample(const string *data_product, const string &component)
 {
   double est = py::float_(StandardAPI.attr("read_sample")(data_product));
-  
+
   return est;
 }
 

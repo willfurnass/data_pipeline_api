@@ -65,10 +65,11 @@ namespace local
     ArrayT<DT>::Ptr ap = ArrayT<DT>::decode_array(mat);
     std::cout << "decoded Array from NumpyArray with dim = " << ap->dimension() << std::endl;
     std::cout << "values of the Array<> : " << (*ap)[0] << (*ap)(1, 0) << std::endl;
-    ap->unit() = "unknown";
+    ap->units() = "unknown";
     ap->dim_unit(0) = "second";
     ap->dim_unit(1) = "mm";
     ap->dim_values(0) = {1, 4};
+    ap->dim_names(0) = {"xmin", "xmaximum"}; // works for var length string
 
     return ap;
   }
@@ -80,10 +81,11 @@ namespace local
     ShapeType s = {3, 4};
     typename ArrayT<DT>::Ptr ap = std::make_shared<ArrayT<DT>>(s, values);
 
-    ap->unit() = "unknown";
+    ap->units() = "unknown";
     ap->dim_unit(0) = "second";
     ap->dim_unit(1) = "mm";
     ap->dim_values(0) = {1, 4};
+    //ap->dim_names(0) = {"xmin", "xmax"};   // it works if names are empty
 
     return ap;
   }
@@ -97,7 +99,7 @@ namespace local
     //BoolArray::Ptr ap = new BoolArray(s, cbools);
     BoolArray::Ptr ap = std::make_shared<BoolArray>(s, cbools);
 
-    ap->unit() = "unknown";
+    ap->units() = "unknown";
     ap->dim_unit(0) = "second";
     ap->dim_unit(1) = "mm";
     ap->dim_values(0) = {1, 4};
@@ -270,7 +272,7 @@ void test_dp_array(DataPipeline &dp)
   ArrayT<DT>::Ptr ap = ArrayT<DT>::decode_array(mat);
   std::cout << "decoded Array from NumpyArray with dim = " << ap->dimension() << std::endl;
   std::cout << "values of the Array<> : " << (*ap)[0] << (*ap)(1, 0) << std::endl;
-  ap->unit() = "unknown";
+  ap->units() = "unknown";
   ap->dim_unit(0) = "second";
   ap->dim_unit(1) = "mm";
   ap->dim_values(0) = {1, 4};

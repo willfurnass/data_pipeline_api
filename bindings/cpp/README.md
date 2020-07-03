@@ -178,7 +178,10 @@ Element types can be any numpy.array supported int and floating pointer scalar t
 NOTE: use `BoolArray`, instead of `ArrayT<bool>`,  Reasons
 + `std::vector<bool>` is a specialized std::vector<T>, each element use a bit not a byte
 + left reference to `std::vector<bool>` element will not compile, such as `T& operator []`
-+ HDF5 save bool as unsigned byte
++ HDF5 C-API, save bool as unsigned byte, while h5py can save bool as ENUM
+http://docs.h5py.org/en/stable/config.html
+
+Array<std::string> is possible but yet implemented by template specialization the `decode_array() encode_array()` method, see example how  dimension names are encoded and decoded in `decode_metadata() encode_metadata()` of `array.h`.
 
 ## Notes for installation on DiRAC CSD3
 
