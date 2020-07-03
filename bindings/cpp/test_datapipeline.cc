@@ -204,6 +204,7 @@ void test_array_local()
   const std::string TEST_ARRAY_FILENAME1 = "test_double_array.h5";
   const std::string TEST_ARRAY_FILENAME2 = "test_bool_array.h5";
   const char *TEST_ARRAY_COMPONENT_NAME = "nparray";
+
   auto ip = local::create_int64_array();
   // write_array is working, confirmed by h5dump
   local::write_array(TEST_ARRAY_FILENAME, "int64array", *ip);
@@ -211,14 +212,14 @@ void test_array_local()
 
   auto dp = local::create_array<double>();
   // write_array is working, confirmed by h5dump
-  local::write_array(TEST_ARRAY_FILENAME2, "float64array", *dp);
-  local::read_array_T<double>(TEST_ARRAY_FILENAME, "float64array");
+  local::write_array(TEST_ARRAY_FILENAME1, "float64array", *dp);
+  local::read_array_T<double>(TEST_ARRAY_FILENAME1, "float64array");
 
   auto bp = local::create_bool_array();
   // write_array is working, confirmed by h5dump
   local::write_array(TEST_ARRAY_FILENAME2, "boolarray", *bp);
   /// NOTE:  can not use BoolArray, specialized type, not impl yet
-  //local::read_bool_array(TEST_ARRAY_FILENAME, "boolarray");
+  //local::read_bool_array(TEST_ARRAY_FILENAME2, "boolarray");
 }
 
 /// test without data pipeline, test passed for std::string as column type
@@ -282,12 +283,18 @@ void test_dp_array(DataPipeline &dp)
   dp.read_array(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-  // todo: a better way to get example data from the repo
-  DataPipeline dp("../../tests/data/config.yaml");
+  // default path may works only for unix makefile
+  // for CMake out of source build, provide path to config as the first cmd argument
+  std::string config_path = "../../tests/data/config.yaml";
+  if (argc > 1)
+  {
+    config_path = std::string(argv[1]);
+  }
+  DataPipeline dp(config_path);
 
 #if 0 // CSV test data, outdated API may not work with latest python API
   // read_table
@@ -298,13 +305,13 @@ int main()
   cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 #endif
 
-  test_array_local();  // without data pipeline
+  test_array_local(); // without data pipeline
   //test_dp_array(dp);
 
-  test_table_local();  // without data pipeline
+  test_table_local(); // without data pipeline
   //test_dp_table(dp);
 
-  std::cout << "data pipeline C++ api tested\n";
+  std::cout << "data pipeline C++ api tested pass successfully\n";
 
   return 0;
 }

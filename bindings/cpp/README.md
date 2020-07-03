@@ -80,7 +80,12 @@ A CMakeLists.txt has been provided, it can detect system installation of pybind1
 On Ubuntu 20.04, dependency `python3-dev python3-pybind11` is installed by `apt` instead of `pip3`
 
 out of source build in a subfolder: `mkdir build && cd build`
-`cmake .. -DPYTHON_EXECUTABLE:FILEPATH=$(which python3)`
+```bash
+cmake .. -DPYTHON_EXECUTABLE:FILEPATH=$(which python3)
+make -j2
+# the path to the config yaml file as the first argument to test_datapipeline
+./bin/test_datapipeline  ../../../tests/data/config.yaml
+```
 
 On Ubuntu 18.04, it may need extra  option `PYTHON_LIBRARIES`
 `cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 -DPYTHON_LIBRARIES=/usr/lib/x86_64-linux-gnu/libpython3.6m.so `. While, `ldd $(which python3)` can help to find the `PYTHON_LIBRARIES`
@@ -106,7 +111,12 @@ NOTE:  **python_pipeline_api** is the repo name/path, it has a folder called **p
 
 ### Run the tests
 The test program for the wrapper can be run as:
-```
+```bash
+# may provide the config file path as the argument,  
+# `./test_datapipeline  path_to_config_file`
+# otherwise, error message `can not parse the yaml file` may appear
+# if hard-code config file relative path is not correctly located, 
+# depends on where is the working directory
 ./test_datapipeline
 ```
 
