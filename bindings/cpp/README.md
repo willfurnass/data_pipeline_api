@@ -118,7 +118,9 @@ YAML) and output some data from the data repository.
 
 ## Documentation
 
-"test_datapipeline.cpp" have some demo to construct Array and Table class instance in C++, model developer may 
+"test_datapipeline.cpp" have some demo to construct Array and Table class instance in C++, model developer may have a look.
+
+### Table creation
 
 ```cpp
   const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
@@ -134,19 +136,39 @@ YAML) and output some data from the data repository.
   dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
 ```
 
-Array examle will come soon,  it is inside `void test_dp_array(DataPipeline &dp)` 
-
-
 ### Notes on read_table() and write_table()
 
-`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.  Limited C++ scalar types, `double, int64_t, bool` are supported, but `std::string` is supported without using data pipeline API.
+`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.  
 
-The python pipeline API, converts DataFrame into records then write to hdf5, data table are in tabular data format, but "std::string" as column data format are not supported.
+The python pipeline API, converts DataFrame into records then write to hdf5, data table are kept in tabular data format, but `std::string` as column data format is not supported.
 > runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+
+```py
+def write_table(file: IOBase, component: str, table: Table):
+    records = table.to_records(index=False)
+    get_write_group(file, component).require_dataset(
+        "table", shape=records.shape, dtype=records.dtype, data=records
+    )
+```
+
+Column types are limited to C++ scalar types, `double, int64_t, bool` are supported, because R, Python only support these 2 scalar types. `std::string` is supported without using data pipeline API.
+
 
 There is another problem when writing table metadata, "get_write_group()" is not available in standard_api.py.
 
 There is `RowTable<RowType>` class which can save any RowType data class as a row in HDF5 dataset, assisted by a code generator.  While this is not standard API, `write_rtable(std::vector<RowType>)` is not added yet.
+
+### Array creation
+
+Demo of Array creation is inside `test_datapipeline.cc` such as `create_array<T>()`. The most common constructor is: 
+`ArrayT(const std::vector<size_t> _shape, const std::vector<T> & flattened_vector)`
+
+Element types can be any numpy.array supported int and floating pointer scalar types, but it is still recommended to use `double, int64_t, bool` only, to be compatible with other programming languages.
+
+NOTE: use `BoolArray`, instead of `ArrayT<bool>`,  Reasons
++ `std::vector<bool>` is a specialized std::vector<T>, each element use a bit not a byte
++ left reference to `std::vector<bool>` element will not compile, such as `T& operator []`
++ HDF5 save bool as unsigned byte
 
 ## Notes for installation on DiRAC CSD3
 
