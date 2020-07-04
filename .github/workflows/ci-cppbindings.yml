@@ -1,6 +1,9 @@
 name: ci-cppbindings
 
-on: [push]
+on: 
+  push:
+    branches:
+      - cppbinding-dev
 
 jobs:
   build:
@@ -20,17 +23,17 @@ jobs:
     - name: Install Python packages
       run: |
         pip3 install wheel
-        pip3 install pybind11 pyyaml pandas scipy toml
+        pip3 install pybind11 pyyaml pandas scipy toml semver
 
     - name: Compile
       run: |
-        export PYTHONPATH=$PWD/src:$PYTHONPATH
+        export PYTHONPATH=$PWD/data_pipeline_api:$PYTHONPATH
         cd bindings/cpp
         make
 
     - name: Run
       run: |
-        export PYTHONPATH=$PWD/src:$PYTHONPATH
+        export PYTHONPATH=$PWD/data_pipeline_api:$PYTHONPATH
         cd bindings/cpp
         # TODO: make the path to the repo an argument to the executable
         mkdir repos
