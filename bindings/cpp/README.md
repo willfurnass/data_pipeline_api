@@ -5,10 +5,8 @@
 
 This directory contains C++ bindings for the Python data pipeline API.
 
-Temporay note:  this should be fixed very soon
-clone only the branch, wihch conflicts with master 
-`git clone -b cppbindings --single-branch git@github.com:ScottishCovidResponse/data_pipeline_api.git`
-
+NOTE: if you have done single-branch, clone, there is some troubles to rebase
+you can either redo the git clone, or fix it by <https://stackoverflow.com/questions/17714159/how-do-i-undo-a-single-branch-clone>
 
 ## Requirements
 
@@ -39,8 +37,8 @@ The Python example:
 
 ```
 cd data_pipeline_api
-export PYTHONPATH=$PWD/src:$PYTHONPATH
-python3 examples/data_access.py
+export PYTHONPATH=$PWD/datapipeline:$PYTHONPATH
+python3 tests/data_access.py
 ```
 This should output
 
@@ -58,11 +56,15 @@ This should output
 ```
 (You might also get some YAML warnings.)
 
+There is another example: `python3 tests/standard_api_usage.py`
+
 ## Building the C++ wrapper
 
 Dependencies: 
 `apt install python3-dev python3-pybind11`  (ubuntu package name)
 `pip3 install h5py` tested, `apt install python3-h5py` should also work.
+
+Choose one of the build methods: Unix Makefile or CMake
 
 ### Unix Makefile
 Now build the C++ test program:
@@ -78,7 +80,12 @@ A CMakeLists.txt has been provided, it can detect system installation of pybind1
 On Ubuntu 20.04, dependency `python3-dev python3-pybind11` is installed by `apt` instead of `pip3`
 
 out of source build in a subfolder: `mkdir build && cd build`
-`cmake .. -DPYTHON_EXECUTABLE:FILEPATH=$(which python3)`
+```bash
+cmake .. -DPYTHON_EXECUTABLE:FILEPATH=$(which python3)
+make -j2
+# the path to the config yaml file as the first argument to test_datapipeline
+./bin/test_datapipeline  ../../../tests/data/config.yaml
+```
 
 On Ubuntu 18.04, it may need extra  option `PYTHON_LIBRARIES`
 `cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 -DPYTHON_LIBRARIES=/usr/lib/x86_64-linux-gnu/libpython3.6m.so `. While, `ldd $(which python3)` can help to find the `PYTHON_LIBRARIES`
@@ -96,13 +103,20 @@ https://github.com/jkhoogland/FindPythonAnaconda
 
 ### Make **data_pipeline_api** on `PYTHONPATH`
 
-In order to run the C++ test program, **python_pipeline_api/src**  python modules must be on `PYTHONPATH`, **data_pipeline_api** can be installed by `pip3 + git`  or conda (later). 
+In order to run the C++ test program, **python_pipeline_api**  python modules must be on `PYTHONPATH`, **data_pipeline_api(repo path)** can be installed by `pip3 + git`  or conda (later). 
 
 Without installation, just download/git-clone the repository, and  `export PYTHONPATH=path_to_data_pipeline_api_repo/data_pipeline_api:$PYTHONPATH`. Adjust the path depend on where **data_pipeline_api** repository directory locates.
 
+NOTE:  **python_pipeline_api** is the repo name/path, it has a folder called **python_pipeline_api** contains all *.py files. set `PYTHONPATH` to **data_pipeline_api(repo path)**. 
+
 ### Run the tests
 The test program for the wrapper can be run as:
-```
+```bash
+# may provide the config file path as the argument,  
+# `./test_datapipeline  path_to_config_file`
+# otherwise, error message `can not parse the yaml file` may appear
+# if hard-code config file relative path is not correctly located, 
+# depends on where is the working directory
 ./test_datapipeline
 ```
 
@@ -112,16 +126,62 @@ It should run without producing an error (you might get warnings about
 YAML) and output some data from the data repository.
 
 
+## Documentation
+
+"test_datapipeline.cpp" have some demo to construct Array and Table class instance in C++, model developer may have a look.
+
+### Table creation
+
+```cpp
+  const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
+  Table table;
+  table.add_column<int64_t>("int", {1, 2});
+  table.add_column<double>("double", {1.1, 2.2});
+  table.add_column<bool>("bool", {true, false});
+  // runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+  // because DataFrame is converted to_records() in write_table()
+  //table.add_column<std::string>("str", {"str1", "str2"});
+
+  table.set_column_units({"unit1", "unit2", "unit3"});
+  dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
+```
+
 ### Notes on read_table() and write_table()
 
-`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.  Limited C++ scalar types, `double, int64_t, bool` are supported, but `std::string` is supported without using data pipeline API.
+`Table` class is a column-major impl, columns are transposed into a group of HDF5 attributes and saved to hdf5 by `pandas.to_hdf()`.  The tabular data are not available in any HDF viewer.  `pandas.read_hdf()`.  
 
-The python pipeline API, converts DataFrame into records then write to hdf5, data table are in tabular data format, but "std::string" as column data format are not supported.
+The python pipeline API, converts DataFrame into records then write to hdf5, data table are kept in tabular data format, but `std::string` as column data format is not supported.
 > runtime error:  TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+
+```py
+def write_table(file: IOBase, component: str, table: Table):
+    records = table.to_records(index=False)
+    get_write_group(file, component).require_dataset(
+        "table", shape=records.shape, dtype=records.dtype, data=records
+    )
+```
+
+Column types are limited to C++ scalar types, `double, int64_t, bool` are supported, because R, Python only support these 2 scalar types. `std::string` is supported without using data pipeline API.
+
 
 There is another problem when writing table metadata, "get_write_group()" is not available in standard_api.py.
 
 There is `RowTable<RowType>` class which can save any RowType data class as a row in HDF5 dataset, assisted by a code generator.  While this is not standard API, `write_rtable(std::vector<RowType>)` is not added yet.
+
+### Array creation
+
+Demo of Array creation is inside `test_datapipeline.cc` such as `create_array<T>()`. The most common constructor is: 
+`ArrayT(const std::vector<size_t> _shape, const std::vector<T> & flattened_vector)`
+
+Element types can be any numpy.array supported int and floating pointer scalar types, but it is still recommended to use `double, int64_t, bool` only, to be compatible with other programming languages.
+
+NOTE: use `BoolArray`, instead of `ArrayT<bool>`,  Reasons
++ `std::vector<bool>` is a specialized std::vector<T>, each element use a bit not a byte
++ left reference to `std::vector<bool>` element will not compile, such as `T& operator []`
++ HDF5 C-API, save bool as unsigned byte, while h5py can save bool as ENUM
+http://docs.h5py.org/en/stable/config.html
+
+Array<std::string> is possible but yet implemented by template specialization the `decode_array() encode_array()` method, see example how  dimension names are encoded and decoded in `decode_metadata() encode_metadata()` of `array.h`.
 
 ## Notes for installation on DiRAC CSD3
 

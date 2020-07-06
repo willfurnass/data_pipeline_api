@@ -1,6 +1,8 @@
 // copyright, Alex Meakins and Qingfeng Xia  @ UKAEA
 // it is released under open source like BSD
 // https://github.com/simple-access-layer/source
+// this code has been widely unit tested, unit test code can be copied here soon
+
 #pragma once
 
 #include <cstdint>
@@ -14,25 +16,20 @@
 #include "pybind11/stl.h"
 namespace py = pybind11;
 
-// todo:   encoding decoding from python.array
-//  xtensor integration,
-//  ArrayBase with meta data. it keeps an shared_ptr<> of save
-// this code has been widely unit tested, unit test code can be copied here soon
-
-/// HDF5 C-API has DimensionScaled
+/// HDF5 C-API has DimensionScaled, but not used in HDF5 IO
 template <typename DT>
 struct Dimension
 {
     std::string title;
-    //std::vector<std::string> names;
-    std::vector<DT> values; // ticks can be a better name
-    std::string unit;
+    std::vector<std::string> names; // tick names as in matplotlib, optional
+    std::vector<DT> values;         // ticks can be a better name
+    std::string units;
 };
 
 /// a typedef to ease future refactoring on data structure
 using ShapeType = std::vector<uint64_t>;
 
-/// base class for all Array<T> as non-templated interface to array metadata
+/// base class for all ArrayT<T> as non-templated interface to array metadata
 class Array
 {
 public:
@@ -73,11 +70,11 @@ public:
         return this->m_strides;
     };
 
-    std::string &unit()
+    std::string &units()
     {
         return m_unit;
     }
-    const std::string &unit() const
+    const std::string &units() const
     {
         return m_unit;
     }
@@ -141,8 +138,8 @@ public:
             return "float64";
         else if (std::is_same<DT, bool>::value)
             return "bool";
-        else if (std::is_same<DT, std::string>::value)
-            return "string";
+        // else if (std::is_same<DT, std::string>::value)
+        //     return "string";   // not supported, so disabled here
         else
         {
             throw std::runtime_error("data type valid as Array element or Atomic value");
@@ -150,13 +147,38 @@ public:
     }
 };
 
-/*
-         It is a multi-dimension array based on std::vector<T>
-         No default constructor without parameter is allowed,
-         so shape of the array, as std::vector<uint64_t>,  consistent with python numpy.array
-         TODO: proxy pattern for m_data, so big data can not fit into memory can be supported.
-         */
-template <class T>
+/**
+It is a multi-dimension array with dat saved to a flattend std::vector<T>
+No default constructor without parameter is allowed, at least give the shape
+ of the array,  `std::vector<uint64_t>`, as the first parameter 
+consistent with python `numpy.array' dtype's name.     
+
+A set of typedefs are provided that define the supported array types. 
+
+Examples of array creation:
+```c++
+    // create a 1D uint8 array with 1000 elements with default value 0.
+    UInt8Array a1({1000});  // ArrayT<uint8_t>
+
+    // create a 2D int32 array with 50x20 elements with default value 0.
+    Int32Array a2({50, 20});  // ArrayT<int>
+
+    // create a 3D float array with 512x512x3 elements.
+    Float32Array a3({512, 512, 3});
+
+    // create Array from a buffer with shape vector as the first parameter
+    double buf[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+    Float64Array a4({2, 3}, buf);
+
+    // create Array from a flattened vector with shape vector as the first parameter
+    Float64Array a5({2, 3}, std::vector<double>({1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+
+    // 2D matrix from const `std::vector<std::vector<T>>&` row-major
+    std::vector<std::vector<double>> mat = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+    Float64Array a6(mat);
+```
+*/
+template <class T, typename = std::enable_if<!std::is_same<bool, T>::value>>
 class ArrayT : public Array
 {
 
@@ -178,27 +200,13 @@ public:
     typedef T value_type;
 
     /*
-            Array constructor.
+    Array constructor.
 
-            Initialises an array with the specified dimensions (shape). The
-            array shape is a vector defining the length of each dimensions
-            of the array. The number of elements in the shape vector
-            defines the number of dimensions.
-
-            This class is not intended to be used directly by the users, a
-            set of typedefs are provided that define the supported SAL
-            array types. For example:
-
-                // create a 1D uint8 array with 1000 elements.
-                UInt8Array a1({1000});
-
-                // create a 2D int32 array with 50x20 elements.
-                Int32Array a2({50, 20});
-
-                // create a 3D float array with 512x512x3 elements.
-                Float32Array a3({512, 512, 3});
-
-            */
+    Initialises an array with the specified dimensions (shape). The
+    array shape is a vector defining the length of each dimensions
+    of the array. The number of elements in the shape vector
+    defines the number of dimensions.
+    */
     ArrayT(ShapeType _shape)
         : ArrayT(_shape, Array::to_dtype_name<T>())
     {
@@ -217,15 +225,37 @@ public:
         this->m_data = vec;
     }
 
+    /// create Array from a  1D buffer with shape vector as the first parameter
+    ArrayT(ShapeType _shape, const T *buf)
+        : Array(_shape, Array::to_dtype_name<T>())
+    {
+        size_t ec = 1; // std::inner_product()
+        for (const auto &s : _shape)
+        {
+            ec *= s;
+        }
+        std::copy_n(buf, ec, m_data.begin());
+    }
+
+    /// 2D matrix from const `std::vector<std::vector<T>>&` row-major
+    ArrayT(const std::vector<std::vector<T>> &mat)
+        : Array({mat.size(), mat[0].size()}, Array::to_dtype_name<T>())
+    {
+        auto offset = m_data.begin();
+        for (size_t r = 0; r < mat.size(); r++)
+        {
+            size_t col = mat[r].size();
+            std::copy_n(mat[r].cbegin(), col, offset);
+            offset += col;
+        }
+    }
+
     // CONSIDER: disable those constructors, force shared_ptr<>
     //            Array(const Array&);
     //            Array& operator= (const Array&);
     //            Array(Array&&);
     //            Array& operator= (Array&&);
 
-    /*
-            virtual destructor
-            */
     virtual ~ArrayT(){};
 
     inline virtual std::string element_type_name() const
@@ -237,12 +267,12 @@ public:
     {
         if (m_dims.size() < i + 1)
             m_dims.push_back(Dimension<T>());
-        return m_dims[i].unit;
+        return m_dims[i].units;
     }
     // must exist before read this field
     const std::string &dim_unit(int i) const
     {
-        return m_dims[i].unit;
+        return m_dims[i].units;
     }
 
     std::string &dim_title(int i)
@@ -265,6 +295,17 @@ public:
     const std::vector<T> &dim_values(int i) const
     {
         return m_dims[i].values;
+    }
+
+    std::vector<std::string> &dim_names(int i)
+    {
+        if (m_dims.size() < i + 1)
+            m_dims.push_back(Dimension<T>());
+        return m_dims[i].names;
+    }
+    const std::vector<std::string> &dim_names(int i) const
+    {
+        return m_dims[i].names;
     }
 
     template <typename DT = T>
@@ -291,13 +332,15 @@ public:
     /// @}
 
     /// @{ Infrastructure for C-API
+
+    /// data buffer byte size, equal to numpy.nbytes()
     inline virtual size_t byte_size() const
     {
         /// NOTE: std::vector<bool> stores bit instead of byte for each element
         return this->m_data.size() * sizeof(T);
     };
 
-    /// read-only pointer to provide read view into the data buffer
+    /// read-only `const void*` pointer to provide read view into the data buffer
     inline virtual const void *data_pointer() const
     {
         // std::enable<> does not work for virtual function, so must check at runtime
@@ -320,7 +363,6 @@ public:
         }
     }
 
-    /// todo: more than 5 dim is kind of nonsense,
     /// using array as index can be more decent
     inline virtual void *data_at(int i0, int64_t i1 = -1, int64_t i2 = -1, int64_t i3 = -1, int64_t i4 = -1,
                                  int64_t i5 = -1, int64_t i6 = -1, int64_t i7 = -1, int64_t i8 = -1,
@@ -421,7 +463,7 @@ public:
         return this->m_data[element_index];
     }
 
-    /// return a const object, for just write out
+    /// write pybind::array with name `array` inside the given H5Group
     virtual void encode(py::object &group) const override
     {
         using namespace pybind11::literals;
@@ -430,24 +472,57 @@ public:
         ShapeType _strides; // empty as the default, C_stride
         const py::array pya(dt, this->m_shape, _strides, this->m_data.data());
 
-        py::list shape = py::cast(m_shape);
-        py::object dataset = group.attr("create_dataset")(py::str("array"), "data"_a = pya);
+        py::tuple shape = py::cast(m_shape);
+        py::object dataset = group.attr("require_dataset")(py::str("array"),
+                                                           "shape"_a = shape, "dtype"_a = dt);
         dataset.attr("write_direct")(pya);
+
+        //group.attr("__setitem__")(py::str("array"), pya);  // equal to the 3 lines above
+
+        /// read meta data for the array, currently, it is attached to group as dataset
+        /// it may also be possible to attached to a DataSet's AttributeProxy
+        // py::object attrs = array_dataset.attr("attrs");
         encode_metadata(group);
     }
 
-    void encode_metadata(py::object &group) const
+    void encode_metadata(py::object &attrs) const
     {
-        group.attr("__setitem__")(py::str("unit"), unit());
-        //  attrs.attr("__setitem__")(py::str("title"), da.title());
+        using namespace pybind11::literals;
+        //py::module np = py::module::import("numpy");
+        py::module h5py = py::module::import("h5py");
+
+        attrs.attr("__setitem__")(py::str("units"), units());
         for (size_t i = 0; i < m_dims.size(); i++)
         {
             std::string dn = "Dimension_" + std::to_string(i);
             py::array _dv = py::cast(m_dims[i].values);
-            group.attr("__setitem__")(py::str(dn + "_values"), _dv);
-            group.attr("__setitem__")(py::str(dn + "_unit"), py::cast(m_dims[i].unit));
+            attrs.attr("__setitem__")(py::str(dn + "_values"), _dv);
+            attrs.attr("__setitem__")(py::str(dn + "_units"), py::cast(m_dims[i].units));
             py::str dtitle = py::cast(m_dims[i].title);
-            group.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+            attrs.attr("__setitem__")(py::str(dn + "_title"), dtitle);
+            if (m_dims[i].names.size() > 0)
+            {
+                auto dt = h5py.attr("string_dtype")(); // encoding='utf-8'
+                py::tuple s = py::cast(std::vector<size_t>({m_dims[i].names.size(), 1}));
+                auto ds = attrs.attr("create_dataset")(py::str(dn + "_names"),
+                                                       s, "dtype"_a = dt);
+                int ind = 0;
+                for (const auto &it : m_dims[i].names)
+                {
+                    ds.attr("__setitem__")(ind, py::str(it));
+                    ind++;
+                }
+
+                // TypeError: Object dtype dtype('O') has no native HDF5 equivalent
+                //py::array dnames = np.attr("array")(_dnames, "dtype"_a = py::dtype("object"));
+
+                // Chris python data pipeline impl, but it does not work in C++
+                //py::array encoded_names = np.attr("char").attr("encode")(_dnames);
+
+                //py::array dnames(_dnames, "dtype"_a = py::dtype("object"));  // C++ has no such ctor
+
+                //attrs.attr("__setitem__")(py::str(dn + "_names"), encoded_names);
+            }
         }
     }
 
@@ -460,11 +535,53 @@ public:
         {
             shape[i] = pya.shape()[i];
         }
-        ArrayT<T>::Ptr arr = std::make_shared<ArrayT<T>>(shape);
+        typename ArrayT<T>::Ptr arr = std::make_shared<ArrayT<T>>(shape);
         //std::cout << "pya.itemsize() = " << pya.itemsize() << std::endl; // sizeof(element_type)
         //std::cout << "pya.size() = " << pya.size() << std::endl;  // this is element count
         std::copy((T *)(pya.data()), (T *)(pya.data()) + pya.size(), arr->m_data.begin());
         return arr;
+    }
+
+    static void decode_metadata(const py::object group, typename ArrayT<T>::Ptr arr)
+    {
+        using namespace pybind11::literals;
+        py::module h5py = py::module::import("h5py");
+
+        /// read meta data for the array, currently, it is attached to group as dataset
+        /// it may also be possible to attached to a DataSet's AttributeProxy
+        // py::object attrs = array_dataset.attr("attrs");
+        py::object attrs = group;
+        py::str _unit = attrs.attr("__getitem__")(py::str("units"));
+        arr->units() = _unit;
+
+        py::module np = py::module::import("numpy");
+
+        for (size_t i = 0; i < arr->shape().size(); i++)
+        {
+            std::string dn = "Dimension_" + std::to_string(i);
+            py::str dtitle = attrs.attr("__getitem__")(py::str(dn + "_title"));
+            py::array _dv = attrs.attr("__getitem__")(py::str(dn + "_values"));
+            py::str dunit = attrs.attr("__getitem__")(py::str(dn + "_units"));
+            std::vector<std::string> _dnames;
+            size_t sz = _dv.size();
+            /// NOTE: if (e) is alwasy true
+            auto e = attrs.attr("__contains__")(py::str(dn + "_names"));
+            if (py::bool_(e).cast<bool>())
+            {
+                auto dt = h5py.attr("string_dtype")(); // encoding='utf-8'
+                py::tuple s = py::cast(std::vector<size_t>({sz, 1}));
+                auto ds = attrs.attr("require_dataset")(py::str(dn + "_names"),
+                                                        "shape"_a = s, "dtype"_a = dt);
+
+                for (int ind = 0; ind < sz; ind++)
+                {
+                    std::string s = py::str(ds.attr("__getitem__")(ind)).cast<std::string>();
+                    _dnames.push_back(s);
+                }
+            }
+            Dimension<T> d{dtitle, _dnames, _dv.cast<std::vector<T>>(), dunit};
+            arr->dims().push_back(d);
+        }
     }
 
     static typename ArrayT<T>::Ptr decode(const py::object group)
@@ -478,20 +595,7 @@ public:
         dataset.attr("read_direct")(pya);
 
         auto arr = ArrayT<T>::decode_array(pya);
-
-        /// read meta data for the array, currently, it is attached to dataset
-        py::object attrs = group;
-        py::str _unit = attrs.attr("__getitem__")(py::str("unit"));
-        arr->unit() = _unit;
-        for (size_t i = 0; i < pya.ndim(); i++)
-        {
-            std::string dn = "Dimension_" + std::to_string(i);
-            py::str dtitle = attrs.attr("__getitem__")(py::str(dn + "_title"));
-            py::array _dv = attrs.attr("__getitem__")(py::str(dn + "_values"));
-            py::str dunit = attrs.attr("__getitem__")(py::str(dn + "_unit"));
-            Dimension<T> d{dtitle, _dv.cast<std::vector<T>>(), dunit};
-            arr->dims().push_back(d);
-        }
+        decode_metadata(group, arr);
 
         return arr;
     }
@@ -517,7 +621,45 @@ typedef ArrayT<uint64_t> UInt64Array;
 typedef ArrayT<float> Float32Array;
 typedef ArrayT<double> Float64Array;
 
-typedef ArrayT<bool> BoolArray;
+/** `typedef ArrayT<bool> BoolArray` will not work, should be disabled
+ * Reasons
+ * + std::vector<bool> is a specialized std::vector<T>, each element use a bit not byte
+ * + all left reference to element will not work/compile, such as `T& operator []`
+ *
+ * `typedef ArrayT<uint8_t> BoolArray;` will not give correct element type
+ * A new type BoolArray should be defined, as a derived class of Array<uint8_t>
+ * Solution: `class BoolArray : public Array<uint8_t>`
+ * override the constructor solved the element_type_name initialization
+ * */
+class BoolArray : public ArrayT<uint8_t>
+{
+public:
+    typedef std::shared_ptr<BoolArray> Ptr;
+    BoolArray(const ShapeType _shape)
+        : ArrayT<uint8_t>(_shape, "bool")
+    {
+    }
+
+    /// this ctor is same as ArrayT<uint8_t>
+    BoolArray(const ShapeType _shape, const std::vector<uint8_t> vec)
+        : ArrayT<uint8_t>(_shape, "bool")
+    {
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            m_data[i] = vec[i];
+        }
+    }
+
+    BoolArray(const ShapeType _shape, const std::vector<bool> vec)
+        : ArrayT<uint8_t>(_shape, "bool")
+    {
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            m_data[i] = vec[i];
+        }
+    }
+    /// write to HDF5 is done,  TODO: test read back from HDF5
+};
 
 class DataDecoder
 {
@@ -570,7 +712,7 @@ public:
             return Float32Array::decode(pyo);
         else if (el_type_name == TYPE_NAME_FLOAT64)
             return Float64Array::decode(pyo);
-        //else if (el_type_name == TYPE_NAME_BOOL)
+        // else if (el_type_name == TYPE_NAME_BOOL)
         //    return BoolArray::decode(pyo); // TODO: does not compile
         else
             throw std::runtime_error("data type string `" + el_type_name + "` is not supported");
