@@ -29,7 +29,7 @@ struct Dimension
 /// a typedef to ease future refactoring on data structure
 using ShapeType = std::vector<uint64_t>;
 
-/// base class for all Array<T> as non-templated interface to array metadata
+/// base class for all ArrayT<T> as non-templated interface to array metadata
 class Array
 {
 public:
@@ -147,11 +147,36 @@ public:
     }
 };
 
-/*
-It is a multi-dimension array based on std::vector<T>
+/**
+It is a multi-dimension array with dat saved to a flattend std::vector<T>
 No default constructor without parameter is allowed, at least give the shape
-so shape of the array, as std::vector<uint64_t>,  
-consistent with python numpy.array' dtypne's name
+ of the array,  `std::vector<uint64_t>`, as the first parameter 
+consistent with python `numpy.array' dtype's name.     
+
+A set of typedefs are provided that define the supported array types. 
+
+Examples of array creation:
+```c++
+    // create a 1D uint8 array with 1000 elements with default value 0.
+    UInt8Array a1({1000});  // ArrayT<uint8_t>
+
+    // create a 2D int32 array with 50x20 elements with default value 0.
+    Int32Array a2({50, 20});  // ArrayT<int>
+
+    // create a 3D float array with 512x512x3 elements.
+    Float32Array a3({512, 512, 3});
+
+    // create Array from a buffer with shape vector as the first parameter
+    double buf[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+    Float64Array a4({2, 3}, buf);
+
+    // create Array from a flattened vector with shape vector as the first parameter
+    Float64Array a5({2, 3}, std::vector<double>({1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+
+    // 2D matrix from const `std::vector<std::vector<T>>&` row-major
+    std::vector<std::vector<double>> mat = {{1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}};
+    Float64Array a6(mat);
+```
 */
 template <class T, typename = std::enable_if<!std::is_same<bool, T>::value>>
 class ArrayT : public Array
@@ -175,27 +200,13 @@ public:
     typedef T value_type;
 
     /*
-            Array constructor.
+    Array constructor.
 
-            Initialises an array with the specified dimensions (shape). The
-            array shape is a vector defining the length of each dimensions
-            of the array. The number of elements in the shape vector
-            defines the number of dimensions.
-
-            This class is not intended to be used directly by the users, a
-            set of typedefs are provided that define the supported SAL
-            array types. For example:
-
-                // create a 1D uint8 array with 1000 elements.
-                UInt8Array a1({1000});
-
-                // create a 2D int32 array with 50x20 elements.
-                Int32Array a2({50, 20});
-
-                // create a 3D float array with 512x512x3 elements.
-                Float32Array a3({512, 512, 3});
-
-            */
+    Initialises an array with the specified dimensions (shape). The
+    array shape is a vector defining the length of each dimensions
+    of the array. The number of elements in the shape vector
+    defines the number of dimensions.
+    */
     ArrayT(ShapeType _shape)
         : ArrayT(_shape, Array::to_dtype_name<T>())
     {
@@ -212,6 +223,31 @@ public:
         : ArrayT(_shape, Array::to_dtype_name<T>())
     {
         this->m_data = vec;
+    }
+
+    /// create Array from a  1D buffer with shape vector as the first parameter
+    ArrayT(ShapeType _shape, const T *buf)
+        : Array(_shape, Array::to_dtype_name<T>())
+    {
+        size_t ec = 1; // std::inner_product()
+        for (const auto &s : _shape)
+        {
+            ec *= s;
+        }
+        std::copy_n(buf, ec, m_data.begin());
+    }
+
+    /// 2D matrix from const `std::vector<std::vector<T>>&` row-major
+    ArrayT(const std::vector<std::vector<T>> &mat)
+        : Array({mat.size(), mat[0].size()}, Array::to_dtype_name<T>())
+    {
+        auto offset = m_data.begin();
+        for (size_t r = 0; r < mat.size(); r++)
+        {
+            size_t col = mat[r].size();
+            std::copy_n(mat[r].cbegin(), col, offset);
+            offset += col;
+        }
     }
 
     // CONSIDER: disable those constructors, force shared_ptr<>
