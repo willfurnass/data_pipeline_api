@@ -10,7 +10,13 @@
 
 using namespace std;
 
-class Distribution;
+class Distribution
+{
+  public:
+  string name;
+  map<string, double> params;
+};
+
 // TODO: define a representation for distributions
 
 template <typename T>

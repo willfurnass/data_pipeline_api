@@ -21,7 +21,23 @@ double DataPipeline::read_estimate(string data_product, const string &component)
   return est;
 }
 
-//Distribution DataPipeline::read_distribution(const string &data_product, const string &component);
+Distribution DataPipeline::read_distribution(const string &data_product, const string &component)
+{
+  py::object d_py = api.attr("read_distribution")(data_product, component);
+
+  Distribution d;
+
+  // TODO: wait for this information to actually be available from the Python API
+  d.name = py::str(d_py.attr("name"));
+
+  map<string, double> params = d_py.attr("params").cast<map<string, double>>();
+  d.params = params;
+
+  cout << "distribution name = " << d.name << endl;
+
+  return d;
+}
+
 
 double DataPipeline::read_sample(const string &data_product, const string &component)
 {

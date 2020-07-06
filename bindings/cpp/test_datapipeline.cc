@@ -51,8 +51,7 @@ int main()
   cout << "  parameter/example-distribution -> " << dp.read_estimate("parameter", "example-distribution") << endl;
   cout << "  parameter/example-samples -> " << dp.read_estimate("parameter", "example-samples") << endl;
 
-  // read_distribution
-  // Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
+  Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
   // cout << "parameter/example-distribution = " << par_dist << endl;
 
   // read_sample
