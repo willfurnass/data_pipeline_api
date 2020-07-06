@@ -61,10 +61,6 @@ add_executable(test_datapipeline
   test_datapipeline.cc)
 target_link_libraries(test_datapipeline data_pipeline_cpp)
 
-#  array test code has moved into test_datapipeline.cc
-#add_executable(test_array  test_array.cpp)
-#target_link_libraries(test_array PUBLIC pybind11::embed)
-
 foreach(MyTarget data_pipeline_cpp test_datapipeline)
     # Let's set compiler-specific flags
     if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
