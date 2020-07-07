@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from pathlib import Path
-from data_pipeline_api.standard_api import StandardAPI
+from data_pipeline_api.standard_api import StandardAPI, Array
 
 CONFIG_PATH = Path(__file__).parent / "data" / "config.yaml"
 
@@ -87,9 +87,8 @@ def test_read_table():
 
 
 def test_read_array():
-    np.testing.assert_array_equal(
-        StandardAPI(CONFIG_PATH).read_array("object", "example-array"),
-        np.array([1, 2, 3]),
+    assert StandardAPI(CONFIG_PATH).read_array("object", "example-array") == Array(
+        np.array([1, 2, 3])
     )
 
 
@@ -100,4 +99,6 @@ def test_write_table():
 
 
 def test_write_array():
-    StandardAPI(CONFIG_PATH).write_array("object", "example-array", np.array([1, 2, 3]))
+    StandardAPI(CONFIG_PATH).write_array(
+        "object", "example-array", Array(np.array([1, 2, 3]))
+    )
