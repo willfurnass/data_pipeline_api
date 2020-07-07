@@ -6,6 +6,7 @@ Metadata = Mapping[str, str]
 class MetadataKey:
     filename = "filename"
     data_product = "data_product"
+    component = "component"
     extension = "extension"
     run_id = "run_id"
     version = "version"
