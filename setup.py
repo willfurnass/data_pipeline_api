@@ -38,7 +38,7 @@ setup(
     description="Interacts with SCRC data pipeline",
     author="SCRC",
     author_email="scrc@glasgow.ac.uk",
-    packages=["data_pipeline_api"],
+    packages=["data_pipeline_api", "data_pipeline_api.file_formats"],
     install_requires=_read_requirements(),
     setup_requires=["setuptools_scm", "pyyaml"],
     use_scm_version=True,
