@@ -14,5 +14,12 @@ PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell python3-config --ldflags)
 
 CXXFLAGS = -g -std=c++11 -Wall -Wno-attributes $(PYTHON_CFLAGS)
 
+.PHONY : all
+
+all: test_datapipeline test_local
+
 test_datapipeline: test_datapipeline.cc table.cc datapipeline.cc
 	$(CXX) -o test_datapipeline $(CPPFLAGS) $(CXXFLAGS) test_datapipeline.cc table.cc datapipeline.cc $(PYTHON_LDFLAGS)
+
+test_local: test_local.cc table.cc datapipeline.cc
+	$(CXX) -o test_local $(CPPFLAGS) $(CXXFLAGS) test_local.cc table.cc datapipeline.cc $(PYTHON_LDFLAGS)
