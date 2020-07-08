@@ -1,4 +1,10 @@
 
+# Makefile for building the C++ bindings for the Python data pipeline client
+
+# Use
+#   make V=1
+# to see the commands used.
+
 ###############################################################################
 # Customisations
 ###############################################################################
@@ -69,16 +75,19 @@ all: $(TARGET_EXECS)
 # Link the executable from its corresponding object file and the library
 $(TARGET_EXECS): $(BUILD_DIR)/% : $(BUILD_DIR)/%.cc.o $(TARGET_LIB)
 	$(MKDIR_P) $(dir $@)
+	@echo "LINK $@"
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 # Build the library from all the library object files
 $(TARGET_LIB): $(LIB_OBJS)
 	$(MKDIR_P) $(dir $@)
-	ar -crs $@ $(LIB_OBJS)
+	@echo "AR $@"
+	$(AR) -crs $@ $(LIB_OBJS)
 
 # Compile .cc files into .cc.o files
 $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
+	@echo "CXX $@"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 # Run all the tests
@@ -88,6 +97,7 @@ test: $(TESTS)
 # Run each executable as a test
 .PHONY : $(TESTS)
 $(TESTS): TEST_% : $(BUILD_DIR)/%
+	@echo "TEST $<"
 	$^
 
 # Remove the build directory
@@ -100,3 +110,7 @@ clean:
 
 # Disable all built-in rules
 .SUFFIXES:
+
+# Control verbosity
+# See http://make.mad-scientist.net/managing-recipe-echoing/
+$(V).SILENT:
