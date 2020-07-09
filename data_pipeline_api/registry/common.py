@@ -147,7 +147,8 @@ def get_remote_filesystem_and_path(
         return LocalFileSystem(**storage_options), uri.as_posix()
     elif protocol in {"http", "https", "s3"}:
         # storage_options are parameters passed to request
-        uri = urllib.parse.urljoin(uri, path)
+        path = urllib.parse.quote(path)
+        uri = '/'.join(s.strip('/') for s in [uri, path])
         fs_class = S3FileSystem if protocol == "s3" else HTTPFileSystem
         return fs_class(**storage_options), uri
     elif protocol in {"sftp", "ssh", "ftp"}:
@@ -156,7 +157,13 @@ def get_remote_filesystem_and_path(
         password = storage_options.pop("password", None) or inferred_options.get("password")
         uri = (Path(inferred_options["path"]) / Path(path)).as_posix()
         fs_class = FTPFileSystem if protocol == "ftp" else SFTPFileSystem
-        return fs_class(host=inferred_options["host"], username=username, password=password, **storage_options), uri
+        fs = fs_class(host=inferred_options["host"], username=username, password=password, **storage_options)
+        if protocol == "ftp":
+            try:
+                fs.ftp.dir()
+            except TimeoutError:
+                fs.ftp.set_pasv(False)
+        return fs, uri
     elif protocol == "github":
         if re.match(r"\w+/\w+", uri):
             uri = f"github://{uri.split('/')[0]}:{uri.split('/')[1]}@master/"

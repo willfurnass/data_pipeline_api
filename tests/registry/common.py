@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -251,6 +251,19 @@ def test_get_remote_filesystem_and_path(patch_fs, protocol, uri, path, kwargs, e
     assert path == expected_path
     assert rfs._mock_name == patch_fs
     rfs.assert_called_once_with(**expected_call)
+
+
+def test_get_remote_filesystem_and_path_active_ftp():
+    def timeout():
+        raise TimeoutError
+
+    with patch(f"data_pipeline_api.registry.common.FTPFileSystem") as rfs:
+        new_fs = Mock()
+        rfs.return_value = new_fs
+        new_fs.ftp.dir.side_effect = timeout
+        get_remote_filesystem_and_path("ftp", "ftp://test/", "data/data.csv")
+    new_fs.ftp.dir.assert_called_once()
+    new_fs.ftp.set_pasv.assert_called_once_with(False)
 
 
 def test_build_query_string():
