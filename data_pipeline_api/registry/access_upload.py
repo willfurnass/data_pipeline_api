@@ -96,8 +96,8 @@ def upload_to_storage(remote_uri: str, storage_options: Dict[str, Any], data_dir
     protocol = urllib.parse.urlsplit(remote_uri).scheme
     upload_path = filename.absolute().relative_to(data_directory.absolute()).as_posix()
     fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
-    if protocol == "file":
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    if protocol in {"file", "ssh", "sftp"}:
+        fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
     logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
     fs.put(filename.as_posix(), path)
     # some remote filesystems expect the root uri in the path, others don't, but the registry path doesn't
@@ -341,7 +341,7 @@ def upload_model_run(
     outputs = []
     posts = []
 
-    storage_type, storage_root = _add_storage_type_and_root(posts, remote_uri_override, data_registry_url, token)
+    _, storage_root = _add_storage_type_and_root(posts, remote_uri_override, data_registry_url, token)
 
     for event in config["io"]:
         read = event["type"] == "read"
@@ -404,8 +404,8 @@ def upload_model_run(
     help="(key, value) pairs that are passed to the remote storage, e.g. credentials",
 )
 @click.option("--remote-uri-override", type=str, help=f"URI to the root of the storage to post in the registry"
-                                                            f" required if the uri to use for download from the registry"
-                                                            f" is different from that used to upload the item")
+                                                      f" required if the uri to use for download from the registry"
+                                                      f" is different from that used to upload the item")
 @click.option("--accessibility", type=str, default="public", help=f"accessibility of the data, defaults to public")
 @click.option(
     "--data-registry",
