@@ -40,6 +40,11 @@ Options:
                                   (key, value) pairs that are passed to the
                                   remote storage, e.g. credentials
 
+  --remote-uri-override TEXT      URI to the root of the storage to post in
+                                  the registry required if the uri to use for
+                                  download from the registry is different from
+                                  that used to upload the item
+
   --accessibility TEXT            accessibility of the data, defaults to
                                   public
 
