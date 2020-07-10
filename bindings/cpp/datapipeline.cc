@@ -119,16 +119,20 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
     }
   }
 
-  py::object fobj = StandardAPI.attr("open_for_read")("data_product"_a = data_product,
-                                                      "component"_a = component);
-  py::object group = ObjectFileAPI.attr("get_read_group")(fobj, component);
-  /// TODO: Table has not define fields to save these meta data
-  //py::str _title = group.attr("__getitem__")(py::str("row_title"));
-  //py::list _names = group.attr("__getitem__")(py::str("row_names"));
-  if (group.attr("contains")(py::str("column_units")))
-  {
-    py::list _units = group.attr("__getitem__")(py::str("column_units"));
-    table.set_column_units(_units.cast<std::vector<std::string>>());
+  bool read_table_units = false;
+
+  if (read_table_units) {
+    py::object fobj = StandardAPI.attr("open_for_read")("data_product"_a = data_product,
+                                                        "component"_a = component);
+    py::object group = ObjectFileAPI.attr("get_read_group")(fobj, component);
+    /// TODO: Table has not define fields to save these meta data
+    //py::str _title = group.attr("__getitem__")(py::str("row_title"));
+    //py::list _names = group.attr("__getitem__")(py::str("row_names"));
+    if (group.attr("contains")(py::str("column_units")))
+    {
+      py::list _units = group.attr("__getitem__")(py::str("column_units"));
+      table.set_column_units(_units.cast<std::vector<std::string>>());
+    }
   }
 
   return table;
