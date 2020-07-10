@@ -32,8 +32,10 @@ void test_dp_table(DataPipeline &dp)
 
   table.set_column_units({"unit1", "unit2", "unit3"});
   dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
+  cout << "Successfully wrote table" << endl;
   //
   Table h5table = dp.read_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
+  cout << "Successfully read table" << endl;
   cout << endl;
 }
 
