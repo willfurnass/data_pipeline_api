@@ -1,8 +1,15 @@
+from logging import basicConfig
 import numpy as np
 import pandas as pd
 from scipy.stats import gamma
 from pathlib import Path
 from data_pipeline_api.standard_api import StandardAPI
+
+
+basicConfig(
+    level="DEBUG",
+    format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s - %(message)s",
+)
 
 CONFIG_PATH = Path(__file__).parent.parent / "tests" / "data" / "config.yaml"
 
