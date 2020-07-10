@@ -11,10 +11,3 @@ int main( int argc, char* argv[] ) {
 
   return result;
 }
-
-void touch_test_catch();
-
-void dummy()
-{
-  touch_test_catch();
-}

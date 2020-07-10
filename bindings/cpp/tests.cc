@@ -13,10 +13,6 @@ using namespace std;
 
 const string CONFIG_FILE = "../../tests/data/config.yaml";
 
-void touch_test_catch()
-{
-}
-
 TEST_CASE("read_estimate", "[read_estimate]") {
   DataPipeline dp(CONFIG_FILE);
   REQUIRE(dp.read_estimate("parameter", "example-estimate") == 1);

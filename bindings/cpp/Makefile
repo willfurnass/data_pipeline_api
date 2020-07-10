@@ -38,15 +38,21 @@ INC_DIRS := $(SRC_DIR)
 
 # Library
 TARGET_LIB := $(BUILD_DIR)/libdatapipeline.a
-LIB_SRC_NAMES := array.cc datapipeline.cc table.cc test_catch.cc
+LIB_SRC_NAMES := array.cc datapipeline.cc table.cc
 LIB_SRCS := $(addprefix $(SRC_DIR)/,$(LIB_SRC_NAMES))
 LIB_OBJS := $(LIB_SRCS:%=$(BUILD_DIR)/%.o)
 
 # Executables
-TARGET_EXEC_NAMES := catch test_datapipeline
+TARGET_EXEC_NAMES := test_datapipeline
 TARGET_EXECS := $(addprefix $(BUILD_DIR)/,$(TARGET_EXEC_NAMES))
 EXEC_SRCS := $(foreach name,$(TARGET_EXEC_NAMES),$(SRC_DIR)/$(name).cc)
 EXEC_OBJS := $(EXEC_SRCS:%=$(BUILD_DIR)/%.o)
+
+# Test executable
+TEST_EXEC_NAME := test_cpp_datapipeline
+TEST_EXEC := $(BUILD_DIR)/$(TEST_EXEC_NAME)
+TEST_EXEC_SRCS := $(SRC_DIR)/$(TEST_EXEC_NAME).cc $(LIB_SRCS) $(SRC_DIR)/tests.cc
+TEST_EXEC_OBJS := $(TEST_EXEC_SRCS:%=$(BUILD_DIR)/%.o)
 
 # All
 OBJS := $(LIB_OBJS) $(EXEC_OBJS)
@@ -70,10 +76,16 @@ LDFLAGS := $(LDFLAGS) $(PYTHON_LDFLAGS)
 
 .PHONY : all
 
-all: $(TARGET_EXECS)
+all: $(TARGET_EXECS) $(TEST_EXEC)
 
 # Link the executable from its corresponding object file and the library
 $(TARGET_EXECS): $(BUILD_DIR)/% : $(BUILD_DIR)/%.cc.o $(TARGET_LIB)
+	$(MKDIR_P) $(dir $@)
+	@echo "LINK $@"
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+# Link the test executable from its corresponding object files
+$(TEST_EXEC): $(BUILD_DIR)/% : $(TEST_EXEC_OBJS)
 	$(MKDIR_P) $(dir $@)
 	@echo "LINK $@"
 	$(CXX) $^ -o $@ $(LDFLAGS)
