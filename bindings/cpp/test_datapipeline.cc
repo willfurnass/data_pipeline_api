@@ -18,7 +18,14 @@ const std::string TEST_HDF5_FILENAME2 = "test_table2.h5";
 const std::string TEST_DATASET_NAME = "table_ds";
 
 
-void test_dp_table(DataPipeline &dp)
+void test_dp_read_table(DataPipeline &dp)
+{
+  cout << "test_dp_read_table:" << endl;
+  Table h5table = dp.read_table("object", "example-table");
+  cout << "  Successfully read table" << endl;
+}
+
+void test_dp_write_table(DataPipeline &dp)
 {
   cout << "test_dp_table:" << endl;
   const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
@@ -32,11 +39,7 @@ void test_dp_table(DataPipeline &dp)
 
   table.set_column_units({"unit1", "unit2", "unit3"});
   dp.write_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, table);
-  cout << "Successfully wrote table" << endl;
-  //
-  Table h5table = dp.read_table(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
-  cout << "Successfully read table" << endl;
-  cout << endl;
+  cout << "  Successfully wrote table" << endl;
 }
 
 void test_dp_array(DataPipeline &dp)
@@ -96,7 +99,8 @@ int main(int argc, char *argv[])
 #endif
 
 //  test_dp_array(dp);
-  test_dp_table(dp);
+  test_dp_read_table(dp);
+  test_dp_write_table(dp);
 
   std::cout << "data pipeline C++ api tested pass successfully\n";
 
