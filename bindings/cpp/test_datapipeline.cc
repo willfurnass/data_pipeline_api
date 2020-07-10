@@ -22,6 +22,7 @@ void test_dp_read_table(DataPipeline &dp)
 {
   cout << "test_dp_read_table:" << endl;
   Table h5table = dp.read_table("object", "example-table");
+  // TODO: check that the table is {"a": [1, 2], "b": [3, 4]}
   cout << "  Successfully read table" << endl;
 }
 
