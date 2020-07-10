@@ -27,7 +27,7 @@ void test_dp_read_table(DataPipeline &dp)
 
 void test_dp_write_table(DataPipeline &dp)
 {
-  cout << "test_dp_table:" << endl;
+  cout << "test_dp_write_table:" << endl;
   const std::string TEST_HDF5_DATAPRODUCT = "test_cpp_data"; // folder name, not filename
   Table table;
   table.add_column<int64_t>("int", {1, 2});
