@@ -404,7 +404,7 @@ def upload_model_run(
     help="(key, value) pairs that are passed to the remote storage, e.g. credentials",
 )
 @click.option("--remote-uri-override", type=str, help=f"URI to the root of the storage to post in the registry"
-                                                      f" required if the uri to use for download from the registry"
+                                                      f" required if the URI to use for download from the registry"
                                                       f" is different from that used to upload the item")
 @click.option("--accessibility", type=str, default="public", help=f"accessibility of the data, defaults to public")
 @click.option(

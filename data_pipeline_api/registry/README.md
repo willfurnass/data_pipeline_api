@@ -41,7 +41,7 @@ Options:
                                   remote storage, e.g. credentials
 
   --remote-uri-override TEXT      URI to the root of the storage to post in
-                                  the registry required if the uri to use for
+                                  the registry required if the URI to use for
                                   download from the registry is different from
                                   that used to upload the item
 
