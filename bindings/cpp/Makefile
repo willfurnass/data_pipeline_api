@@ -98,7 +98,7 @@ test: $(TESTS)
 .PHONY : $(TESTS)
 $(TESTS): TEST_% : $(BUILD_DIR)/%
 	@echo "TEST $<"
-	$^
+	$^ ../../tests/data/config.yaml
 
 # Remove the build directory
 .PHONY: clean
