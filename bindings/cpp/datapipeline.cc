@@ -175,16 +175,20 @@ void DataPipeline::write_table(const string &data_product, const string &compone
   StandardAPI.attr("write_table")(data_product, component, _df);
   /// ObjectFileAPI has also the lower level API, write_table()
 
-  py::object fobj = StandardAPI.attr("open_for_write")("data_product"_a = data_product,
-                                                       "component"_a = component, "extension"_a = py::str("h5"));
-  py::object group = ObjectFileAPI.attr("get_write_group")(fobj, component);
-  /// ObjectFileAPI may be not desired to be use directly?
-  // TypeError: Incompatible object (Group) already exists, if previous run generated file exists
+  bool write_table_units = false;
 
-  if (table.get_column_units().size() > 0)
-  {
-    py::list _units = py::cast(table.get_column_units());
-    //  TypeError: No conversion path for dtype: dtype('<U5')
-    //group.attr("__setitem__")(py::str("column_units"), _units);
+  if (write_table_units) {
+    py::object fobj = StandardAPI.attr("open_for_write")("data_product"_a = data_product,
+                                                         "component"_a = component, "extension"_a = py::str("h5"));
+    py::object group = ObjectFileAPI.attr("get_write_group")(fobj, component);
+    /// ObjectFileAPI may be not desired to be use directly?
+    // TypeError: Incompatible object (Group) already exists, if previous run generated file exists
+
+    if (table.get_column_units().size() > 0)
+    {
+      py::list _units = py::cast(table.get_column_units());
+      //  TypeError: No conversion path for dtype: dtype('<U5')
+      //group.attr("__setitem__")(py::str("column_units"), _units);
+    }
   }
 }
