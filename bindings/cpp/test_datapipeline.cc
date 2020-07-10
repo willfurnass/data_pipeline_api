@@ -51,7 +51,8 @@ int main()
   cout << "  parameter/example-distribution -> " << dp.read_estimate("parameter", "example-distribution") << endl;
   cout << "  parameter/example-samples -> " << dp.read_estimate("parameter", "example-samples") << endl;
 
-  Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
+  // Distribution par_dist = dp.read_distribution("parameter", "example-distribution");
+  // Gives error: AttributeError: 'rv_frozen' object has no attribute 'name'
   // cout << "parameter/example-distribution = " << par_dist << endl;
 
   // read_sample
