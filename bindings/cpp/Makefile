@@ -59,7 +59,7 @@ TESTS := $(foreach name,$(TARGET_EXEC_NAMES),TEST_$(name))
 # Flags
 ###############################################################################
 
-CXXFLAGS := $(CXXFLAGS) -g -std=c++11 -Wno-attributes $(PYTHON_CFLAGS) -Wno-everything #-Wall
+CXXFLAGS := $(CXXFLAGS) -g -std=c++11 -Wno-attributes $(PYTHON_CFLAGS) -Wall
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS := $(CPPFLAGS) $(INC_FLAGS) -MMD -MP
 LDFLAGS := $(LDFLAGS) $(PYTHON_LDFLAGS)
