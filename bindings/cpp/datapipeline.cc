@@ -86,7 +86,7 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
 Array<double> DataPipeline::read_array(const string &data_product, const string &component)
 {
   py::module np = py::module::import("numpy");
-  py::object array_np = api.attr("read_array")(data_product, component);
+  py::object array_np = api.attr("read_array")(data_product, component).attr("data");
   vector<int> shape = py::list(array_np.attr("shape")).cast<vector<int>>();
   Array<double> array(shape.size(),shape);
 
