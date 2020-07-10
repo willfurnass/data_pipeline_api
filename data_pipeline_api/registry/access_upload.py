@@ -4,7 +4,7 @@ import os
 import urllib
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Union, List, Any, Tuple
+from typing import Dict, Union, List, Any, Tuple, Optional
 from datetime import datetime as dt
 
 import click
@@ -96,11 +96,12 @@ def upload_to_storage(remote_uri: str, storage_options: Dict[str, Any], data_dir
     protocol = urllib.parse.urlsplit(remote_uri).scheme
     upload_path = filename.absolute().relative_to(data_directory.absolute()).as_posix()
     fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
-    if protocol == "file":
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    if protocol in {"file", "ssh", "sftp"}:
+        fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
     logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
     fs.put(filename.as_posix(), path)
-    return path
+    # some remote filesystems expect the root uri in the path, others don't, but the registry path doesn't
+    return path.replace(remote_uri, "")
 
 
 def _add_storage_type_and_root(
@@ -300,6 +301,7 @@ def unique_posts(posts: List[YamlDict]) -> List[YamlDict]:
 def upload_model_run(
     config_filename: Union[Path, str],
     remote_uri: str,
+    remote_uri_override: Optional[str],
     storage_options: Dict[str, str],
     accessibility_name: str,
     data_registry_url: str,
@@ -310,12 +312,14 @@ def upload_model_run(
     appropriate, resolving references to other data where required.
 
     :param config_filename: file path to the configuration file
-    :param remote_uri: URI to the root of the storage
+    :param remote_uri: URI to the root of the storage for uploading
+    :param remote_uri_override: URI to the root of the storage that gets put into the data registry as the URI
     :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
     :param accessibility_name: name of the accessibility level the outputs of this model run have
     :param data_registry_url: base url of the data registry
     :param token: personal access token
     """
+    remote_uri_override = remote_uri_override or remote_uri
     config_filename = Path(config_filename)
     with open(config_filename, "r") as cf:
         config = yaml.safe_load(cf)
@@ -337,7 +341,7 @@ def upload_model_run(
     outputs = []
     posts = []
 
-    storage_type, storage_root = _add_storage_type_and_root(posts, remote_uri, data_registry_url, token)
+    _, storage_root = _add_storage_type_and_root(posts, remote_uri_override, data_registry_url, token)
 
     for event in config["io"]:
         read = event["type"] == "read"
@@ -399,6 +403,9 @@ def upload_model_run(
     type=click.Tuple([str, str]),
     help="(key, value) pairs that are passed to the remote storage, e.g. credentials",
 )
+@click.option("--remote-uri-override", type=str, help=f"URI to the root of the storage to post in the registry"
+                                                      f" required if the URI to use for download from the registry"
+                                                      f" is different from that used to upload the item")
 @click.option("--accessibility", type=str, default="public", help=f"accessibility of the data, defaults to public")
 @click.option(
     "--data-registry",
@@ -412,11 +419,12 @@ def upload_model_run(
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
-def upload_model_run_cli(config, remote_uri, remote_option, accessibility, data_registry, token):
+def upload_model_run_cli(config, remote_uri, remote_option, remote_uri_override, accessibility, data_registry, token):
     configure_cli_logging()
     data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
     token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
     remote_options = dict(remote_option) if remote_option else {}
+    remote_uri_override = remote_uri_override or remote_uri
     accessibility = accessibility or "public"
     if not token:
         raise ValueError(
@@ -426,6 +434,7 @@ def upload_model_run_cli(config, remote_uri, remote_option, accessibility, data_
     upload_model_run(
         config_filename=config,
         remote_uri=remote_uri,
+        remote_uri_override=remote_uri_override,
         storage_options=remote_options,
         accessibility_name=accessibility,
         data_registry_url=data_registry,
