@@ -106,12 +106,27 @@ int main(int argc, char *argv[])
   cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 #endif
 
-  test_dp_read_array(dp);
-  test_dp_write_array(dp);
-  test_dp_read_table(dp);
-  test_dp_write_table(dp);
+  auto test_list = {test_dp_read_array, test_dp_write_array, test_dp_read_table,
+                    test_dp_write_table};
 
-  std::cout << "data pipeline C++ api tested pass successfully\n";
+  int passes = 0;
+  int tests = 0;
+
+  for (auto test_fn : test_list) {
+    cout << endl;
+    try {
+      tests++;
+      test_fn(dp);
+      passes++;
+    } catch(const exception &e) {
+      cout << "  Exception: " << e.what() << endl;
+      cout << "  Test FAILED" << endl;
+    }
+  }
+
+  cout << endl;
+
+  cout << "Data pipeline C++ API test run completed with " << passes << " out of " << tests << " tests passed" << endl;
 
   return 0;
 }
