@@ -13,6 +13,8 @@ using namespace std;
 class Column 
 {
   public:
+  Column() {};
+  virtual ~Column() {};
   virtual string get_value_as_string(int i)=0;
 };
 
