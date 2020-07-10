@@ -4,3 +4,4 @@ build/*
 third-party/*
 test_datapipeline
 *.h5
+/python
