@@ -38,12 +38,12 @@ INC_DIRS := $(SRC_DIR)
 
 # Library
 TARGET_LIB := $(BUILD_DIR)/libdatapipeline.a
-LIB_SRC_NAMES := array.cc datapipeline.cc table.cc
+LIB_SRC_NAMES := array.cc datapipeline.cc table.cc test_catch.cc
 LIB_SRCS := $(addprefix $(SRC_DIR)/,$(LIB_SRC_NAMES))
 LIB_OBJS := $(LIB_SRCS:%=$(BUILD_DIR)/%.o)
 
 # Executables
-TARGET_EXEC_NAMES := test_datapipeline
+TARGET_EXEC_NAMES := catch test_datapipeline
 TARGET_EXECS := $(addprefix $(BUILD_DIR)/,$(TARGET_EXEC_NAMES))
 EXEC_SRCS := $(foreach name,$(TARGET_EXEC_NAMES),$(SRC_DIR)/$(name).cc)
 EXEC_OBJS := $(EXEC_SRCS:%=$(BUILD_DIR)/%.o)
