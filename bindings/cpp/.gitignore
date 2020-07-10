@@ -1,2 +1,4 @@
 /cppbindings
 *.dSYM
+/build
+/python
