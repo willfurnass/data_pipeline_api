@@ -43,11 +43,20 @@ void test_dp_write_table(DataPipeline &dp)
   cout << "  Successfully wrote table" << endl;
 }
 
-void test_dp_array(DataPipeline &dp)
+void test_dp_read_array(DataPipeline &dp)
 {
-  cout << "test_dp_array:" << endl;
+  cout << "test_dp_read_array:" << endl;
+  dp.read_array("object", "example-array");
+  // TODO: check that the array is [1,2,3]
+  cout << "  Successfully read array" << endl;
+}
+
+void test_dp_write_array(DataPipeline &dp)
+{
+  cout << "test_dp_write_array:" << endl;
 
   // make test input array data by py
+  // TODO: Create the array in C++, not Python
   py::module np = py::module::import("numpy");
   typedef int64_t DT;
   // np.arange()  return the int64_t type? not double
@@ -69,12 +78,10 @@ void test_dp_array(DataPipeline &dp)
   ap->dim_values(0) = {1, 4};
 
   const std::string TEST_HDF5_DATAPRODUCT = "test_npy";
-  // error: Unable to create link (name already exists)
-  // when I create_dataset from the given group object,  it may be caused by
-  // `get_write_group()`
   dp.write_array(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME, *ap);
-  dp.read_array(TEST_HDF5_DATAPRODUCT, TEST_DATASET_NAME);
-  cout << endl;
+
+  // TODO: read the array back and check it is correct
+  cout << "  Successfully wrote array" << endl;
 }
 
 int main(int argc, char *argv[])
@@ -99,7 +106,8 @@ int main(int argc, char *argv[])
   cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 #endif
 
-//  test_dp_array(dp);
+  test_dp_read_array(dp);
+  test_dp_write_array(dp);
   test_dp_read_table(dp);
   test_dp_write_table(dp);
 
