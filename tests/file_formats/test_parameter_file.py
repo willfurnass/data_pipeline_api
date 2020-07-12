@@ -38,18 +38,34 @@ def test_estimate_roundtrip(tmp_path):
         assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
 
 
-def test_distribution_roundtrip(tmp_path):
-    distribution = stats.gamma(1, scale=2)
+def test_write_np_float_estimate(tmp_path):
+    estimate = np.float64(3)
     with open(tmp_path / "test.toml", "w+b") as file:
-        parameter_file.write_distribution(TextIOWrapper(file), "test", distribution)
+        parameter_file.write_estimate(TextIOWrapper(file), "test", estimate)
+    with open(tmp_path / "test.toml", "r+b") as file:
+        assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
+
+
+
+def assert_distribution_roundtrip(tmp_path, distribution):
+    with open(tmp_path / "test.toml", "w+b") as file:
+        parameter_file.write_distribution(TextIOWrapper(file), f"test-{distribution.dist.name}", distribution)
 
     def representation(distribution):
         return distribution.dist._parse_args(*distribution.args, **distribution.kwds)
 
     with open(tmp_path / "test.toml", "r+b") as file:
         assert representation(
-            parameter_file.read_distribution(TextIOWrapper(file), "test")
+            parameter_file.read_distribution(TextIOWrapper(file), f"test-{distribution.dist.name}")
         ) == representation(distribution)
+
+
+def test_gamma_distribution_roundtrip(tmp_path):
+    assert_distribution_roundtrip(tmp_path, stats.gamma(a=2, scale=3))
+
+
+def test_normal_distribution_roundtrip(tmp_path):
+    assert_distribution_roundtrip(tmp_path, stats.norm(loc=2, scale=3))
 
 
 def test_samples_roundtrip(tmp_path):

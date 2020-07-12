@@ -55,7 +55,9 @@ def read_estimate(file: TextIOBase, component: str) -> Estimate:
 
 
 def write_estimate(file: TextIOBase, component: str, estimate: Estimate):
-    write_parameter(file, component, {"type": "point-estimate", "value": estimate})
+    write_parameter(
+        file, component, {"type": "point-estimate", "value": float(estimate)}
+    )
 
 
 # ======================================================================================
@@ -64,6 +66,7 @@ def write_estimate(file: TextIOBase, component: str, estimate: Estimate):
 
 distribution_parsers = {
     "gamma": lambda data: stats.gamma(a=data["shape"], scale=data["scale"]),
+    "norm": lambda data: stats.norm(loc=data["loc"], scale=data["scale"]),
 }
 
 
@@ -80,15 +83,18 @@ def write_distribution(file: TextIOBase, component: str, distribution: Distribut
     shape, loc, scale = distribution.dist._parse_args(
         *distribution.args, **distribution.kwds
     )
+    parameter = {
+        "type": "distribution",
+        "distribution": distribution.dist.name,
+    }
+    if loc:
+        parameter["loc"] = loc
+    if shape:
+        parameter["shape"] = shape[0]
+    if scale:
+        parameter["scale"] = scale
     write_parameter(
-        file,
-        component,
-        {
-            "type": "distribution",
-            "distribution": distribution.dist.name,
-            "shape": shape[0],
-            "scale": scale,
-        },
+        file, component, parameter,
     )
 
 
