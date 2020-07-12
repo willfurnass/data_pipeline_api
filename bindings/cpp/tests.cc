@@ -13,14 +13,14 @@ using namespace std;
 
 const string CONFIG_FILE = "../../tests/data/config.yaml";
 
-TEST_CASE("read_estimate", "[read_estimate]") {
+TEST_CASE("read_estimate") {
   DataPipeline dp(CONFIG_FILE);
   REQUIRE(dp.read_estimate("parameter", "example-estimate") == 1);
   REQUIRE(dp.read_estimate("parameter", "example-distribution") == 2);
   REQUIRE(dp.read_estimate("parameter", "example-samples") == 2);
 }
 
-TEST_CASE("read_sample", "[read_sample]") {
+TEST_CASE("read_sample") {
   DataPipeline dp(CONFIG_FILE);
 
   REQUIRE(dp.read_sample("parameter", "example-estimate") == 1);
