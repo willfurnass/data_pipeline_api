@@ -46,7 +46,6 @@ map<type_index, string> type_names;
 
 void register_type_names()
 {
-  cout << "Registering" << endl;
   REGISTER_TYPE_NAME(int);
   REGISTER_TYPE_NAME(long);
   REGISTER_TYPE_NAME(double);
