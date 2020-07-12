@@ -46,10 +46,22 @@ double DataPipeline::read_sample(const string &data_product, const string &compo
   return py::float_(api.attr("read_sample")(data_product, component));
 }
 
-//void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate);
-//void DataPipeline::write_distribution(const string &data_product, const string &component,
-//                        const Distribution &d);
-//void DataPipeline::write_sample(const string &data_product, const string &component, const vector<double> &samples);
+void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate)
+{
+  throw runtime_error("Not implemented");
+}
+
+void DataPipeline::write_distribution(const string &data_product, const string &component,
+                        const Distribution &d)
+{
+  throw runtime_error("Not implemented");
+}
+
+void DataPipeline::write_samples(const string &data_product, const string &component, const vector<double> &samples)
+{
+  throw runtime_error("Not implemented");
+}
+
 
 Table DataPipeline::read_table(const string &data_product, const string &component)
 {
