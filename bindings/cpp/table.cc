@@ -5,7 +5,8 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
-
+#include <typeinfo>
+#include <typeindex>
 #include "table.hh"
 
 using namespace std;
@@ -13,16 +14,17 @@ using namespace std;
 class Column 
 {
   public:
-  Column() {};
+  Column() : type(typeid(void)) {};
   virtual ~Column() {};
   virtual string get_value_as_string(int i)=0;
+  type_index type;
 };
 
 template<typename T>
 class ColumnT : public Column
 {
   public:
-  ColumnT(const vector<T> &vals_in) : vals(vals_in) {};
+  ColumnT(const vector<T> &vals_in) : vals(vals_in) {type = typeid(T);};
   string get_value_as_string(int i);
 
   vector<T> vals;
@@ -34,6 +36,35 @@ string ColumnT<T>::get_value_as_string(int i)
   stringstream ss;
   ss << vals.at(i);
   return ss.str();
+}
+
+
+map<type_index, string> type_names;
+
+#define REGISTER_TYPE_NAME(x) \
+  type_names[type_index(typeid(x))] = #x
+
+void register_type_names()
+{
+  cout << "Registering" << endl;
+  REGISTER_TYPE_NAME(int);
+  REGISTER_TYPE_NAME(long);
+  REGISTER_TYPE_NAME(double);
+  REGISTER_TYPE_NAME(string);
+}
+
+string get_type_name(type_index ti)
+{
+  if (type_names.find(ti) != type_names.end()) {
+    return type_names[ti];
+  } else {
+    return ti.name();
+  }
+}
+
+Table::Table() : m_size(0)
+{
+  register_type_names();
 }
 
 template<typename T>
@@ -57,6 +88,15 @@ vector<T> &Table::get_column(const string &colname)
 {
   if (columns.find(colname) == columns.end()) {
     throw out_of_range("There is no column named " + colname + " in this table");
+  }
+
+  const type_index  &stored_type = columns[colname]->type;
+  const type_index  &requested_type = type_index(typeid(T));
+
+  if (requested_type != stored_type) {
+    throw invalid_argument(
+      "Column \"" + colname + "\" of type " + get_type_name(stored_type) +
+      " accessed as " + get_type_name(requested_type));
   }
 
   return dynamic_cast<ColumnT<T> *>(&*columns[colname])->vals; // throws std::bad_cast if type mismatch
@@ -116,3 +156,4 @@ template void Table::add_column(const string &colname, const vector<type> &value
 INSTANTIATE_TABLE(double);
 INSTANTIATE_TABLE(string);
 INSTANTIATE_TABLE(long);
+INSTANTIATE_TABLE(int);

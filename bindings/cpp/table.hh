@@ -17,7 +17,7 @@ class Table
 {
   public:
 
-  Table() : m_size(0) {};
+  Table();
 
   template<typename T>
   void add_column(const string &colname, const vector<T> &values);
