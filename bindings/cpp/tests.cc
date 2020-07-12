@@ -28,3 +28,20 @@ TEST_CASE("read_sample") {
   REQUIRE(dp.read_sample("parameter", "example-distribution") == 1.59174901632622);
   REQUIRE(dp.read_sample("parameter", "example-samples") == 2);
 }
+
+TEST_CASE("read_table") {
+  DataPipeline dp(CONFIG_FILE);
+  Table table = dp.read_table("object", "example-table");
+
+  REQUIRE(table.get_column<long>("a") == vector<long>{1,2});
+  REQUIRE(table.get_column<long>("b") == vector<long>{3,4});
+}
+
+TEST_CASE("table::get_column/types") {
+  Table table;
+
+  table.add_column<long>("a",{1,2,3});
+
+  REQUIRE(table.get_column<long>("a") == vector<long>{1,2,3});
+  REQUIRE_THROWS_AS(table.get_column<double>("a"), invalid_argument);
+}
