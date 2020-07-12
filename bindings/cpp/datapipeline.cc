@@ -27,13 +27,15 @@ Distribution DataPipeline::read_distribution(const string &data_product, const s
 
   Distribution d;
 
+//  throw logic_error("Not implemented");
+
   // TODO: wait for this information to actually be available from the Python API
-  d.name = py::str(d_py.attr("name"));
+  // d.name = py::str(d_py.attr("name"));
 
-  map<string, double> params = d_py.attr("params").cast<map<string, double>>();
-  d.params = params;
+  // map<string, double> params = d_py.attr("params").cast<map<string, double>>();
+  // d.params = params;
 
-  cout << "distribution name = " << d.name << endl;
+  // cout << "distribution name = " << d.name << endl;
 
   return d;
 }
