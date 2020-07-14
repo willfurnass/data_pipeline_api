@@ -125,7 +125,7 @@ def test_access_log_contains_uri_and_git_sha(standard_api):
 def test_issue_logging(standard_api):
     with standard_api as api:
         api.write_estimate(
-            "parameter", "example-estimate", 1.0, [Issue("test issue 1", 1), Issue("test issue 2", 2)]
+            "parameter", "example-estimate", 1.0, issues=[Issue("test issue 1", 1), Issue("test issue 2", 2)]
         )
     with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
         access_yaml = yaml.safe_load(access_file)
@@ -137,3 +137,14 @@ def test_issue_logging(standard_api):
             {"description": "test issue 1", "severity": 1},
             {"description": "test issue 2", "severity": 2},
         ]
+
+
+def test_description(standard_api):
+    with standard_api as api:
+        api.write_estimate(
+            "parameter", "example-estimate", 1.0, description="test description"
+        )
+    with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
+        access_yaml = yaml.safe_load(access_file)
+        assert access_yaml["io"][0]["call_metadata"]["description"] == "test description"
+        assert access_yaml["io"][0]["access_metadata"]["description"] == "test description"

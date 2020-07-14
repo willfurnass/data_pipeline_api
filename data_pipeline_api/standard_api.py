@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Union, NamedTuple, Optional, Sequence
 import numpy as np
 from data_pipeline_api.file_api import FileAPI
+from data_pipeline_api.metadata import Metadata
 from data_pipeline_api.file_formats.parameter_file import (
     Type,
     Estimate,
@@ -53,17 +54,20 @@ class StandardAPI:
         return self.file_api.__exit__(exc_type, exc_value, traceback)
 
     @staticmethod
-    def get_issues_as_metadata(issues: Optional[Sequence[Issue]]):
+    def get_additional_metadata(
+        description: Optional[str], issues: Optional[Sequence[Issue]]
+    ) -> Metadata:
         """Convert an Optional Sequence of Issue objects into the metadata format.
         """
-        if issues is None:
-            return {}
-        return {
-            "issues": [
+        additional_metadata = {}
+        if description is not None:
+            additional_metadata["description"] = description
+        if issues is not None:
+            additional_metadata["issues"] = [
                 {"description": issue.description, "severity": issue.severity}
                 for issue in issues
             ]
-        }
+        return additional_metadata
 
     # ==================================================================================
     # Parameter files
@@ -83,6 +87,7 @@ class StandardAPI:
         self,
         data_product: str,
         component: str,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Open a parameter file for writing.
@@ -92,7 +97,7 @@ class StandardAPI:
                 data_product=data_product,
                 component=component,
                 extension="toml",
-                **self.get_issues_as_metadata(issues),
+                **self.get_additional_metadata(description, issues),
             )
         ) as parameter_file:
             yield parameter_file
@@ -119,12 +124,14 @@ class StandardAPI:
         data_product: str,
         component: str,
         estimate: Estimate,
+        *,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Write an estimate to the data product component.
         """
         with self.open_parameter_file_for_write(
-            data_product, component, issues
+            data_product, component, description, issues
         ) as file:
             write_estimate(file, component, estimate)
 
@@ -150,12 +157,14 @@ class StandardAPI:
         data_product: str,
         component: str,
         distribution: Distribution,
+        *,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Write a distribution to the data product component.
         """
         with self.open_parameter_file_for_write(
-            data_product, component, issues
+            data_product, component, description, issues
         ) as file:
             write_distribution(file, component, distribution)
 
@@ -181,12 +190,14 @@ class StandardAPI:
         data_product: str,
         component: str,
         samples: Samples,
+        *,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Write samples to the data product component.
         """
         with self.open_parameter_file_for_write(
-            data_product, component, issues
+            data_product, component, description, issues
         ) as file:
             write_samples(file, component, samples)
 
@@ -208,6 +219,7 @@ class StandardAPI:
         self,
         data_product: str,
         component: str,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Open an parameter file for writing.
@@ -216,7 +228,7 @@ class StandardAPI:
             data_product=data_product,
             component=component,
             extension="h5",
-            **self.get_issues_as_metadata(issues),
+            **self.get_additional_metadata(description, issues),
         ) as object_file:
             yield object_file
 
@@ -231,11 +243,15 @@ class StandardAPI:
         data_product: str,
         component: str,
         table: Table,
+        *,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Write a table to the data product component.
         """
-        with self.open_object_file_for_write(data_product, component, issues) as file:
+        with self.open_object_file_for_write(
+            data_product, component, description, issues
+        ) as file:
             write_table(file, component, table)
 
     def read_array(self, data_product: str, component: str) -> Array:
@@ -249,9 +265,13 @@ class StandardAPI:
         data_product: str,
         component: str,
         array: Array,
+        *,
+        description: Optional[str] = None,
         issues: Optional[Sequence[Issue]] = None,
     ):
         """Write an array to the data product component.
         """
-        with self.open_object_file_for_write(data_product, component, issues) as file:
+        with self.open_object_file_for_write(
+            data_product, component, description, issues
+        ) as file:
             write_array(file, component, array)
