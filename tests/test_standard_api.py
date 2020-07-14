@@ -5,7 +5,8 @@ import yaml
 import numpy as np
 import pandas as pd
 from scipy import stats
-from data_pipeline_api.standard_api import StandardAPI, Array
+from data_pipeline_api.standard_api import StandardAPI, Array, Issue
+
 
 CONFIG_PATH = Path(__file__).parent / "data" / "config.yaml"
 
@@ -39,8 +40,8 @@ def test_read_estimate_as_sample(standard_api):
 def test_write_distribution(standard_api):
     with standard_api as api:
         api.write_distribution(
-        "parameter", "example-distribution", stats.gamma(1, scale=2)
-    )
+            "parameter", "example-distribution", stats.gamma(1, scale=2)
+        )
 
 
 def test_read_distribution_as_estimate(standard_api):
@@ -61,10 +62,7 @@ def test_read_distribution_as_distribution(standard_api):
 def test_read_distribution_as_sample(standard_api):
     np.random.seed(0)
     with standard_api as api:
-        assert (
-        api.read_sample("parameter", "example-distribution")
-        == 1.59174901632622
-    )
+        assert api.read_sample("parameter", "example-distribution") == 1.59174901632622
 
 
 def test_write_samples(standard_api):
@@ -122,3 +120,20 @@ def test_access_log_contains_uri_and_git_sha(standard_api):
             "uri": "test_uri",
             "git_sha": "test_git_sha",
         }
+
+
+def test_issue_logging(standard_api):
+    with standard_api as api:
+        api.write_estimate(
+            "parameter", "example-estimate", 1.0, [Issue("test issue 1", 1), Issue("test issue 2", 2)]
+        )
+    with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
+        access_yaml = yaml.safe_load(access_file)
+        assert access_yaml["io"][0]["call_metadata"]["issues"] == [
+            {"description": "test issue 1", "severity": 1},
+            {"description": "test issue 2", "severity": 2},
+        ]
+        assert access_yaml["io"][0]["access_metadata"]["issues"] == [
+            {"description": "test issue 1", "severity": 1},
+            {"description": "test issue 2", "severity": 2},
+        ]

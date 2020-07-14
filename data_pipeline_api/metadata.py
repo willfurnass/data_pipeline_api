@@ -1,8 +1,11 @@
-from typing import Mapping
+from typing import Mapping, Any
 
-Metadata = Mapping[str, str]
+Metadata = Mapping[str, Any]
+
 
 class MetadataKey:
+    """Metadata key constants.
+    """
     filename = "filename"
     data_product = "data_product"
     component = "component"
