@@ -20,3 +20,9 @@ def is_superset(metadataA: Metadata, metadataB: Metadata) -> bool:
     return all(
         key in metadataA and metadataA[key] == value for key, value in metadataB.items()
     )
+
+
+def log_format_metadata(metadata):
+    """Return a string representation of the metadata formatted for log output.
+    """
+    return ", ".join("{}={}".format(k, v) for k, v in metadata.items())

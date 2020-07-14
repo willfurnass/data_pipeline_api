@@ -1,16 +1,31 @@
+from logging import getLogger
 from typing import Sequence, Optional, NamedTuple
 from operator import attrgetter
 from semver import VersionInfo
-from data_pipeline_api.metadata import Metadata, MetadataKey, is_superset
+from data_pipeline_api.metadata import (
+    Metadata,
+    MetadataKey,
+    is_superset,
+    log_format_metadata,
+)
+
+logger = getLogger(__name__)
 
 
 class MetadataRecord(NamedTuple):
+    """A versioned Metadata object.
+    """
     metadata: Metadata
     version: Optional[VersionInfo]
 
 
 class MetadataStore:
     def __init__(self, metadata_sequence: Sequence[Metadata]):
+        """The MetadataStore class provides a simple metadata lookup mechanism.
+
+        A MetadataStore is initialised with a Sequence of Metadata objects, which can
+        then be searched by matching against Metadata fragments.
+        """
         try:
             self._metadata_records = tuple(
                 MetadataRecord(
@@ -26,12 +41,19 @@ class MetadataStore:
 
     def find(self, metadata: Metadata) -> Optional[Metadata]:
         try:
-            return max(
+            results = tuple(
                 filter(
                     lambda record: is_superset(record.metadata, metadata),
                     self._metadata_records,
-                ),
-                key=attrgetter("version"),
-            ).metadata
+                )
+            )
+            for result in results:
+                logger.debug(
+                    "found matching metadata %s", log_format_metadata(result.metadata)
+                )
+            selected = max(results, key=attrgetter("version"),).metadata
+            logger.debug("selected metadata %s", log_format_metadata(selected))
+            return selected
         except ValueError:
+            logger.debug("could not find any matching metadata")
             return None
