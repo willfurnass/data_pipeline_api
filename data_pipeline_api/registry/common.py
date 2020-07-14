@@ -34,25 +34,24 @@ class DataRegistryTarget:
     Full set of Data Registry end points
     """
 
-    accessibility = "accessibility"
-    data_product = "data_product"
-    data_product_type = "data_product_type"
-    data_product_version = "data_product_version"
-    data_product_version_component = "data_product_version_component"
+    users = "users"
     groups = "groups"
     issue = "issue"
-    model = "model"
-    model_run = "model_run"
-    model_version = "model_version"
-    processing_script = "processing_script"
-    processing_script_version = "processing_script_version"
-    storage_location = "storage_location"
+    object = "object"
+    object_component = "object_component"
+    code_run = "code_run"
     storage_root = "storage_root"
-    storage_type = "storage_type"
+    storage_location = "storage_location"
     source = "source"
-    source_type = "source_type"
-    source_version = "source_version"
-    users = "users"
+    external_object = "external_object"
+    quality_controlled = "quality_controlled"
+    keyword = "keyword"
+    author = "author"
+    licence = "licence"
+    namespace = "namespace"
+    data_product = "data_product"
+    code_repo_release = "code_repo_release"
+    key_value = "key_value"
 
 
 class DataRegistryField:
@@ -60,58 +59,120 @@ class DataRegistryField:
     Incomplete set of Data Registry Fields - only those that are being used as constants
     """
 
-    inputs = "inputs"
-    outputs = "outputs"
-    supersedes = "supersedes"
-    submission_script = "submission_script"
-    model_config = "model_config"
-    description = "description"
-    run_id = "run_id"
-    responsible_person = "responsible_person"
-    name = "name"
-    components = "components"
-    version_identifier = "version_identifier"
-    model = "model"
-    processing_script = "processing_script"
-    source = "source"
-    data_product = "data_product"
-    run_date = "run_date"
-    model_version = "model_version"
-    data_product_version = "data_product_version"
-    username = "username"
+    abbreviation = "abbreviation"
     accessibility = "accessibility"
-    store = "store"
-    path = "path"
-    store_root = "store_root"
-    uri = "uri"
-    type = "type"
+    authors = "authors"
+    code_repo = "code_repo"
+    code_repo_release = "code_repo_release"
+    components = "components"
+    data_product = "data_product"
+    description = "description"
+    doi_or_unique_name = "doi_or_unique_name"
+    email = "email"
+    external_object = "external_object"
+    family_name = "family_name"
+    full_name = "full_name"
     hash = "hash"
+    inputs = "inputs"
+    issues = "issues"
+    key = "key"
+    keyphrase = "keyphrase"
+    keywords = "keywords"
+    last_updated = "last_updated"
+    licence_info = "licence_info"
+    licences = "licences"
+    model_config = "model_config"
+    name = "name"
+    namespace = "namespace"
+    object = "object"
+    orgs = "orgs"
+    original_store = "original_store"
+    outputs = "outputs"
+    path = "path"
+    personal_name = "personal_name"
+    primary_not_supplement = "primary_not_supplement"
+    quality_control = "quality_control"
+    release_date = "release_date"
+    root = "root"
+    run_date = "run_date"
+    run_identifier = "run_identifier"
+    severity = "severity"
+    source = "source"
+    storage_location = "storage_location"
+    storage_root = "storage_root"
+    submission_script = "submission_script"
+    title = "title"
+    updated_by = "updated_by"
+    url = "url"
+    username = "username"
+    value = "value"
+    version = "version"
+    website = "website"
 
 
-class DataRegistryFilter:
-    """
-    Full set of Data Registry Filters
-    """
-
-    version_identifier = DataRegistryField.version_identifier
-    model = DataRegistryField.model
-    processing_script = DataRegistryField.processing_script
-    source = DataRegistryField.source
-    data_product = DataRegistryField.data_product
-    run_date = DataRegistryField.run_date
-    model_version = DataRegistryField.model_version
-    data_product_version = DataRegistryField.data_product_version
-    name = DataRegistryField.name
-    username = DataRegistryField.username
-
-
-FILTERS = set(
-    [
-        a
-        for a, v in DataRegistryFilter.__dict__.items()
-        if not a.startswith("__") and not callable(getattr(DataRegistryFilter, a))
-    ]
-)
+DATA_REGISTRY_FILTERS = {
+    DataRegistryTarget.users: {DataRegistryField.username},
+    DataRegistryTarget.groups: set(),
+    DataRegistryTarget.issue: {DataRegistryField.name},
+    DataRegistryTarget.object: {
+        DataRegistryField.last_updated,
+        DataRegistryField.updated_by,
+        DataRegistryField.storage_location,
+        DataRegistryField.data_product,
+        DataRegistryField.code_repo_release,
+        DataRegistryField.object,
+    },
+    DataRegistryTarget.object_component: {
+        DataRegistryField.name,
+        DataRegistryField.last_updated,
+        DataRegistryField.object,
+    },
+    DataRegistryTarget.code_run: {
+        DataRegistryField.run_date,
+        DataRegistryField.run_identifier,
+        DataRegistryField.last_updated,
+    },
+    DataRegistryTarget.storage_root: {
+        DataRegistryField.name,
+        DataRegistryField.root,
+        DataRegistryField.last_updated,
+        DataRegistryField.accessibility,
+    },
+    DataRegistryTarget.storage_location: {
+        DataRegistryField.last_updated,
+        DataRegistryField.path,
+        DataRegistryField.hash,
+    },
+    DataRegistryTarget.source: {DataRegistryField.last_updated, DataRegistryField.name, DataRegistryField.abbreviation},
+    DataRegistryTarget.external_object: {
+        DataRegistryField.last_updated,
+        DataRegistryField.doi_or_unique_name,
+        DataRegistryField.release_date,
+        DataRegistryField.title,
+        DataRegistryField.version,
+    },
+    DataRegistryTarget.quality_controlled: set(),
+    DataRegistryTarget.keyword: {DataRegistryField.last_updated, DataRegistryField.keyphrase},
+    DataRegistryTarget.author: {
+        DataRegistryField.last_updated,
+        DataRegistryField.family_name,
+        DataRegistryField.personal_name,
+    },
+    DataRegistryTarget.licence: {DataRegistryField.last_updated},
+    DataRegistryTarget.namespace: {DataRegistryField.last_updated, DataRegistryField.name},
+    DataRegistryTarget.data_product: {
+        DataRegistryField.last_updated,
+        DataRegistryField.namespace,
+        DataRegistryField.name,
+        DataRegistryField.version,
+    },
+    DataRegistryTarget.code_repo_release: {
+        DataRegistryField.last_updated,
+        DataRegistryField.name,
+        DataRegistryField.version,
+    },
+    DataRegistryTarget.key_value: {DataRegistryField.last_updated, DataRegistryField.key},
+}
 
 
 def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True) -> List[Dict[str, Any]]:
@@ -123,8 +184,9 @@ def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True) -> List
     :return: Sorted list of items
     """
     return sorted(
-        items, key=lambda data: semver.parse_version_info(data[DataRegistryFilter.version_identifier]),
-        reverse=descending
+        items,
+        key=lambda data: semver.parse_version_info(data[DataRegistryField.version]),
+        reverse=descending,
     )
 
 
@@ -148,7 +210,7 @@ def get_remote_filesystem_and_path(
     elif protocol in {"http", "https", "s3"}:
         # storage_options are parameters passed to request
         path = urllib.parse.quote(path)
-        uri = '/'.join(s.strip('/') for s in [uri, path])
+        uri = "/".join(s.strip("/") for s in [uri, path])
         fs_class = S3FileSystem if protocol == "s3" else HTTPFileSystem
         return fs_class(**storage_options), uri
     elif protocol in {"sftp", "ssh", "ftp"}:
@@ -200,21 +262,25 @@ def get_headers(token: str) -> Dict[str, str]:
     return {"Authorization": f"token {token}"} if token else {}
 
 
-def build_query_string(query_data: YamlDict, data_registry_url: str) -> str:
+def build_query_string(query_data: YamlDict, target: str, data_registry_url: str) -> str:
     """
     Converts a dictionary of query data into a query string
 
     :param query_data: the query data dictionary to convert
+    :param target: target end point of the data registry
     :param data_registry_url: the url of the data registry
     :return: the query string generated
     """
+
     def id_from_url(url: str):
         if url is not None and url.startswith(data_registry_url):
             return url.split("/")[-2]
         return url
 
+    filters = DATA_REGISTRY_FILTERS.get(target, set())
+
     return urllib.parse.urlencode(
-        {k: id_from_url(v) for k, v in query_data.items() if k in FILTERS and isinstance(v, str)}
+        {k: id_from_url(v) for k, v in query_data.items() if k in filters and isinstance(v, str)}
     )
 
 
@@ -251,7 +317,7 @@ def get_data(
                   If exact is False: 1+ results -> return results in list, 0 results -> return None
     :return: reference url to existing data or None if it does not exist
     """
-    query_str = build_query_string(query_data, data_registry_url)
+    query_str = build_query_string(query_data, target, data_registry_url)
     result = get_on_end_point(get_end_point(data_registry_url, target), token, query_str)
     if not result:
         logger.info(f"No matching data found for query '{query_str}' to target '{target}'")

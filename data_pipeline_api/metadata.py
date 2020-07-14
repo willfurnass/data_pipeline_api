@@ -3,17 +3,20 @@ from typing import Mapping, Any
 Metadata = Mapping[str, Any]
 
 
+
 class MetadataKey:
     """Metadata key constants.
     """
     filename = "filename"
     data_product = "data_product"
+    namespace = "namespace"
     component = "component"
     extension = "extension"
     run_id = "run_id"
     version = "version"
     verified_hash = "verified_hash"
     calculated_hash = "calculated_hash"
+    accessibility = "accessibility"
 
 
 def is_superset(metadataA: Metadata, metadataB: Metadata) -> bool:

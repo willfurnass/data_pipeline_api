@@ -4,8 +4,13 @@ import pytest
 import yaml
 
 from data_pipeline_api.registry.upload import resolve_references, upload_from_config
-from data_pipeline_api.registry.common import get_end_point, get_headers
+from data_pipeline_api.registry.common import get_end_point, get_headers, get_on_end_point
 from tests.registry.common import DATA_REGISTRY_URL, TOKEN, MockResponse
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    get_on_end_point.cache_clear()
 
 
 def test_resolve_references_no_resolution():
@@ -26,9 +31,9 @@ def test_resolve_references_name():
 
 
 def test_resolve_references_version():
-    data = {"name": "A", "o": {"target": "vref", "data": {"version_identifier": "1", "model": "mock_url_b"}}}
+    data = {"name": "A", "o": {"target": "vref", "data": {"version": "1", "model": "mock_url_b"}}}
     with patch("requests.get") as get:
-        get.return_value = MockResponse([{"url": "mock_url_v", "version_identifier": "1", "model": "mock_url_b"}])
+        get.return_value = MockResponse([{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}])
         assert resolve_references(data, DATA_REGISTRY_URL, TOKEN) == {"name": "A", "o": "mock_url_v"}
 
 
@@ -108,7 +113,7 @@ post:
     - 
         target: 'end_point_1'
         data:
-            version_identifier: '1.1.1'
+            version: '1.1.1'
     """)
     with patch("requests.get") as get:
         with patch("requests.post") as post:
@@ -116,7 +121,7 @@ post:
             upload_from_config(config, DATA_REGISTRY_URL, TOKEN)
             post.assert_called_once_with(
                 get_end_point(DATA_REGISTRY_URL, "end_point_1"),
-                data={"version_identifier": "1.1.1"},
+                data={"version": "1.1.1"},
                 headers=get_headers(TOKEN),
             )
 
@@ -127,7 +132,7 @@ post:
     - 
         target: 'end_point_1'
         data:
-            version_identifier: '1'
+            version: '1'
     """)
     with patch("requests.get") as get:
         get.return_value = MockResponse([])

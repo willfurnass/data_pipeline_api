@@ -1,7 +1,7 @@
 data_directory: data
 access_log: access-{run_id}.yaml
 fail_on_hash_mismatch: True
-
+namespace: simple_network_sim
 read:
   - where:
       data_product: human/mixing-matrix
@@ -13,7 +13,12 @@ read:
   - where:
       data_product: human/population
       version: 0.1.0
-
+  - where:
+      data_product: human/infection/SARS-CoV-2/symptom-probability
+      namespace: SCRC
+  - where:
+      data_product: human/infection/SARS-CoV-2/scotland/mortality
+      namespace: SCRC
 
 write:
   - where:

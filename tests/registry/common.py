@@ -8,9 +8,9 @@ from data_pipeline_api.registry.common import (
     get_headers,
     get_remote_filesystem_and_path,
     build_query_string,
-    DataRegistryFilter,
     DataRegistryField,
-    FILTERS, sort_by_semver,
+    sort_by_semver,
+    DataRegistryTarget,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -48,7 +48,7 @@ def test_get_headers():
 
 def test_get_on_end_point():
     with patch("requests.get") as get:
-        json_data_1 = [{"url": "mock_url_v", "version_identifier": "1", "model": "mock_url_b"}]
+        json_data_1 = [{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}]
         get.return_value = MockResponse(json_data_1)
         assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == json_data_1
         assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == json_data_1
@@ -267,36 +267,47 @@ def test_get_remote_filesystem_and_path_active_ftp():
 
 
 def test_build_query_string():
-    assert build_query_string({}, DATA_REGISTRY_URL) == ""
-    assert build_query_string({DataRegistryFilter.name: "name"}, DATA_REGISTRY_URL) == "name=name"
-    assert build_query_string({"not_a_filter": "not_a_filter"}, DATA_REGISTRY_URL) == ""
+    assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == ""
     assert (
-        build_query_string({"not_a_filter": "not_a_filter", DataRegistryFilter.name: "name"}, DATA_REGISTRY_URL)
+        build_query_string({DataRegistryField.name: "name"}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == "name=name"
+    )
+    assert build_query_string({"not_a_filter": "not_a_filter"}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == ""
+    assert (
+        build_query_string(
+            {"not_a_filter": "not_a_filter", DataRegistryField.name: "name"},
+            DataRegistryTarget.issue,
+            DATA_REGISTRY_URL,
+        )
         == "name=name"
     )
     assert (
-        build_query_string({DataRegistryFilter.name: '!"£$%^&*()[]{}'}, DATA_REGISTRY_URL)
+        build_query_string({DataRegistryField.name: '!"£$%^&*()[]{}'}, DataRegistryTarget.issue, DATA_REGISTRY_URL)
         == "name=%21%22%C2%A3%24%25%5E%26%2A%28%29%5B%5D%7B%7D"
     )
-    assert build_query_string({DataRegistryFilter.name: f"{DATA_REGISTRY_URL}/1/"}, DATA_REGISTRY_URL) == "name=1"
-    query_data = {}
-    for field in (
-        a
-        for a, v in DataRegistryField.__dict__.items()
-        if not a.startswith("__") and not callable(getattr(DataRegistryField, a))
-    ):
-        query_data[field] = "test"
-    query_string = build_query_string(query_data, DATA_REGISTRY_URL)
-    assert set(query_string.replace("&", "").replace("test", "")[:-1].split("=")) == FILTERS
+    assert (
+        build_query_string(
+            {DataRegistryField.name: f"{DATA_REGISTRY_URL}/1/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL
+        )
+        == "name=1"
+    )
 
 
 def test_sort_by_semver():
-
     def make_versions(items):
-        return [{"version_identifier": i} for i in items]
+        return [{"version": i} for i in items]
 
     def get_versions(items):
-        return [i["version_identifier"] for i in items]
+        return [i["version"] for i in items]
 
-    assert get_versions(sort_by_semver(make_versions(["0.1.0", "0.1.1", "0.0.1", "1.0.0"]))) == ['1.0.0', '0.1.1', '0.1.0', '0.0.1']
-    assert get_versions(sort_by_semver(make_versions(["0.1.0", "0.1.1", "0.0.1", "1.0.0"]), descending=False)) == ['0.0.1', '0.1.0', '0.1.1', '1.0.0']
+    assert get_versions(sort_by_semver(make_versions(["0.1.0", "0.1.1", "0.0.1", "1.0.0"]))) == [
+        "1.0.0",
+        "0.1.1",
+        "0.1.0",
+        "0.0.1",
+    ]
+    assert get_versions(sort_by_semver(make_versions(["0.1.0", "0.1.1", "0.0.1", "1.0.0"]), descending=False)) == [
+        "0.0.1",
+        "0.1.0",
+        "0.1.1",
+        "1.0.0",
+    ]
