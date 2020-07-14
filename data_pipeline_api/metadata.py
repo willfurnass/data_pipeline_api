@@ -1,5 +1,4 @@
-from typing import Mapping, Optional
-from pathlib import Path
+from typing import Mapping
 
 Metadata = Mapping[str, str]
 

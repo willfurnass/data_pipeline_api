@@ -1,8 +1,6 @@
 from logging import basicConfig
-import numpy as np
-import pandas as pd
-from scipy.stats import gamma
 from pathlib import Path
+import numpy as np
 from data_pipeline_api.standard_api import StandardAPI
 
 
@@ -13,7 +11,7 @@ basicConfig(
 
 CONFIG_PATH = Path(__file__).parent.parent / "tests" / "data" / "config.yaml"
 
-with StandardAPI(CONFIG_PATH) as api:
+with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
     api.write_estimate(
         "output-parameter",
         "example-estimate-from-estimate",

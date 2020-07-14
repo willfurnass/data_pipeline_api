@@ -72,6 +72,8 @@ class FileAPI:
         self._open_timestamp = datetime.now()
         logger.debug("open_timestamp = %s", self._open_timestamp)
         self._accesses = []
+        self._run_metadata = {}
+
         config_filename = Path(config_filename)
         config_root = config_filename.parent
 
@@ -230,6 +232,11 @@ class FileAPI:
         file.close = close
         return file
 
+    def set_metadata(self, key, value):
+        """Set run-level metadata.
+        """
+        self._run_metadata[key] = value
+
     def close(self):
         """Close the session and write the access log.
         """
@@ -242,6 +249,7 @@ class FileAPI:
                         "close_timestamp": datetime.now(),
                         "run_id": self.run_id,
                         "config": self._config,
+                        "metadata": self._run_metadata,
                         "io": self._accesses,
                     },
                     output_file,
