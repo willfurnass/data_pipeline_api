@@ -1,7 +1,7 @@
 from logging import basicConfig
 from pathlib import Path
 import numpy as np
-from data_pipeline_api.standard_api import StandardAPI
+from data_pipeline_api.standard_api import StandardAPI, Issue
 
 
 basicConfig(
@@ -21,6 +21,7 @@ with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
         "output-parameter",
         "example-estimate-from-distribution",
         api.read_estimate("parameter", "example-distribution"),
+        [Issue("foo issue", 3)]
     )
     api.write_estimate(
         "output-parameter",

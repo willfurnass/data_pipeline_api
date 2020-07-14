@@ -1,7 +1,7 @@
 from io import TextIOWrapper
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Union
+from typing import Union, NamedTuple, Optional, Sequence
 import numpy as np
 from data_pipeline_api.file_api import FileAPI
 from data_pipeline_api.file_formats.parameter_file import (
@@ -27,10 +27,19 @@ from data_pipeline_api.file_formats.object_file import (
 )
 
 
+class Issue(NamedTuple):
+    """An issue associate with a data product or component.
+    """
+
+    description: str
+    severity: int
+
+
 class StandardAPI:
     """The StandardAPI class provides access to data products conforming to the Standard
     API specification.
     """
+
     def __init__(self, config_filename: Union[Path, str], uri: str, git_sha: str):
         self.file_api = FileAPI(config_filename)
         self.file_api.set_metadata("uri", uri)
@@ -42,6 +51,19 @@ class StandardAPI:
 
     def __exit__(self, exc_type, exc_value, traceback):
         return self.file_api.__exit__(exc_type, exc_value, traceback)
+
+    @staticmethod
+    def get_issues_as_metadata(issues: Optional[Sequence[Issue]]):
+        """Convert an Optional Sequence of Issue objects into the metadata format.
+        """
+        if issues is None:
+            return {}
+        return {
+            "issues": [
+                {"description": issue.description, "severity": issue.severity}
+                for issue in issues
+            ]
+        }
 
     # ==================================================================================
     # Parameter files
@@ -57,12 +79,20 @@ class StandardAPI:
             yield parameter_file
 
     @contextmanager
-    def open_parameter_file_for_write(self, data_product: str, component: str):
+    def open_parameter_file_for_write(
+        self,
+        data_product: str,
+        component: str,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Open a parameter file for writing.
         """
         with TextIOWrapper(
             self.file_api.open_for_write(
-                data_product=data_product, component=component, extension="toml"
+                data_product=data_product,
+                component=component,
+                extension="toml",
+                **self.get_issues_as_metadata(issues),
             )
         ) as parameter_file:
             yield parameter_file
@@ -84,10 +114,18 @@ class StandardAPI:
                 return read_samples(file, component).mean()
             raise ValueError(f"unrecognised type {parameter_type}")
 
-    def write_estimate(self, data_product: str, component: str, estimate: Estimate):
+    def write_estimate(
+        self,
+        data_product: str,
+        component: str,
+        estimate: Estimate,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Write an estimate to the data product component.
         """
-        with self.open_parameter_file_for_write(data_product, component) as file:
+        with self.open_parameter_file_for_write(
+            data_product, component, issues
+        ) as file:
             write_estimate(file, component, estimate)
 
     # ----------------------------------------------------------------------------------
@@ -108,11 +146,17 @@ class StandardAPI:
             raise ValueError(f"unrecognised type {parameter_type}")
 
     def write_distribution(
-        self, data_product: str, component: str, distribution: Distribution,
+        self,
+        data_product: str,
+        component: str,
+        distribution: Distribution,
+        issues: Optional[Sequence[Issue]] = None,
     ):
         """Write a distribution to the data product component.
         """
-        with self.open_parameter_file_for_write(data_product, component) as file:
+        with self.open_parameter_file_for_write(
+            data_product, component, issues
+        ) as file:
             write_distribution(file, component, distribution)
 
     # ----------------------------------------------------------------------------------
@@ -132,10 +176,18 @@ class StandardAPI:
                 return np.random.choice(read_samples(file, component))
             raise ValueError(f"unrecognised type {parameter_type}")
 
-    def write_samples(self, data_product: str, component: str, samples: Samples):
+    def write_samples(
+        self,
+        data_product: str,
+        component: str,
+        samples: Samples,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Write samples to the data product component.
         """
-        with self.open_parameter_file_for_write(data_product, component) as file:
+        with self.open_parameter_file_for_write(
+            data_product, component, issues
+        ) as file:
             write_samples(file, component, samples)
 
     # ==================================================================================
@@ -152,11 +204,19 @@ class StandardAPI:
             yield object_file
 
     @contextmanager
-    def open_object_file_for_write(self, data_product: str, component: str):
+    def open_object_file_for_write(
+        self,
+        data_product: str,
+        component: str,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Open an parameter file for writing.
         """
         with self.file_api.open_for_write(
-            data_product=data_product, component=component, extension="h5"
+            data_product=data_product,
+            component=component,
+            extension="h5",
+            **self.get_issues_as_metadata(issues),
         ) as object_file:
             yield object_file
 
@@ -166,10 +226,16 @@ class StandardAPI:
         with self.open_object_file_for_read(data_product, component) as file:
             return read_table(file, component)
 
-    def write_table(self, data_product: str, component: str, table: Table):
+    def write_table(
+        self,
+        data_product: str,
+        component: str,
+        table: Table,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Write a table to the data product component.
         """
-        with self.open_object_file_for_write(data_product, component) as file:
+        with self.open_object_file_for_write(data_product, component, issues) as file:
             write_table(file, component, table)
 
     def read_array(self, data_product: str, component: str) -> Array:
@@ -178,8 +244,14 @@ class StandardAPI:
         with self.open_object_file_for_read(data_product, component) as file:
             return read_array(file, component)
 
-    def write_array(self, data_product: str, component: str, array: Array):
+    def write_array(
+        self,
+        data_product: str,
+        component: str,
+        array: Array,
+        issues: Optional[Sequence[Issue]] = None,
+    ):
         """Write an array to the data product component.
         """
-        with self.open_object_file_for_write(data_product, component) as file:
+        with self.open_object_file_for_write(data_product, component, issues) as file:
             write_array(file, component, array)
