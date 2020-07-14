@@ -341,10 +341,10 @@ def upload_model_run(
     accessibility = _get_accessibility(config)
     namespace = config.get("namespace")
     model_version_str = config_yaml["model_version"]
-    model_git_sha = config_yaml["model_git_sha"]
-    model_uri = config_yaml["model_uri"]
     model_name = config_yaml["model_name"]
     open_timestamp = config_yaml["open_timestamp"]
+    model_git_sha = config["metadata"]["git_sha"]
+    model_uri = config["metadata"]["uri"]
 
     inputs = []
     outputs = []
