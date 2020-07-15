@@ -1,3 +1,5 @@
+# pylint: disable=missing-function-docstring,import-error
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from data_pipeline_api.file_formats import object_file
@@ -29,3 +31,9 @@ def test_array_roundtrip(tmp_path):
     with open(tmp_path / "test.h5", "r+b") as file:
         output_array = object_file.read_array(file, "test")
         assert output_array == array
+
+
+def test_can_read_R_hdf5_file():
+    with open(Path(__file__).parent.parent / "data" / "demographics.h5", "rb") as file:
+        array = object_file.read_array(file, "hb/1year/persons")
+        assert array.dimensions[0].title == 'health board'

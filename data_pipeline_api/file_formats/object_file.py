@@ -85,6 +85,26 @@ VALUES_SUFFIX = "_values"
 UNITS_SUFFIX = "_units"
 
 
+def get_string_array(array) -> np.ndarray:
+    """Attempt to coerce an arbitrary numpy array into a decoded string-type array."""
+    return np.char.decode(np.array(array, dtype=np.string_))
+
+
+def get_string_list(array) -> List[str]:
+    """Attempt to coerce an arbitrary numpy array into a string list."""
+    return list(get_string_array(array))
+
+
+def get_single_string(array) -> str:
+    """Attempt to coerce an arbitrary numpy array into a single string."""
+    string_array = get_string_array(array)
+    if string_array.shape == ():
+        return string_array[()]
+    if string_array.shape == (1,):
+        return string_array[0]
+    raise ValueError(f"Cannot get a single string from a {string_array.shape} array")
+
+
 def read_array(file: IOBase, component: str) -> Array:
     group = get_read_group(file, component)
     data = group["array"][()]
@@ -96,17 +116,21 @@ def read_array(file: IOBase, component: str) -> Array:
         if name.startswith(DIMENSION_PREFIX):
             rest = name[len(DIMENSION_PREFIX) :]
             if rest.endswith(TITLE_SUFFIX):
-                dimension_title[int(rest[: -len(TITLE_SUFFIX)])] = group[name][()]
+                dimension_title[int(rest[: -len(TITLE_SUFFIX)])] = get_single_string(
+                    group[name][()]
+                )
             elif rest.endswith(NAMES_SUFFIX):
-                dimension_names[int(rest[: -len(NAMES_SUFFIX)])] = list(
-                    np.char.decode(group[name][()])
+                dimension_names[int(rest[: -len(NAMES_SUFFIX)])] = get_string_list(
+                    group[name][()]
                 )
             elif rest.endswith(VALUES_SUFFIX):
                 dimension_values[int(rest[: -len(VALUES_SUFFIX)])] = list(
                     group[name][()]
                 )
             elif rest.endswith(UNITS_SUFFIX):
-                dimension_units[int(rest[: -len(UNITS_SUFFIX)])] = group[name][()]
+                dimension_units[int(rest[: -len(UNITS_SUFFIX)])] = get_single_string(
+                    group[name][()]
+                )
     max_dimension = max(
         set(dimension_title)
         | set(dimension_names)
@@ -127,7 +151,7 @@ def read_array(file: IOBase, component: str) -> Array:
             for dimension in range(1, max_dimension + 1)
         ]
     if "units" in group:
-        units = group["units"][()]
+        units = get_single_string(group["units"][()])
     else:
         units = None
     # TODO : More validation on the outputs?
@@ -153,7 +177,7 @@ def write_array(file: IOBase, component: str, array: Array):
                 encoded_names = np.char.encode(dimension.names)
                 group.require_dataset(
                     f"Dimension_{i}_names",
-                    dtype=encoded_names.dtype,
+                    dtype=h5py.string_dtype(),
                     shape=encoded_names.shape,
                     data=encoded_names,
                 )
