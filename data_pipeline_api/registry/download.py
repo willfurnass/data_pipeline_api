@@ -109,11 +109,11 @@ def _get_data_product_version_and_components(
         # data_products, and for each get their component urls, get the data at that url and break on the
         # first data_product found that contains the requested component
         for dp in data_products:
-            object = get_on_end_point(dp[DataRegistryField.object], token)
+            obj = get_on_end_point(dp[DataRegistryField.object], token)
             data_product_components = [
                 cn
                 for cn in [
-                    get_on_end_point(c, token)[DataRegistryField.name] for c in object[DataRegistryField.components]
+                    get_on_end_point(c, token)[DataRegistryField.name] for c in obj[DataRegistryField.components]
                 ]
                 if cn == parsed_config.component
             ]
@@ -127,10 +127,10 @@ def _get_data_product_version_and_components(
             )
     else:
         data_product = next(iter(data_products))
-        object = get_on_end_point(data_product[DataRegistryField.object], token)
+        obj = get_on_end_point(data_product[DataRegistryField.object], token)
         data_product_components = [
             get_on_end_point(c, token)[DataRegistryField.name]
-            for c in object[DataRegistryField.components]
+            for c in obj[DataRegistryField.components]
         ]
     logger.info(
         f"Found data_product: {data_product} "
