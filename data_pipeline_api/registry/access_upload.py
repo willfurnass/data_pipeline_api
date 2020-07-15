@@ -407,7 +407,7 @@ def upload_model_run(
     upload_from_config({"post": posts}, data_registry_url, token)
 
 
-@click.command()
+@click.command(context_settings=dict(max_content_width=200))
 @click.option(
     "--config", required=True, type=str, help=f"Path to the access yaml file.",
 )
