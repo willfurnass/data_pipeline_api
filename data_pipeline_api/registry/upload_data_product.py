@@ -166,4 +166,5 @@ def upload_data_product_cli(
 
 if __name__ == "__main__":
     logger = logging.getLogger(f"{__package__}.{__name__}")
+    # pylint: disable=no-value-for-parameter
     upload_data_product_cli()

@@ -329,4 +329,5 @@ def download_cli(config, data_registry, token):
 
 if __name__ == "__main__":
     logger = logging.getLogger(f"{__package__}.{__name__}")
+    # pylint: disable=no-value-for-parameter
     download_cli()
