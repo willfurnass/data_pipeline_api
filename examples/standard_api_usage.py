@@ -21,7 +21,7 @@ with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
         "output-parameter",
         "example-estimate-from-distribution",
         api.read_estimate("parameter", "example-distribution"),
-        [Issue("foo issue", 3)]
+        issues=[Issue("test issue", 3)]
     )
     api.write_estimate(
         "output-parameter",
