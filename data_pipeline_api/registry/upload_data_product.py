@@ -23,7 +23,7 @@ from data_pipeline_api.registry.access_upload import upload_to_storage
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
     "--data-product-path",
-    type=str,
+    type=click.Path(exists=True),
     required=True,
     help="Path to the data product on the local filesystem to upload to storage",
 )
@@ -65,12 +65,14 @@ from data_pipeline_api.registry.access_upload import upload_to_storage
 @click.option(
     "--data-registry",
     type=str,
+    envvar=f"{DATA_REGISTRY_URL}",
     help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
     f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
 )
 @click.option(
     "--token",
     type=str,
+    envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
@@ -111,8 +113,7 @@ def upload_data_product_cli(
     with open(template_file, "r") as f:
         template = f.read()
 
-    data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
-    token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
+    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     remote_uri_override = remote_uri_override or remote_uri
     storage_root_name = storage_root_name or urllib.parse.urlparse(remote_uri_override).netloc
     storage_root = remote_uri_override

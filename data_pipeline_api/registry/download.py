@@ -306,24 +306,25 @@ def download_from_config_file(config_filename: Union[Path, str], data_registry_u
 
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=str, help=f"Path to the yaml config file.",
+    "--config", required=True, type=click.Path(exists=True), help=f"Path to the yaml config file.",
 )
 @click.option(
     "--data-registry",
     type=str,
+    envvar=f"{DATA_REGISTRY_URL}",
     help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
     f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
 )
 @click.option(
     "--token",
     type=str,
+    envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
 def download_cli(config, data_registry, token):
     configure_cli_logging()
-    data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
-    token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
+    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     download_from_config_file(config_filename=config, data_registry_url=data_registry, token=token)
 
 

@@ -409,13 +409,13 @@ def upload_model_run(
 
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=str, help=f"Path to the access yaml file.",
+    "--config", required=True, type=click.Path(exists=True), help=f"Path to the access yaml file.",
 )
 @click.option(
-    "--model-config", required=True, type=str, help=f"Path to the model config yaml file.",
+    "--model-config", required=True, type=click.Path(exists=True), help=f"Path to the model config yaml file.",
 )
 @click.option(
-    "--submission-script", required=True, type=str, help=f"Path to the submission script file.",
+    "--submission-script", required=True, type=click.Path(exists=True), help=f"Path to the submission script file.",
 )
 @click.option("--remote-uri", "-u", required=True, type=str, help=f"URI to the root of the storage")
 @click.option(
@@ -436,12 +436,14 @@ def upload_model_run(
 @click.option(
     "--data-registry",
     type=str,
+    envvar=f"{DATA_REGISTRY_URL}",
     help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
     f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
 )
 @click.option(
     "--token",
     type=str,
+    envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
@@ -449,8 +451,7 @@ def upload_model_run_cli(
     config, model_config, submission_script, remote_uri, remote_option, remote_uri_override, data_registry, token
 ):
     configure_cli_logging()
-    data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
-    token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
+    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     remote_options = dict(remote_option) if remote_option else {}
     remote_uri_override = remote_uri_override or remote_uri
     if not token:

@@ -117,19 +117,20 @@ def upload_from_config_file(config_filename: Union[Path, str], data_registry_url
 @click.option(
     "--data-registry",
     type=str,
+    envvar=f"{DATA_REGISTRY_URL}",
     help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
     f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
 )
 @click.option(
     "--token",
     type=str,
+    envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
 def upload_cli(config, data_registry, token):
     configure_cli_logging()
-    data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
-    token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
+    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     if not token:
         raise ValueError(
             f"Personal Access Token must be provided through either --token cmd line arg "
