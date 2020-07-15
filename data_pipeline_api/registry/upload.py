@@ -34,7 +34,7 @@ def resolve_references(data: YamlDict, data_registry_url: str, token: str) -> Di
         elif isinstance(value, List):
             return [resolve(inner_value) for inner_value in value]
         else:
-            return value.strip()
+            return value.strip() if isinstance(value, str) else value
 
     return {k: resolve(v) for k, v in data.items()}
 
