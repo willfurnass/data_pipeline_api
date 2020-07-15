@@ -1,5 +1,4 @@
 import logging
-import os
 import urllib
 from collections import namedtuple
 from pathlib import Path

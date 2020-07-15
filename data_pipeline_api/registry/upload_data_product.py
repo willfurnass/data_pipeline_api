@@ -1,5 +1,4 @@
 import logging
-import os
 import urllib
 from pathlib import Path
 from hashlib import sha1

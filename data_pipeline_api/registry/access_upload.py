@@ -1,10 +1,9 @@
 import logging
 import logging.config
-import os
 import urllib
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Union, List, Any, Tuple, Optional
+from typing import Dict, Union, List, Any, Optional
 from datetime import datetime as dt
 
 import click
