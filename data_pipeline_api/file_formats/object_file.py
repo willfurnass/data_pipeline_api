@@ -72,7 +72,18 @@ def read_table(file: IOBase, component: str) -> Table:
 
 
 def write_table(file: IOBase, component: str, table: Table):
-    records = table.to_records(index=False)
+    # Assumes all object columns are strings.
+    records = table.to_records(
+        index=False,
+        column_dtypes={
+            column: (
+                table[column].values.astype(np.string_).dtype
+                if dtype == "O"
+                else dtype
+            )
+            for column, dtype in table.dtypes.items()
+        },
+    )
     get_write_group(file, component).require_dataset(
         "table", shape=records.shape, dtype=records.dtype, data=records
     )

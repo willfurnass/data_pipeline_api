@@ -4,7 +4,7 @@ from data_pipeline_api.file_formats import object_file
 
 
 def test_table_roundtrip(tmp_path):
-    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    df = pd.DataFrame({"a": [1, 2.0], "b": ["hello", "world"]})
     with open(tmp_path / "test.h5", "wb") as file:
         object_file.write_table(file, "test", df)
     with open(tmp_path / "test.h5", "rb") as file:
