@@ -15,7 +15,7 @@ required packages:
    installed packages if it doesn't work, just ensure you have the
    required packages installed, e.g. using pip3:
    ```
-   pip3 install pybind11 pyyaml pandas scipy toml
+   pip3 install pybind11 pyyaml pandas scipy toml semver h5py
    ```
    Add --user if needed.
 2. Automatic: Giving up on any existing installation, we can build our
