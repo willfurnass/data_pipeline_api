@@ -24,17 +24,9 @@ jobs:
 
     - name: Compile
       run: |
-        export PYTHONPATH=$PWD/src:$PYTHONPATH
         cd bindings/cpp
-        make
+        make build/test_cpp_datapipeline
 
-    - name: Run
-      run: |
-        export PYTHONPATH=$PWD/src:$PYTHONPATH
+    - name: Run tests
         cd bindings/cpp
-        # TODO: make the path to the repo an argument to the executable
-        mkdir repos
-        cd repos
-        ln -s ../../.. data_pipeline_api
-        cd ..
-        ./test_datapipeline
+        ./build/test_cpp_datapipeline
