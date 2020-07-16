@@ -49,6 +49,8 @@ public interface MetadataItem {
   @JsonProperty("data_product")
   Optional<String> dataProduct();
 
+  Optional<String> namespace();
+
   @JsonProperty("run_id")
   Optional<String> runId();
 
@@ -72,7 +74,8 @@ public interface MetadataItem {
             MetadataItem::calculatedHash,
             MetadataItem::runId,
             MetadataItem::source,
-            metadataItem -> issuesInComparableFormat(metadataItem.issues().orElse(List.of())))
+            metadataItem -> issuesInComparableFormat(metadataItem.issues().orElse(List.of())),
+            MetadataItem::namespace)
         .stream()
         .map(func -> func.andThen(s -> s.orElse("")))
         .allMatch(func -> keyIsEitherNotPresentOrEqual(func.apply(key), func.apply(this)));
@@ -152,6 +155,10 @@ public interface MetadataItem {
 
     if (metadataOverride.issues().isPresent()) {
       newMetadataItem = newMetadataItem.withIssues(metadataOverride.issues().get());
+    }
+
+    if (metadataOverride.namespace().isPresent()) {
+      newMetadataItem = newMetadataItem.withNamespace(metadataOverride.namespace().get());
     }
 
     return newMetadataItem;

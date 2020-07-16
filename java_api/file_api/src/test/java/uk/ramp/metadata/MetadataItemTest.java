@@ -125,4 +125,13 @@ public class MetadataItemTest {
     assertThat(otherKey.isSuperSetOf(queryKey)).isFalse();
     assertThat(queryKey.isSuperSetOf(otherKey)).isFalse();
   }
+
+  @Test
+  public void testIsSuperSetOfNamespace() {
+    var queryKey = ImmutableMetadataItem.builder().build();
+    var otherKey = ImmutableMetadataItem.builder().namespace("ns").build();
+
+    assertThat(otherKey.isSuperSetOf(queryKey)).isTrue();
+    assertThat(queryKey.isSuperSetOf(otherKey)).isFalse();
+  }
 }
