@@ -19,8 +19,9 @@ MKDIR_P          := mkdir -p
 ###############################################################################
 
 PYBIND11_INCLUDE := -I$(shell $(PYTHON) -c 'import os; import pybind11; print(os.path.dirname(pybind11.__file__)+"/include")')
-PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell $(PYTHON_CONFIG) --cflags) -UNDEBUG -fPIC
-PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell $(PYTHON_CONFIG) --ldflags)
+PYTHON_CONFIG_FLAGS := $(shell $(PYTHON) -c 'import sys; print("" if (sys.version_info.major < 3 or sys.version_info.minor < 8) else "--embed")')
+PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell $(PYTHON_CONFIG) $(PYTHON_CONFIG_FLAGS) --cflags) -UNDEBUG -fPIC
+PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell $(PYTHON_CONFIG) $(PYTHON_CONFIG_FLAGS) --ldflags)
 
 # TODO: Python 3.8 requires the --embed flag to $(PYTHON_CONFIG)
 
