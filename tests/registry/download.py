@@ -121,13 +121,24 @@ def test_get_output_info():
             assert oi.accessibility == 0
 
 
-def test_download_data_public():
+def test_download_data_public_file():
     with patch("data_pipeline_api.registry.download.get_remote_filesystem_and_path") as fs_path:
         fs = Mock()
         fs_path.return_value = fs, "path"
+        fs.isdir.return_value = False
         _download_data(OutputInfo("http://source_uri", "source_path", "output_filename", "output_path", "hash", 0))
         fs_path.assert_called_once_with("http", "http://source_uri", "source_path")
         fs.get.assert_called_once_with("path", "output_path", block_size=0)
+
+
+def test_download_data_public_dir():
+    with patch("data_pipeline_api.registry.download.get_remote_filesystem_and_path") as fs_path:
+        fs = Mock()
+        fs_path.return_value = fs, "path"
+        fs.isdir.return_value = True
+        _download_data(OutputInfo("http://source_uri", "source_path", "output_filename", "output_path", "hash", 0))
+        fs_path.assert_called_once_with("http", "http://source_uri", "source_path")
+        fs.get.assert_called_once_with("path", "output_path", recursive=True, block_size=0)
 
 
 def test_download_data_not_public():

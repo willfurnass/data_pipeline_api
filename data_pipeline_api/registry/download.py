@@ -234,7 +234,11 @@ def _download_data(output_info: OutputInfo) -> None:
         fs, source_path = get_remote_filesystem_and_path(
             protocol, output_info.source_uri, output_info.source_path
         )
-        kwargs = {} if isinstance(fs, SFTPFileSystem) else {"block_size": 0}  # don't try to stream the file
+        kwargs = {}
+        if not isinstance(fs, SFTPFileSystem):
+            if fs.isdir(source_path):
+                kwargs["recursive"] = True
+            kwargs["block_size"] = 0
         fs.get(source_path, output_info.output_path, **kwargs)
     else:
         logger.info(f"Data is not public, skipping download")
