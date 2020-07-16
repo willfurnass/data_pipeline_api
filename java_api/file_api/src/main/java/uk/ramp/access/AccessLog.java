@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value.Immutable;
 import uk.ramp.config.Config;
 
@@ -28,4 +29,7 @@ public interface AccessLog {
 
   @JsonProperty("io")
   List<AccessEntry> accessEntries();
+
+  @JsonProperty("metadata")
+  Map<String, String> runMetadata();
 }

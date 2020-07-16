@@ -10,11 +10,17 @@ import java.time.Instant;
 import java.util.ArrayList;
 import uk.ramp.config.Config;
 import uk.ramp.hash.Hasher;
+import uk.ramp.metadata.ReadOnlyRunMetadata;
 import uk.ramp.yaml.YamlWriter;
 
 public class AccessLoggerFactory {
   public AccessLogger accessLogger(
-      Config config, YamlWriter yamlWriter, Clock clock, Instant openTimestamp, Hasher hasher) {
+      Config config,
+      YamlWriter yamlWriter,
+      Clock clock,
+      Instant openTimestamp,
+      Hasher hasher,
+      ReadOnlyRunMetadata runMetadata) {
     if (config.accessLogDisabled()) {
       return new NoImplAccessLogger();
     }
@@ -28,6 +34,7 @@ public class AccessLoggerFactory {
     }
 
     AccessLogWriter writer = new AccessLogWriter(yamlWriter, underlyingWriter);
-    return new AccessLoggerImpl(new ArrayList<>(), clock, writer, config, openTimestamp, hasher);
+    return new AccessLoggerImpl(
+        new ArrayList<>(), clock, writer, config, openTimestamp, hasher, runMetadata);
   }
 }

@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import uk.ramp.hash.Hasher;
@@ -110,5 +111,15 @@ public class FileApiIntegrationTest {
     assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml")))
         .contains(
             "    issues:\n" + "    - description: \"issue description\"\n" + "      severity: 1");
+  }
+
+  @Test
+  public void testRunMetadata() throws IOException {
+    FileApi fileApi = new FileApi(Path.of(configPath));
+    fileApi.setRunMetadata(Map.of("uri", "https://uri/", "git_sha", "abc"));
+    fileApi.close();
+
+    assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml")))
+        .contains("metadata:\n" + "  git_sha: \"abc\"\n" + "  uri: \"https://uri/\"");
   }
 }

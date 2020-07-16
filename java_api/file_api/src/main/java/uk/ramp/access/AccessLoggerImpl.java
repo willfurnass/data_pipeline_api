@@ -7,6 +7,7 @@ import uk.ramp.config.Config;
 import uk.ramp.hash.Hasher;
 import uk.ramp.metadata.ImmutableMetadataItem;
 import uk.ramp.metadata.MetadataItem;
+import uk.ramp.metadata.ReadOnlyRunMetadata;
 
 class AccessLoggerImpl implements AccessLogger {
   private final List<AccessEntry> accessEntries;
@@ -15,6 +16,7 @@ class AccessLoggerImpl implements AccessLogger {
   private final AccessLogWriter writer;
   private final Config config;
   private final Hasher hasher;
+  private final ReadOnlyRunMetadata runMetadata;
 
   AccessLoggerImpl(
       List<AccessEntry> accessEntries,
@@ -22,13 +24,15 @@ class AccessLoggerImpl implements AccessLogger {
       AccessLogWriter writer,
       Config config,
       Instant openTimestamp,
-      Hasher hasher) {
+      Hasher hasher,
+      ReadOnlyRunMetadata runMetadata) {
     this.accessEntries = accessEntries;
     this.clock = clock;
     this.openTimestamp = openTimestamp;
     this.writer = writer;
     this.config = config;
     this.hasher = hasher;
+    this.runMetadata = runMetadata;
   }
 
   @Override
@@ -69,6 +73,7 @@ class AccessLoggerImpl implements AccessLogger {
             .closeTimestamp(clock.instant())
             .dataDirectory(config.normalisedDataDirectory())
             .config(config)
+            .runMetadata(runMetadata.read())
             .build();
     writer.write(log);
   }
