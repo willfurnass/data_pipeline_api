@@ -2,6 +2,7 @@
 #include "array.hh"
 #include <vector>
 #include <string>
+#include <assert.h>
 
 using namespace std;
 
