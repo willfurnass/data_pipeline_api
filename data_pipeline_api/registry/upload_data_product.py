@@ -1,7 +1,6 @@
 import logging
 import urllib
 from pathlib import Path
-from hashlib import sha1
 import click
 import semver
 import yaml
@@ -17,6 +16,7 @@ from data_pipeline_api.registry.common import (
     sort_by_semver,
 )
 from data_pipeline_api.registry.access_upload import upload_to_storage
+from data_pipeline_api.file_api import FileAPI
 
 
 @click.command(context_settings=dict(max_content_width=200))
@@ -119,8 +119,7 @@ def upload_data_product_cli(
     remote_option = {} if remote_option is None else dict(remote_option)
     data_product_path = Path(data_product_path)
 
-    with open(data_product_path, "rb") as f:
-        storage_location_hash = sha1(f.read()).hexdigest()
+    storage_location_hash = FileAPI.calculate_hash(data_product_path)
 
     path = upload_to_storage(
         remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path

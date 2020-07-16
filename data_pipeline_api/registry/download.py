@@ -305,7 +305,7 @@ def download_from_config_file(config_filename: Union[Path, str], data_registry_u
 
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=click.Path(exists=True), help=f"Path to the yaml config file.",
+    "--config", required=True, type=click.Path(exists=True), help="Path to the yaml config file.",
 )
 @click.option(
     "--data-registry",

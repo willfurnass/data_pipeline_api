@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import urllib
-from hashlib import sha1
 from pathlib import Path
 from typing import Dict, Union, List, Any, Optional
 from datetime import datetime as dt
@@ -21,6 +20,7 @@ from data_pipeline_api.registry.common import (
     get_remote_filesystem_and_path,
 )
 from data_pipeline_api.registry.upload import upload_from_config
+from data_pipeline_api.file_api import FileAPI
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,7 @@ def _verify_hash(filename: Path, access_calculated_hash: str) -> None:
     :param filename: file to verify the hash of 
     :param access_calculated_hash: hash read from the access log for this filename
     """
-    with open(filename, "rb") as file:
-        calculated_hash = sha1(file.read()).hexdigest()
+    calculated_hash = FileAPI.calculate_hash(filename)
     if access_calculated_hash != calculated_hash:
         raise ValueError(
             f"access log contains hash {access_calculated_hash} but calculated hash of {filename} is {calculated_hash}"
@@ -250,13 +249,13 @@ def _get_accessibility(config):
         return max(int(event.get("accessibility", 0)) for event in config["io"])
 
 
-def _add_code_repo(posts: List[YamlDict], model_name: str, model_git_sha: str, model_uri: str) -> YamlDict:
+def _add_code_repo(posts: List[YamlDict], model_name: str, model_version: str, model_uri: str) -> YamlDict:
     """
     Creates a code_repo_release and adds it to the list of objects to post to the data registry
 
     :param posts: List of posts to the data registry, will be modified
     :param model_name: name of the model
-    :param model_git_sha: git sha of the model
+    :param model_version: version of the model
     :param model_uri: uri that the model is located at
     :return: the object reference to the code repo release
     """
@@ -267,7 +266,7 @@ def _add_code_repo(posts: List[YamlDict], model_name: str, model_git_sha: str, m
         DataRegistryTarget.code_repo_release,
         {
             DataRegistryField.name: model_name,
-            DataRegistryField.version: model_git_sha,
+            DataRegistryField.version: model_version,
             DataRegistryField.website: model_uri,
             DataRegistryField.object: code_repo_obj,
         },
@@ -296,8 +295,7 @@ def _upload_file_to_storage(
     """
     filename = Path(filename)
     path = upload_to_storage(remote_uri, storage_options, filename.parent, filename)
-    with open(filename, "rb") as file:
-        file_hash = sha1(file.read()).hexdigest()
+    file_hash = FileAPI.calculate_hash(filename)
     location = _create_target_data_dict(
         DataRegistryTarget.storage_location,
         {
@@ -349,7 +347,7 @@ def upload_model_run(
     model_version_str = config_yaml["model_version"]
     model_name = config_yaml["model_name"]
     open_timestamp = config_yaml["open_timestamp"]
-    model_git_sha = config["metadata"]["git_sha"]
+    # model_git_sha = config["metadata"]["git_sha"]
     model_uri = config["metadata"]["uri"]
 
     inputs = []
@@ -357,7 +355,7 @@ def upload_model_run(
     posts = []
 
     storage_root = _add_storage_root(posts, remote_uri_override, accessibility, data_registry_url, token)
-    code_repo = _add_code_repo(posts, model_name, model_git_sha, model_uri)
+    code_repo = _add_code_repo(posts, model_name, model_version_str, model_uri)
 
     for event in config["io"]:
         read = event["type"] == "read"
@@ -408,15 +406,15 @@ def upload_model_run(
 
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=click.Path(exists=True), help=f"Path to the access yaml file.",
+    "--config", required=True, type=click.Path(exists=True), help="Path to the access yaml file.",
 )
 @click.option(
-    "--model-config", required=True, type=click.Path(exists=True), help=f"Path to the model config yaml file.",
+    "--model-config", required=True, type=click.Path(exists=True), help="Path to the model config yaml file.",
 )
 @click.option(
-    "--submission-script", required=True, type=click.Path(exists=True), help=f"Path to the submission script file.",
+    "--submission-script", required=True, type=click.Path(exists=True), help="Path to the submission script file.",
 )
-@click.option("--remote-uri", "-u", required=True, type=str, help=f"URI to the root of the storage")
+@click.option("--remote-uri", "-u", required=True, type=str, help="URI to the root of the storage")
 @click.option(
     "--remote-option",
     "-o",
@@ -428,9 +426,9 @@ def upload_model_run(
 @click.option(
     "--remote-uri-override",
     type=str,
-    help=f"URI to the root of the storage to post in the registry"
-    f" required if the URI to use for download from the registry"
-    f" is different from that used to upload the item",
+    help="URI to the root of the storage to post in the registry"
+    " required if the URI to use for download from the registry"
+    " is different from that used to upload the item",
 )
 @click.option(
     "--data-registry",
