@@ -8,10 +8,13 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import uk.ramp.hash.Hasher;
+import uk.ramp.metadata.ImmutableIssueItem;
 import uk.ramp.metadata.ImmutableMetadataItem;
+import uk.ramp.metadata.IssueItem;
 
 public class FileApiIntegrationTest {
   private String configPath;
@@ -86,5 +89,26 @@ public class FileApiIntegrationTest {
     fileApi.close();
 
     assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml"))).contains("io: []");
+  }
+
+  @Test
+  public void testIssuesAndDescriptionIsWritten() throws IOException {
+    List<IssueItem> issues =
+        List.of(ImmutableIssueItem.builder().severity(1).description("issue description").build());
+    var query =
+        ImmutableMetadataItem.builder()
+            .internalFilename("exampleWrite.toml")
+            .issues(issues)
+            .build();
+    var buffer = ByteBuffer.allocate(16).put("testWrite".getBytes()).flip();
+    FileApi fileApi = new FileApi(Path.of(configPath));
+    var fileHandle = fileApi.openForWrite(query);
+    fileHandle.write(buffer);
+    fileHandle.close();
+    fileApi.close();
+
+    assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml")))
+        .contains(
+            "    issues:\n" + "    - description: \"issue description\"\n" + "      severity: 1");
   }
 }
