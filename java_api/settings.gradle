@@ -1,2 +1,4 @@
 rootProject.name = 'java_api'
+include 'standard_api'
+include 'file_api'
 
