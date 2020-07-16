@@ -2,7 +2,8 @@
 #include "array.hh"
 #include <vector>
 #include <string>
-#include <assert.h>
+#include <cassert>
+#include <stdexcept>
 
 using namespace std;
 
