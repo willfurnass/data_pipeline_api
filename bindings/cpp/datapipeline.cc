@@ -148,7 +148,9 @@ void DataPipeline::write_array(const string &data_product, const string &compone
     throw domain_error("Unsupported array dimensionality in write_array");
   }
 
-   api.attr("write_array")(data_product, component, array_np);
+  py::object Array = py::module::import("data_pipeline_api.standard_api").attr("Array");
+
+  api.attr("write_array")(data_product, component, Array(array_np));
 }
 
 // void DataPipeline::write_table(const string &data_product, const string &component,
