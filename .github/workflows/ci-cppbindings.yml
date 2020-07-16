@@ -25,7 +25,7 @@ jobs:
     - name: Compile
       run: |
         cd bindings/cpp
-        make build/test_cpp_datapipeline
+        make -j 4 build/test_cpp_datapipeline
 
     - name: Run tests
       run: |
