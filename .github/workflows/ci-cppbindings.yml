@@ -20,7 +20,7 @@ jobs:
     - name: Install Python packages
       run: |
         pip3 install wheel
-        pip3 install pybind11 pyyaml pandas scipy toml
+        pip3 install pybind11 pyyaml pandas scipy toml semver
 
     - name: Compile
       run: |
