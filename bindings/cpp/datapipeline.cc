@@ -129,7 +129,10 @@ void DataPipeline::write_array(const string &data_product, const string &compone
 {
   py::module np = py::module::import("numpy");
   vector<int> shape = array.size();
-  const py::array array_np = np.attr("zeros")(shape,"float64");
+
+  // TODO: the example dataset is an int, and if we try to write a
+  // float64 over the top, this results in an error
+  const py::array array_np = np.attr("zeros")(shape,"int64");
 
   switch(shape.size()) {
     case 1:
