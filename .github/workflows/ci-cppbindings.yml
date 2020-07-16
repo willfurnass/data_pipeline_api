@@ -28,5 +28,6 @@ jobs:
         make build/test_cpp_datapipeline
 
     - name: Run tests
+      run: |
         cd bindings/cpp
         ./build/test_cpp_datapipeline
