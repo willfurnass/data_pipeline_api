@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch, Mock
 
 import pytest
@@ -86,7 +87,7 @@ def test_get_on_end_point():
             "file://C:\\test",
             "data/data.csv",
             {},
-            "C:/test/data/data.csv",
+            "C:/test/data/data.csv" if os.name == "nt" else "C:\\test/data/data.csv",
             dict(auto_mkdir=True),
         ],
         [
