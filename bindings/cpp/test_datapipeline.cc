@@ -46,7 +46,7 @@ int main()
 
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
-  DataPipeline dp("../../tests/data/config.yaml");
+  DataPipeline dp("../../tests/data/config.yaml", "https://whatever", GIT_VERSION);
 
   // read_estimate
   cout << "read_estimate:" << endl;

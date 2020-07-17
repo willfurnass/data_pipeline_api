@@ -9,9 +9,10 @@
 using namespace std;
 namespace py = pybind11;
 
-DataPipeline::DataPipeline(const string &config_file)
+DataPipeline::DataPipeline(const string &config_file, const string &uri, const string &git_sha)
 {
-  api = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI")(config_file);
+  api = py::module::import("data_pipeline_api.standard_api").attr("StandardAPI")(
+    config_file, uri, git_sha);
 }
 
 double DataPipeline::read_estimate(string data_product, const string &component)

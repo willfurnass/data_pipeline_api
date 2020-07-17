@@ -25,7 +25,7 @@ class Array;
 class DataPipeline
 {
   public:
-  DataPipeline(const string &config_file);
+  DataPipeline(const string &config_file, const string &uri, const string &git_sha);
   double read_estimate(string data_product, const string &component);
   Distribution read_distribution(const string &data_product, const string &component);
   double read_sample(const string &data_product, const string &component);
