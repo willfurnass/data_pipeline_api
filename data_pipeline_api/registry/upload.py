@@ -1,6 +1,5 @@
 import logging
 import logging.config
-import os
 from pathlib import Path
 from typing import Dict, Union, List
 
@@ -34,7 +33,7 @@ def resolve_references(data: YamlDict, data_registry_url: str, token: str) -> Di
         elif isinstance(value, List):
             return [resolve(inner_value) for inner_value in value]
         else:
-            return value.strip()
+            return value.strip() if isinstance(value, str) else value
 
     return {k: resolve(v) for k, v in data.items()}
 
@@ -71,13 +70,13 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
                 do_request = reference is not None
 
             if do_request:
-                if DataRegistryField.version_identifier in data:
+                if DataRegistryField.version in data:
                     try:
-                        semver.parse_version_info(data[DataRegistryField.version_identifier])
+                        semver.parse_version_info(data[DataRegistryField.version])
                     except ValueError as e:
                         raise ValueError(
-                            f"version_identifier must match the Semantic Versioning (SemVer) "
-                            f"format but was '{data['version_identifier']}'"
+                            f"version must match the Semantic Versioning (SemVer) "
+                            f"format but was '{data['version']}'"
                         ) from e
 
                 logger.info(f"{method} {end_point}: {data}")
@@ -110,26 +109,27 @@ def upload_from_config_file(config_filename: Union[Path, str], data_registry_url
     upload_from_config(config, data_registry_url, token)
 
 
-@click.command()
+@click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=str, help=f"Path to the yaml config file.",
+    "--config", required=True, type=str, help="Path to the yaml config file.",
 )
 @click.option(
     "--data-registry",
     type=str,
+    envvar=f"{DATA_REGISTRY_URL}",
     help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
     f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
 )
 @click.option(
     "--token",
     type=str,
+    envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
 def upload_cli(config, data_registry, token):
     configure_cli_logging()
-    data_registry = data_registry or os.environ.get(DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL)
-    token = token or os.environ.get(DATA_REGISTRY_ACCESS_TOKEN)
+    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     if not token:
         raise ValueError(
             f"Personal Access Token must be provided through either --token cmd line arg "
@@ -140,4 +140,5 @@ def upload_cli(config, data_registry, token):
 
 if __name__ == "__main__":
     logger = logging.getLogger(f"{__package__}.{__name__}")
+    # pylint: disable=no-value-for-parameter
     upload_cli()

@@ -1,0 +1,35 @@
+post:
+- &namespace
+  data:
+    name: {namespace}
+  target: namespace
+- &storage_root
+  data:
+    name: {storage_root_name}
+    root: {storage_root}
+    accessibility: {accessibility}
+  target: storage_root
+- &storage_location
+  data:
+    path: {storage_location_path}
+    hash: {storage_location_hash}
+    storage_root: *storage_root
+  target: storage_location
+- &object
+  data:
+    description: {data_product_description}
+    storage_location: *storage_location
+  target: object
+-
+  data:
+    name: {data_product_name}
+    version: {data_product_version}
+    object: *object
+    namespace: *namespace
+  target: data_product
+-
+  data:
+    name: {component_name}
+    description: {component_description}
+    object: *object
+  target: object_component
