@@ -249,18 +249,67 @@ def _get_accessibility(config):
         return max(int(event.get("accessibility", 0)) for event in config["io"])
 
 
-def _add_code_repo(posts: List[YamlDict], model_name: str, model_version: str, model_uri: str) -> YamlDict:
+def to_github_uri(input_uri: str, git_sha: str = "master") -> str:
     """
-    Creates a code_repo_release and adds it to the list of objects to post to the data registry
+    A basic and crude function that attempts to convert an https://github or git@github.com uri to a github
+    format uri of github://<org>:<repo>@<sha>/<path>. if conversion can't be done the original uri is returned
+
+    :param input_uri: the input uri
+    :param git_sha: the git sha of where this uri points, defaults to master
+    :return: github format uri of github://<org>:<repo>@<sha>/<path>
+    """
+    if input_uri.startswith("https://github.com/"):
+        try:
+            split_uri = input_uri.split("/")
+            org = split_uri[3]
+            repo = split_uri[4]
+            path = "/".join(split_uri[5:])
+            github_uri = f"github://{org}:{repo}@{git_sha}/{path}"
+        except IndexError:
+            github_uri = input_uri
+    elif input_uri.startswith("git@github.com:"):
+        split_uri = input_uri.replace("git@github.com:", "").split("/")
+        org = split_uri[0]
+        repo = split_uri[1].replace(".git", "")
+        github_uri = f"github://{org}:{repo}@{git_sha}/"
+    else:
+        github_uri = input_uri
+    return github_uri
+
+
+def _add_code_repo(
+    posts: List[YamlDict], model_name: str, model_version: str, model_git_sha: str, model_uri: str
+) -> YamlDict:
+    """
+    Creates a code_repo_release and storage_location for the model and adds them to the list of objects to post to the
+    data registry
 
     :param posts: List of posts to the data registry, will be modified
     :param model_name: name of the model
     :param model_version: version of the model
+    :param model_git_sha: git sha of the model
     :param model_uri: uri that the model is located at
     :return: the object reference to the code repo release
     """
+    storage_root_uri = to_github_uri(model_uri, model_git_sha)
+
+    code_repo_storage = _create_target_data_dict(
+        DataRegistryTarget.storage_root, {DataRegistryField.name: model_uri, DataRegistryField.root: storage_root_uri,},
+    )
+    code_repo_location = _create_target_data_dict(
+        DataRegistryTarget.storage_location,
+        {
+            DataRegistryField.path: "/",
+            DataRegistryField.hash: model_git_sha,
+            DataRegistryField.storage_root: code_repo_storage,
+        },
+    )
     code_repo_obj = _create_target_data_dict(
-        DataRegistryTarget.object, {DataRegistryField.description: f"{model_name}+{model_git_sha}"}
+        DataRegistryTarget.object,
+        {
+            DataRegistryField.description: f"{model_name}+{model_version}",
+            DataRegistryField.storage_location: code_repo_location,
+        },
     )
     code_repo_release = _create_target_data_dict(
         DataRegistryTarget.code_repo_release,
@@ -271,8 +320,8 @@ def _add_code_repo(posts: List[YamlDict], model_name: str, model_version: str, m
             DataRegistryField.object: code_repo_obj,
         },
     )
-    posts.append(code_repo_release)
-    posts.append(code_repo_obj)
+    posts.extend([code_repo_storage, code_repo_location, code_repo_obj, code_repo_release])
+
     return code_repo_obj
 
 
@@ -347,7 +396,7 @@ def upload_model_run(
     model_version_str = config_yaml["model_version"]
     model_name = config_yaml["model_name"]
     open_timestamp = config_yaml["open_timestamp"]
-    # model_git_sha = config["metadata"]["git_sha"]
+    model_git_sha = config["metadata"]["git_sha"]
     model_uri = config["metadata"]["uri"]
 
     inputs = []
@@ -355,7 +404,7 @@ def upload_model_run(
     posts = []
 
     storage_root = _add_storage_root(posts, remote_uri_override, accessibility, data_registry_url, token)
-    code_repo = _add_code_repo(posts, model_name, model_version_str, model_uri)
+    code_repo = _add_code_repo(posts, model_name, model_version_str, model_git_sha, model_uri)
 
     for event in config["io"]:
         read = event["type"] == "read"
