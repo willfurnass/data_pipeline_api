@@ -26,19 +26,31 @@ Distribution DataPipeline::read_distribution(const string &data_product, const s
 {
   py::object d_py = api.attr("read_distribution")(data_product, component);
 
-  Distribution d;
+  throw runtime_error("Not implemented");
 
-//  throw logic_error("Not implemented");
+  // Distribution d;
 
-  // TODO: wait for this information to actually be available from the Python API
-  // d.name = py::str(d_py.attr("name"));
+  // d.name = py::str(d_py.attr("dist").attr("name"));
 
   // map<string, double> params = d_py.attr("params").cast<map<string, double>>();
+
+  // // The distribution returned is a scipy distribution, and it's not
+  // // straightforward to extract the needed parameters. Ideally this
+  // // would all be handled on the Python side.
+
+  // if (d.name == "gamma") {
+    
+  //   params["shape"] = 0; // ???
+  //   params["scale"] = 0; // ???
+  // } else {
+  //   throw domain_error("Unrecognised distribution "+d.name);
+  // }
+
   // d.params = params;
 
-  // cout << "distribution name = " << d.name << endl;
+  // // cout << "distribution name = " << d.name << endl;
 
-  return d;
+  // return d;
 }
 
 
