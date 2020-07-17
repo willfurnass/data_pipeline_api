@@ -1,6 +1,8 @@
 import logging
+import glob
+import re
 import urllib
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from pathlib import Path
 from typing import Dict, List, Union, IO, Tuple, Optional
 
@@ -12,7 +14,6 @@ from data_pipeline_api.metadata import MetadataKey
 from data_pipeline_api.registry.common import (
     configure_cli_logging,
     get_data,
-    get_reference,
     DATA_REGISTRY_ACCESS_TOKEN,
     get_on_end_point,
     DATA_REGISTRY_URL,
@@ -70,7 +71,7 @@ def _parse_read_config(read_config: ReadConfig, namespace: Optional[str]) -> Par
 
 def _get_data_product_version_and_components(
     parsed_config: ParsedReadConfig, data_registry_url: str, token: str
-) -> Tuple[Dict[str, str], List[str]]:
+) -> List[Tuple[Dict[str, str], List[str]]]:
     """
     For a provided parsed read config block gets the specified data_product (filtering on namespace, name
     and version), if no version is specified all versions will be gotten. The data_products are
@@ -83,59 +84,71 @@ def _get_data_product_version_and_components(
     :param parsed_config: a read config block parsed to the relevant data
     :param data_registry_url: base url of the data registry
     :param token: personal access token
-    :return: a pair of data_product data, List[data_product_component[name]]
+    :return: a list of pairs of data_product data, List[data_product_component[name]]
     """
-    namespace = get_reference({DataRegistryField.name: parsed_config.namespace}, DataRegistryTarget.namespace, data_registry_url, token)
+    namespace = get_data({DataRegistryField.name: parsed_config.namespace}, DataRegistryTarget.namespace, data_registry_url, token, exact=False)
     if namespace is None:
         raise ValueError(f"No namespace found with name: {parsed_config.namespace}")
-    query_data = {DataRegistryField.name: parsed_config.data_product, DataRegistryField.namespace: namespace}
-    if parsed_config.version is not None:
-        query_data[DataRegistryField.version] = parsed_config.version
+    data_products_list = []
+    for ns in namespace:
+        query_data = {DataRegistryField.name: parsed_config.data_product, DataRegistryField.namespace: ns[DataRegistryField.url]}
+        if parsed_config.version is not None:
+            query_data[DataRegistryField.version] = parsed_config.version
 
-    # if query_data contains a version this will return a list with a single element, else it will return
-    # a list of all versions for the data_product
-    data_products = get_data(
-        query_data, DataRegistryTarget.data_product, data_registry_url, token, exact=False
-    )
-    if data_products is None:
+        # if query_data contains a version this will return a list with a single element, else it will return
+        # a list of all versions for the data_product
+        data_products = get_data(
+            query_data, DataRegistryTarget.data_product, data_registry_url, token, exact=False
+        )
+        if data_products:
+            data_products_list.extend(sort_by_semver(data_products))
+
+    if not data_products_list:
         raise ValueError(f"No data_product found with namespace {parsed_config.namespace}, name {parsed_config.data_product} and version {parsed_config.version}")
 
-    data_products = sort_by_semver(data_products)
-    if parsed_config.component:
-        data_product = None
-        data_product_components = []
-        # if a specific component has been requested then just get that component, iterate through the
-        # data_products, and for each get their component urls, get the data at that url and break on the
-        # first data_product found that contains the requested component
-        for dp in data_products:
-            obj = get_on_end_point(dp[DataRegistryField.object], token)
-            data_product_components = [
-                cn
-                for cn in [
-                    get_on_end_point(c, token)[DataRegistryField.name] for c in obj[DataRegistryField.components]
+    grouped_data_products = defaultdict(list)
+    for data_product in data_products_list:
+        grouped_data_products[tuple([data_product[DataRegistryField.namespace], data_product[DataRegistryField.name]])].append(data_product)
+
+    data_product_component_pairs = []
+    for _, group in grouped_data_products.items():
+        if parsed_config.component:
+            data_product = None
+            data_product_components = []
+            # if a specific component has been requested then just get that component, iterate through the
+            # data_products, and for each get their component urls, get the data at that url and break on the
+            # first data_product found that contains the requested component
+            for dp in group:
+                obj = get_on_end_point(dp[DataRegistryField.object], token)
+                data_product_components = [
+                    cn
+                    for cn in [
+                        get_on_end_point(c, token)[DataRegistryField.name] for c in obj[DataRegistryField.components]
+                    ]
+                    if re.match(glob.fnmatch.translate(parsed_config.component), cn)
                 ]
-                if cn == parsed_config.component
+                if data_product_components:
+                    data_product = dp
+                    break
+        else:
+            data_product = next(iter(group))
+            obj = get_on_end_point(data_product[DataRegistryField.object], token)
+            data_product_components = [
+                get_on_end_point(c, token)[DataRegistryField.name]
+                for c in obj[DataRegistryField.components]
             ]
-            if data_product_components:
-                data_product = dp
-                break
-        if data_product is None:
-            raise ValueError(
-                f"No data_product found for data_product '{parsed_config.data_product}'"
-                f" with component '{parsed_config.component}'"
+        if data_product is not None:
+            logger.info(
+                f"Found data_product: {data_product} "
+                f"and components: {data_product_components}"
             )
-    else:
-        data_product = next(iter(data_products))
-        obj = get_on_end_point(data_product[DataRegistryField.object], token)
-        data_product_components = [
-            get_on_end_point(c, token)[DataRegistryField.name]
-            for c in obj[DataRegistryField.components]
-        ]
-    logger.info(
-        f"Found data_product: {data_product} "
-        f"and components: {data_product_components}"
-    )
-    return data_product, data_product_components
+            data_product_component_pairs.append((data_product, data_product_components))
+    if not data_product_component_pairs:
+        raise ValueError(
+            f"No data_product found for data_product '{parsed_config.data_product}'"
+            f" with component '{parsed_config.component}'"
+        )
+    return data_product_component_pairs
 
 
 def _write_metadata(
@@ -267,22 +280,25 @@ def download_from_configs(
         for read_config in read_configs:
             parsed_config = _parse_read_config(read_config, namespace)
 
-            data_product, data_product_components = _get_data_product_version_and_components(
+            data_product_component_pairs = _get_data_product_version_and_components(
                 parsed_config, data_registry_url, token
             )
-            output_info = _get_output_info(parsed_config.data_product, data_product, data_directory, token)
-            _write_metadata(
-                parsed_config.data_product,
-                data_product[DataRegistryField.version],
-                parsed_config.namespace,
-                output_info.accessibility,
-                output_info.hash,
-                data_product_components,
-                output_info.output_filename,
-                metadata_stream,
-            )
 
-            _download_data(output_info)
+            for data_product, data_product_components in data_product_component_pairs:
+                output_info = _get_output_info(data_product[DataRegistryField.name], data_product, data_directory, token)
+                ns = get_on_end_point(data_product[DataRegistryField.namespace], token)[DataRegistryField.name]
+                _write_metadata(
+                    data_product[DataRegistryField.name],
+                    data_product[DataRegistryField.version],
+                    ns,
+                    output_info.accessibility,
+                    output_info.hash,
+                    data_product_components,
+                    output_info.output_filename,
+                    metadata_stream,
+                )
+
+                _download_data(output_info)
 
 
 def download_from_config_file(config_filename: Union[Path, str], data_registry_url: str, token: str) -> None:

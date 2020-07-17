@@ -184,9 +184,7 @@ def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True) -> List
     :return: Sorted list of items
     """
     return sorted(
-        items,
-        key=lambda data: semver.parse_version_info(data[DataRegistryField.version]),
-        reverse=descending,
+        items, key=lambda data: semver.parse_version_info(data[DataRegistryField.version]), reverse=descending,
     )
 
 
@@ -315,7 +313,7 @@ def get_data(
     :param token: personal access token
     :param exact: If exact is True: 1 result -> return that result, 2+ results -> raise an error, 0 results -> return None
                   If exact is False: 1+ results -> return results in list, 0 results -> return None
-    :return: reference url to existing data or None if it does not exist
+    :return: existing data or None if it does not exist
     """
     query_str = build_query_string(query_data, target, data_registry_url)
     result = get_on_end_point(get_end_point(data_registry_url, target), token, query_str)
