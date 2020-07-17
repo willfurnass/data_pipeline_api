@@ -8,6 +8,7 @@
 #include "datapipeline.hh"
 
 #include "array.hh"
+#include "gitversion.hh"
 
 using namespace std;
 

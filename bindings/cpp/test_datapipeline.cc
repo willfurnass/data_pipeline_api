@@ -6,6 +6,7 @@
 #include "datapipeline.hh"
 
 #include "array.hh"
+#include "gitversion.hh"
 
 using namespace std;
 
@@ -41,6 +42,8 @@ void test_array()
 
 int main()
 {
+  cout << "Data pipeline test program version " << GIT_VERSION << endl;
+
   pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
   DataPipeline dp("../../tests/data/config.yaml");
