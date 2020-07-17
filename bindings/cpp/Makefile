@@ -105,7 +105,8 @@ $(BUILD_DIR)/%.cc.o: %.cc  | gitversion
 
 # Run all the tests
 .PHONY : test
-test: $(TESTS)
+test: $(TEST_EXEC)
+	$(TEST_EXEC)
 
 # Run each executable as a test
 .PHONY : $(TESTS)
