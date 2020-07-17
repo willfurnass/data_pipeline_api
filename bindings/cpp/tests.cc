@@ -57,9 +57,9 @@ TEST_CASE("read_sample") {
   CHECK(dp.read_sample("parameter", "example-samples") == 2);
 }
 
-TEST_CASE("write_samples","[!shouldfail]") {
+TEST_CASE("write_samples") {
   INIT_DP;
-  CHECK_NOTHROW(dp.write_samples("parameter", "example-samples", vector<double>{1,2,3}));
+  CHECK_NOTHROW(dp.write_samples("parameter", "example-samples", vector<int>{1,2,3}));
 }
 
 TEST_CASE("read_table") {

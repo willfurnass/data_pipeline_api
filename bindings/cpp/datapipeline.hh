@@ -32,7 +32,7 @@ class DataPipeline
     void write_estimate(const string &data_product, const string &component, double estimate);
   void write_distribution(const string &data_product, const string &component,
                           const Distribution &d);
-  void write_samples(const string &data_product, const string &component, const vector<double> &samples);
+  void write_samples(const string &data_product, const string &component, const vector<int> &samples);
 
   Array<double> read_array(const string &data_product, const string &component);
   Table read_table(const string &data_product, const string &component);

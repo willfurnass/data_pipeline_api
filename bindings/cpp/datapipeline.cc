@@ -58,9 +58,10 @@ void DataPipeline::write_distribution(const string &data_product, const string &
   throw runtime_error("Not implemented");
 }
 
-void DataPipeline::write_samples(const string &data_product, const string &component, const vector<double> &samples)
+void DataPipeline::write_samples(const string &data_product, const string &component, const vector<int> &samples)
 {
-  throw runtime_error("Not implemented");
+  py::module np = py::module::import("numpy");
+  api.attr("write_samples")(data_product, component, np.attr("array")(samples));
 }
 
 
