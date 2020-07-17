@@ -1,12 +1,17 @@
-import numpy as np
-import pandas as pd
-from scipy.stats import gamma
+from logging import basicConfig
 from pathlib import Path
-from data_pipeline_api.standard_api import StandardAPI
+import numpy as np
+from data_pipeline_api.standard_api import StandardAPI, Issue
+
+
+basicConfig(
+    level="DEBUG",
+    format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s - %(message)s",
+)
 
 CONFIG_PATH = Path(__file__).parent.parent / "tests" / "data" / "config.yaml"
 
-with StandardAPI(CONFIG_PATH) as api:
+with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
     api.write_estimate(
         "output-parameter",
         "example-estimate-from-estimate",
@@ -16,6 +21,7 @@ with StandardAPI(CONFIG_PATH) as api:
         "output-parameter",
         "example-estimate-from-distribution",
         api.read_estimate("parameter", "example-distribution"),
+        issues=[Issue("test issue", 3)]
     )
     api.write_estimate(
         "output-parameter",

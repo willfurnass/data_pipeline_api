@@ -1,219 +1,117 @@
 # Upload of some simple network sim data
 
-reference:
-  - &richard_blackwell
-    target: 'users'
-    data:
-      username: 'rtblackwell'
-
-  - &chris_hughes
-    target: 'users'
-    data:
-      username: 'mrow84'
-
 post:
-  - &https
-    target: 'storage_type'
-    data:
-      name:  'https'
-      description: 'secure file access over https'
-
   - &temporary_data
     target: 'storage_root'
     data:
       name:  'temporary_data'
-      description: 'SCRC temporary_data github repo on master'
-      uri: 'https://raw.githubusercontent.com/ScottishCovidResponse/temporary_data/master/'
-      type: *https
+      root: 'https://raw.githubusercontent.com/ScottishCovidResponse/temporary_data/master/'
 
   - &human_commutes_store
     target: 'storage_location'
     data:
-      name: 'simple_network_sim/human/commutes'
-      description: 'human/commutes csv from simple_network_sim input data'
       path: 'simple_network_sim/human/commutes/data/data.csv'
       hash: 'dae8dd8b1053e2f33979da109259344f0f9e273f'
-      local_cache_url: ''   # reference to a local store of the data
-      responsible_person: *chris_hughes
-      store_root: *temporary_data
+      storage_root: *temporary_data
 
   - &human_compartment_transition_store
     target: 'storage_location'
     data:
-      name: 'simple_network_sim/human/compartment-transition'
-      description: 'human/compartment-transition csv from simple_network_sim input data'
       path: 'simple_network_sim/human/compartment-transition/data/data.csv'
       hash: '3a9f2e43c148633afb7057bd134b859c77f382d7'
-      responsible_person: *chris_hughes
-      store_root: *temporary_data
+      storage_root: *temporary_data
 
   - &human_mixing_matrix_store
     target: 'storage_location'
     data:
-      name: 'simple_network_sim/human/mixing-matrix'
-      description: 'human/mixing-matrix csv from simple_network_sim input data'
       path: 'simple_network_sim/human/mixing-matrix/data/data.csv'
       hash: '141e15d0f8f467debbaf3b607971ecd6c6c04833'
-      responsible_person: *chris_hughes
-      store_root: *temporary_data
+      storage_root: *temporary_data
 
   - &human_population_store
     target: 'storage_location'
     data:
-      name: 'simple_network_sim/human/population'
-      description: 'human/population csv from simple_network_sim input data'
       path: 'simple_network_sim/human/population/data/data.csv'
       hash: '1219832fdd6a2d9af5d33b1e10bfa69c6787748c'
-      responsible_person: *chris_hughes
-      store_root: *temporary_data
+      storage_root: *temporary_data
 
-  - &simple_network_sim
-    target: 'data_product_type'
+  - &human_population_obj
+    target: 'object'
+    data:
+      storage_location: *human_population_store
+
+  - &human_mixing_matrix_obj
+    target: 'object'
+    data:
+      storage_location: *human_mixing_matrix_store
+
+  - &human_compartment_transition_obj
+    target: 'object'
+    data:
+      storage_location: *human_compartment_transition_store
+
+  - &human_commutes_obj
+    target: 'object'
+    data:
+      storage_location: *human_commutes_store
+
+  - &namespace
+    target: 'namespace'
     data:
       name: 'simple_network_sim'
-      description: 'data product from simple network sim'
 
-  - &human_population
+  -
     target: 'data_product'
     data:
       name: 'human/population'
-      description: 'human population from simple network sim'
-      responsible_person: *richard_blackwell
-      type: *simple_network_sim
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_population_obj
 
-  - &human_mixing_matrix
+  -
     target: 'data_product'
     data:
       name: 'human/mixing-matrix'
-      description: 'human mixing matrix from simple network sim'
-      responsible_person: *richard_blackwell
-      type: *simple_network_sim
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_mixing_matrix_obj
 
-  - &human_compartment_transition
+  -
     target: 'data_product'
     data:
       name: 'human/compartment-transition'
-      description: 'human compartment-transition from simple network sim'
-      responsible_person: *richard_blackwell
-      type: *simple_network_sim
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_compartment_transition_obj
 
-  - &human_commutes
+  -
     target: 'data_product'
     data:
       name: 'human/commutes'
-      description: 'human commutes from simple network sim'
-      responsible_person: *richard_blackwell
-      type: *simple_network_sim
-
-  - &public
-    target: 'accessibility'
-    data:
-      name: 'public'
-      description: 'accessible to everyone'
-      access_info: 'public'
-
-  - &simple_network_sim_root
-    target: 'storage_root'
-    data:
-      name:  'simple_network_sim'
-      description: 'SCRC simple_network_sim github repo on master'
-      uri: 'https://raw.githubusercontent.com/ScottishCovidResponse/simple_network_sim/master/'
-      type: *https
-
-  - &simple_network_sim_store
-    target: 'storage_location'
-    data:
-      name: 'simple_network_sim_init'
-      description: 'human/mixing-matrix csv from simple_network_sim input data'
-      path: 'simple_network_sim/__init__.py'
-      hash: 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
-      responsible_person: *chris_hughes
-      store_root: *simple_network_sim_root
-
-  - &simple_network_sim_processing_script
-    target: 'processing_script'
-    data:
-      name: 'simple_network_sim'
-      responsible_person: *chris_hughes
-      store: *simple_network_sim_store
-
-  - &simple_network_sim_processing_script_version
-    target: 'processing_script_version'
-    data:
-      version_identifier: '0.1.0'
-      responsible_person: *chris_hughes
-      processing_script: *simple_network_sim_processing_script
-      store: *simple_network_sim_store
-      accessibility: *public
-
-  - &human_mixing_matrix_data_product_version
-    target: 'data_product_version'
-    data:
-      version_identifier: '0.1.0'
-      description: 'version 1 of the human mixing-matrix for simple_network_sim'
-      responsible_person: *richard_blackwell
-      data_product: *human_mixing_matrix
-      store: *human_mixing_matrix_store
-      accessibility: *public
-      processing_script_version: *simple_network_sim_processing_script_version
-
-  - &human_commutes_data_product_version
-    target: 'data_product_version'
-    data:
-      version_identifier: '0.1.0'
-      description: 'version 1 of the human commutes for simple_network_sim'
-      responsible_person: *richard_blackwell
-      data_product: *human_commutes
-      store: *human_commutes_store
-      accessibility: *public
-      processing_script_version: *simple_network_sim_processing_script_version
-
-  - &human_compartment_transition_data_product_version
-    target: 'data_product_version'
-    data:
-      version_identifier: '0.1.0'
-      description: 'version 1 of the human compartment-transition for simple_network_sim'
-      responsible_person: *richard_blackwell
-      data_product: *human_compartment_transition
-      store: *human_compartment_transition_store
-      accessibility: *public
-      processing_script_version: *simple_network_sim_processing_script_version
-
-  - &human_population_data_product_version
-    target: 'data_product_version'
-    data:
-      version_identifier: '0.1.0'
-      description: 'version 1 of the human population for simple_network_sim'
-      responsible_person: *richard_blackwell
-      data_product: *human_population
-      store: *human_population_store
-      accessibility: *public
-      processing_script_version: *simple_network_sim_processing_script_version
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_commutes_obj
 
   -
-    target: 'data_product_version_component'
+    target: 'object_component'
     data:
       name: 'mixing-matrix'
-      responsible_person: *richard_blackwell
-      data_product_version: *human_mixing_matrix_data_product_version
+      object: *human_mixing_matrix_obj
 
   -
-    target: 'data_product_version_component'
+    target: 'object_component'
     data:
       name: 'commutes'
-      responsible_person: *richard_blackwell
-      data_product_version: *human_commutes_data_product_version
+      object: *human_commutes_obj
 
   -
-    target: 'data_product_version_component'
+    target: 'object_component'
     data:
       name: 'compartment-transition'
-      responsible_person: *richard_blackwell
-      data_product_version: *human_compartment_transition_data_product_version
+      object: *human_compartment_transition_obj
 
   -
-    target: 'data_product_version_component'
+    target: 'object_component'
     data:
       name: 'population'
-      responsible_person: *richard_blackwell
-      data_product_version: *human_population_data_product_version
+      object: *human_population_obj
