@@ -14,7 +14,7 @@ from data_pipeline_api.registry.download import (
     OutputInfo,
 )
 from registry.common import DataRegistryField
-from tests.registry.common import DATA_REGISTRY_URL, TOKEN
+from tests.registry.test_common import DATA_REGISTRY_URL, TOKEN
 
 
 NAMESPACE = "namespace"

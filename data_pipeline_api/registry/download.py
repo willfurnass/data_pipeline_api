@@ -1,5 +1,5 @@
 import logging
-import glob
+import fnmatch
 import re
 import urllib
 from collections import namedtuple, defaultdict
@@ -108,10 +108,10 @@ def _get_data_product_version_and_components(
 
     grouped_data_products = defaultdict(list)
     for data_product in data_products_list:
-        grouped_data_products[tuple([data_product[DataRegistryField.namespace], data_product[DataRegistryField.name]])].append(data_product)
+        grouped_data_products[data_product[DataRegistryField.namespace], data_product[DataRegistryField.name]].append(data_product)
 
     data_product_component_pairs = []
-    for _, group in grouped_data_products.items():
+    for group in grouped_data_products.values():
         if parsed_config.component:
             data_product = None
             data_product_components = []
@@ -125,7 +125,7 @@ def _get_data_product_version_and_components(
                     for cn in [
                         get_on_end_point(c, token)[DataRegistryField.name] for c in obj[DataRegistryField.components]
                     ]
-                    if re.match(glob.fnmatch.translate(parsed_config.component), cn)
+                    if re.match(fnmatch.translate(parsed_config.component), cn)
                 ]
                 if data_product_components:
                     data_product = dp

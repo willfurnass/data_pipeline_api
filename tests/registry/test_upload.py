@@ -5,7 +5,7 @@ import yaml
 
 from data_pipeline_api.registry.upload import resolve_references, upload_from_config
 from data_pipeline_api.registry.common import get_end_point, get_headers, get_on_end_point
-from tests.registry.common import DATA_REGISTRY_URL, TOKEN, MockResponse
+from tests.registry.test_common import DATA_REGISTRY_URL, TOKEN, MockResponse
 
 
 @pytest.fixture(autouse=True)
