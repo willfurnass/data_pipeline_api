@@ -18,7 +18,7 @@ const string uri = GIT_URL;
 
 #define INIT_DP DataPipeline dp(CONFIG_FILE, uri, GIT_VERSION)
 
-TEST_CASE("write_estimate", "[!shouldfail]") {
+TEST_CASE("write_estimate") {
   INIT_DP;
   CHECK_NOTHROW(dp.write_estimate("parameter", "example-estimate", 1.0));
 }

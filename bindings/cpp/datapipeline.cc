@@ -49,7 +49,7 @@ double DataPipeline::read_sample(const string &data_product, const string &compo
 
 void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate)
 {
-  throw runtime_error("Not implemented");
+  api.attr("write_estimate")(data_product, component, estimate);
 }
 
 void DataPipeline::write_distribution(const string &data_product, const string &component,
