@@ -13,7 +13,7 @@ from data_pipeline_api.registry.download import (
     _download_data,
     OutputInfo,
 )
-from registry.common import DataRegistryField
+from data_pipeline_api.registry.common import DataRegistryField
 from tests.registry.test_common import DATA_REGISTRY_URL, TOKEN
 
 
