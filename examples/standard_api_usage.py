@@ -29,28 +29,20 @@ with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
         api.read_estimate("parameter", "example-samples"),
     )
 
-    # print(api.read_distribution("parameter", "example-estimate"))  # expected to fail
+    # api.read_distribution("parameter", "example-estimate")  # expected to fail
     api.write_distribution(
         "output-parameter",
         "example-distribution",
         api.read_distribution("parameter", "example-distribution"),
     )
-    # print(api.read_distribution("parameter", "example-samples"))  # expected to fail
+    # api.read_distribution("parameter", "example-samples")  # expected to fail
 
-    api.write_samples(
-        "output-parameter",
-        "example-samples-from-estimate",
-        np.array([api.read_sample("parameter", "example-estimate")]),
-    )
-    api.write_samples(
-        "output-parameter",
-        "example-samples-from-distribution",
-        np.array([api.read_sample("parameter", "example-distribution")]),
-    )
+    # api.read_samples("parameter", "example-estimate")  # expected to fail
+    # api.read_samples("parameter", "example-distribution")  # expected to fail
     api.write_samples(
         "output-parameter",
         "example-samples-from-samples",
-        np.array([api.read_sample("parameter", "example-samples")]),
+        np.array(api.read_samples("parameter", "example-samples")),
     )
 
     api.write_table(

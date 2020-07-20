@@ -172,17 +172,17 @@ class StandardAPI:
     # Samples
     # ----------------------------------------------------------------------------------
 
-    def read_sample(self, data_product: str, component: str) -> float:
+    def read_samples(self, data_product: str, component: str) -> Samples:
         """Read a sample from the data product component.
         """
         with self.open_parameter_file_for_read(data_product, component) as file:
             parameter_type = read_type(file, component)
             if parameter_type is Type.POINT_ESTIMATE:
-                return read_estimate(file, component)
+                raise ValueError("point-estimate cannot be read as samples")
             if parameter_type is Type.DISTRIBUTION:
-                return read_distribution(file, component).rvs()
+                raise ValueError("distribution cannot be read as samples")
             if parameter_type is Type.SAMPLES:
-                return np.random.choice(read_samples(file, component))
+                return read_samples(file, component)
             raise ValueError(f"unrecognised type {parameter_type}")
 
     def write_samples(
