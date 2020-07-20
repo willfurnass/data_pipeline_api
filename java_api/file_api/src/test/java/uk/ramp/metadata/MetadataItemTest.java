@@ -134,4 +134,13 @@ public class MetadataItemTest {
     assertThat(otherKey.isSuperSetOf(queryKey)).isTrue();
     assertThat(queryKey.isSuperSetOf(otherKey)).isFalse();
   }
+
+  @Test
+  public void testIsSuperSetOfDescription() {
+    var queryKey = ImmutableMetadataItem.builder().build();
+    var otherKey = ImmutableMetadataItem.builder().description("desc").build();
+
+    assertThat(otherKey.isSuperSetOf(queryKey)).isTrue();
+    assertThat(queryKey.isSuperSetOf(otherKey)).isFalse();
+  }
 }

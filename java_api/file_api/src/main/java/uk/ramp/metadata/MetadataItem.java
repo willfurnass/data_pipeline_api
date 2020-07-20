@@ -63,6 +63,8 @@ public interface MetadataItem {
 
   Optional<List<IssueItem>> issues();
 
+  Optional<String> description();
+
   default boolean isSuperSetOf(MetadataItem key) {
     return List.<Function<MetadataItem, Optional<String>>>of(
             MetadataItem::internalFilename,
@@ -75,7 +77,8 @@ public interface MetadataItem {
             MetadataItem::runId,
             MetadataItem::source,
             metadataItem -> issuesInComparableFormat(metadataItem.issues().orElse(List.of())),
-            MetadataItem::namespace)
+            MetadataItem::namespace,
+            MetadataItem::description)
         .stream()
         .map(func -> func.andThen(s -> s.orElse("")))
         .allMatch(func -> keyIsEitherNotPresentOrEqual(func.apply(key), func.apply(this)));
@@ -159,6 +162,10 @@ public interface MetadataItem {
 
     if (metadataOverride.namespace().isPresent()) {
       newMetadataItem = newMetadataItem.withNamespace(metadataOverride.namespace().get());
+    }
+
+    if (metadataOverride.description().isPresent()) {
+      newMetadataItem = newMetadataItem.withDescription(metadataOverride.description().get());
     }
 
     return newMetadataItem;
