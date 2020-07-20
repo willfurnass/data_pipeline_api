@@ -5,7 +5,7 @@ from semver import VersionInfo
 from data_pipeline_api.metadata import (
     Metadata,
     MetadataKey,
-    is_superset,
+    matches,
     log_format_metadata,
 )
 
@@ -43,7 +43,7 @@ class MetadataStore:
         try:
             results = tuple(
                 filter(
-                    lambda record: is_superset(record.metadata, metadata),
+                    lambda record: matches(record.metadata, metadata),
                     self._metadata_records,
                 )
             )
