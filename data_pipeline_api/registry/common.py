@@ -10,6 +10,7 @@ import logging.config
 from functools import lru_cache
 
 import semver
+import yaml
 from fsspec import AbstractFileSystem
 from fsspec.implementations.ftp import FTPFileSystem
 from fsspec.implementations.github import GithubFileSystem
@@ -18,6 +19,7 @@ from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.sftp import SFTPFileSystem
 from fsspec.utils import infer_storage_options
 from s3fs import S3FileSystem
+
 
 logger = logging.getLogger(__name__)
 
@@ -112,16 +114,17 @@ class DataRegistryField:
     website = "website"
 
 
-def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True) -> List[Dict[str, Any]]:
+def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True, key: Any = DataRegistryField.version) -> List[Dict[str, Any]]:
     """
     Sorts a list of dicts containing a version identifier by semver VersionInfo, defaults to descending
 
     :param items: list of items to sort
     :param descending: sort order
+    :param key: the key to get the version field
     :return: Sorted list of items
     """
     return sorted(
-        items, key=lambda data: semver.parse_version_info(data[DataRegistryField.version]), reverse=descending,
+        items, key=lambda data: semver.parse_version_info(data[key]), reverse=descending,
     )
 
 
@@ -379,3 +382,14 @@ def configure_cli_logging():
         "loggers": {__package__: {"handlers": ["stdout"], "level": "DEBUG",},},
     }
     logging.config.dictConfig(logconf)
+
+
+def unique_dicts(list_of_dicts: List[Dict[Any, Any]]) -> List[Dict[Any, Any]]:
+    """
+    Removes duplicate dictsfrom the list of dicts while maintaining their ordering.
+
+    :param list_of_dicts: List of dicts
+    :return: Unique list of dicts
+    """
+    set_of_yamls = {yaml.dump(d): None for d in list_of_dicts}
+    return [yaml.load(t, Loader=yaml.FullLoader) for t in set_of_yamls.keys()]

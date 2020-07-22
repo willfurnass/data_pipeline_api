@@ -17,6 +17,8 @@ from data_pipeline_api.registry.common import (
     DataRegistryField,
     get_data,
     DataRegistryTarget,
+    get_remote_filesystem_and_path,
+    unique_dicts,
     get_reference,
     upload_to_storage,
 )
@@ -208,18 +210,6 @@ def _add_model_run(
     )
     logger.debug(f"Created ModelRun: {code_run}")
     posts.append(code_run)
-
-
-def unique_posts(posts: List[YamlDict]) -> List[YamlDict]:
-    """
-    Removes duplicate posts from the list of posts while maintaining their ordering.
-
-    :param posts: List of posts to the data registry, will be modified
-    :return: Unique list of posts to the data registry
-    """
-    set_of_yamls = {yaml.safe_dump(d): None for d in posts}
-    logger.info(f"Removed {len(posts) - len(set_of_yamls)} duplicate POSTs.")
-    return [yaml.safe_load(t) for t in set_of_yamls.keys()]
 
 
 def _get_accessibility(config):
@@ -428,7 +418,7 @@ def upload_model_run(
         posts, run_id, open_timestamp, inputs, outputs, model_config_obj, submission_script_obj, code_repo,
     )
 
-    posts = unique_posts(posts)
+    posts = unique_dicts(posts)
 
     upload_from_config({"post": posts}, data_registry_url, token)
 

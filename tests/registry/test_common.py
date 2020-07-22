@@ -1,8 +1,7 @@
 import os
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, Mock, call
-
+from datetime import datetime as dt
 import pytest
 
 from data_pipeline_api.registry.common import (
@@ -13,7 +12,10 @@ from data_pipeline_api.registry.common import (
     build_query_string,
     DataRegistryField,
     sort_by_semver,
-    DataRegistryTarget, upload_to_storage, get_fields,
+    DataRegistryTarget,
+    unique_dicts,
+    upload_to_storage,
+    get_fields,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -302,7 +304,7 @@ def test_build_query_string():
             == "name=1"
         )
         assert build_query_string({DataRegistryField.name: ["blah"]}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
-        assert build_query_string({DataRegistryField.name: datetime(2020, 7, 24, 12, 1, 2)}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=2020-07-24T12%3A01%3A02Z"
+        assert build_query_string({DataRegistryField.name: dt(2020, 7, 24, 12, 1, 2)}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=2020-07-24T12%3A01%3A02Z"
 
 
 def test_get_fields():
@@ -338,6 +340,17 @@ def test_sort_by_semver():
         "0.1.0",
         "0.1.1",
         "1.0.0",
+    ]
+
+
+def test_unique_dicts():
+    assert unique_dicts([{"a": 1}, {"b": 2}, {"a": 1}]) == [{"a": 1}, {"b": 2}]
+    assert unique_dicts([{"a": 1}, {"b": 2}, {"a": 3}]) == [{"a": 1}, {"b": 2}, {"a": 3}]
+    now = dt.now()
+    assert unique_dicts([{"a": now}, {"a": 1}, {"a": now}]) == [{"a": now}, {"a": 1}]
+    assert unique_dicts([{"a": {"a": {"a": 1}}}, {"b": {"b": {"b": 1}}}, {"a": {"a": {"a": 1}}}]) == [
+        {"a": {"a": {"a": 1}}},
+        {"b": {"b": {"b": 1}}},
     ]
 
 

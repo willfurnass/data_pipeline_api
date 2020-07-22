@@ -19,6 +19,7 @@ class MetadataKey:
     verified_hash = "verified_hash"
     calculated_hash = "calculated_hash"
     accessibility = "accessibility"
+    doi_or_unique_name = "doi_or_unique_name"
 
 
 def value_matches(value_a: Any, value_b: Any) -> bool:
