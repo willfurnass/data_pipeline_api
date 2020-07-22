@@ -28,6 +28,7 @@ class Table
   vector<string> get_column_as_string(const string &colname);
 
   const vector<string> &get_column_names();
+  size_t get_column_size() {return m_size;};
 
   string to_string();
 
