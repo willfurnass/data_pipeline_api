@@ -140,7 +140,7 @@ def _add_data_product_output_posts(
     posts: List[YamlDict],
     path: str,
     data_product_name: str,
-    namespace: str,
+    namespace_str: str,
     model_version_str: str,
     run_id: str,
     component_name: str,
@@ -154,7 +154,7 @@ def _add_data_product_output_posts(
     :param posts: List of posts to the data registry, will be modified
     :param path: StorageLocation path
     :param data_product_name: Name of the output data product
-    :param namespace: namespace that the data product is a member of
+    :param namespace_str: namespace that the data product is a member of
     :param model_version_str: version number of the model
     :param run_id: id of the run
     :param component_name: name of the output component
@@ -171,6 +171,7 @@ def _add_data_product_output_posts(
         },
     )
     obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: storage_location})
+    namespace = _create_target_data_dict(DataRegistryTarget.namespace, {DataRegistryField.name: namespace_str})
     data_product = _create_target_data_dict(
         DataRegistryTarget.data_product,
         {
@@ -187,7 +188,7 @@ def _add_data_product_output_posts(
             DataRegistryField.object: obj,
         },
     )
-    posts.extend([storage_location, obj, data_product, object_component])
+    posts.extend([storage_location, obj, namespace, data_product, object_component])
     logger.debug(f"Creating ObjectComponent: {object_component}")
     return object_component
 
@@ -395,7 +396,7 @@ def upload_model_run(
     namespace = config.get("namespace")
     model_version_str = config_yaml["model_version"]
     model_name = config_yaml["model_name"]
-    open_timestamp = config_yaml["open_timestamp"]
+    open_timestamp = config["open_timestamp"]
     model_git_sha = config["metadata"]["git_sha"]
     model_uri = config["metadata"]["uri"]
 
