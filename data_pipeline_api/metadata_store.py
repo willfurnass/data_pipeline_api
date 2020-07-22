@@ -38,6 +38,7 @@ class MetadataStore:
             )
         except Exception as exception:
             raise ValueError("invalid metadata") from exception
+        self._additional_metadata_records = []
 
     def find(self, metadata: Metadata) -> Optional[Metadata]:
         try:
@@ -57,3 +58,20 @@ class MetadataStore:
         except ValueError:
             logger.debug("could not find any matching metadata")
             return None
+
+    def add(self, metadata: Metadata):
+        record = MetadataRecord(
+                    metadata=metadata,
+                    version=VersionInfo.parse(metadata[MetadataKey.version])
+                    if MetadataKey.version in metadata
+                    else None,
+                )
+        # self._metadata_records = tuple(list(self._metadata_records)+[record])
+        self._additional_metadata_records = self._additional_metadata_records+[record]
+
+    def metadata_list(self):
+        return [record.metadata for record in self._additional_metadata_records]
+
+    def __str__(self):
+        return str(self._metadata_records)
+

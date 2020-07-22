@@ -6,10 +6,13 @@ from functools import wraps
 from hashlib import sha1
 from logging import getLogger, WARNING, DEBUG
 import yaml
+import copy
 
 from data_pipeline_api.metadata import Metadata, MetadataKey, log_format_metadata
 from data_pipeline_api.metadata_store import MetadataStore
 from data_pipeline_api.overrides import Overrides
+
+import pprint
 
 logger = getLogger(__name__)
 
@@ -59,6 +62,22 @@ class FileAPI:
             logger.warning("could not find metadata.yaml")
             metadata_store = {}
         return MetadataStore(metadata_store)
+
+
+    @staticmethod
+    def write_metadata_store(metadata_store, metadata_filename: Path):
+        """Write the MetadataStore to a file.
+        """
+        # NOTE: this currently just appends the new entries, even if
+        # they already exist
+
+        metadata_list = copy.deepcopy(metadata_store.metadata_list())
+
+        for metadata in metadata_list:
+            metadata["verified_hash"] = metadata.pop("calculated_hash")
+
+        with open(metadata_filename,'a') as metadata_store_file:
+            yaml.dump(metadata_list, metadata_store_file, sort_keys=False)
 
     def __init__(self, config_filename: Union[Path, str]):
         """The FileAPI class provides tracked interaction with the filesystem.
@@ -175,6 +194,14 @@ class FileAPI:
         )
         logger.info("recorded %s(%s)", access_type, log_format_metadata(call_metadata))
 
+        print("self._metadata_store =",self._metadata_store)
+
+        pprint.pprint(self._metadata_store,width=1)
+
+        self._metadata_store.add(access_metadata)
+
+        # {'data_product': 'parameter', 'component': 'example-estimate', 'version': '1.0.0', 'filename': 'parameter/example.toml'}
+
     def open_for_read(self, **call_metadata) -> IOBase:
         """Return a file open for reading corresponding to the given metadata.
 
@@ -258,6 +285,7 @@ class FileAPI:
             logger.info("wrote %s accesses to access log", len(self._accesses))
         else:
             logger.warning("did not write access log")
+        FileAPI.write_metadata_store(self._metadata_store, self.normalised_data_directory / "metadata-tmp.yaml")
 
     def __enter__(self):
         return self
