@@ -101,6 +101,22 @@ vector<T> &Table::get_column(const string &colname)
   return dynamic_cast<ColumnT<T> *>(&*columns[colname])->vals; // throws std::bad_cast if type mismatch
 }
 
+vector<string> Table::get_column_as_string(const string &colname)
+{
+  if (columns.find(colname) == columns.end()) {
+    throw out_of_range("There is no column named " + colname + " in this table");
+  }
+
+  Column &col = *columns[colname];
+
+  vector<string> result;
+
+  for (size_t i = 0; i < m_size; i++) {
+    result.push_back(col.get_value_as_string(i));
+  }
+  return result;
+}
+
 const vector<string> &Table::get_column_names()
 {
   return colnames;

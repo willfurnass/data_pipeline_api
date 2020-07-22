@@ -25,6 +25,8 @@ class Table
   template<typename T>
   vector<T> &get_column(const string &colname);
 
+  vector<string> get_column_as_string(const string &colname);
+
   const vector<string> &get_column_names();
 
   string to_string();
