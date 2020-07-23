@@ -109,29 +109,94 @@ post:
       path: 'simple_network_sim/human/trials/1/data.h5'
       storage_root: *SCRC_FTP
 
-
-
-
-
-  - &human_population_obj
+  - &human_commutes_obj
     target: 'object'
     data:
-      storage_location: *human_population_store
+      storage_location: *human_commutes_store
+
+  - &human_compartment_transition_1_obj
+    target: 'object'
+    data:
+      storage_location: *human_compartment_transition_1_store
+
+  - &human_compartment_transition_2_obj
+    target: 'object'
+    data:
+      storage_location: *human_compartment_transition_2_store
+
+  - &human_full_mixing_matrix_obj
+    target: 'object'
+    data:
+      storage_location: *human_full_mixing_matrix_store
+
+  - &human_infection_probability_obj
+    target: 'object'
+    data:
+      storage_location: *human_infection_probability_store
+
+  - &human_infection_probability_obj
+    target: 'object'
+    data:
+      storage_location: *human_infection_probability_store
+
+  - &human_infectious_compartments_1_obj
+    target: 'object'
+    data:
+      storage_location: *human_infectious_compartments_1_store
+
+  - &human_infectious_compartments_2_obj
+    target: 'object'
+    data:
+      storage_location: *human_infectious_compartments_2_store
+
+  - &human_initial_infections_obj
+    target: 'object'
+    data:
+      storage_location: *human_initial_infections_store
+
+  - &human_locations_obj
+    target: 'object'
+    data:
+      storage_location: *human_locations_store
 
   - &human_mixing_matrix_obj
     target: 'object'
     data:
       storage_location: *human_mixing_matrix_store
 
-  - &human_compartment_transition_obj
+  - &human_movement_multipliers_obj
     target: 'object'
     data:
-      storage_location: *human_compartment_transition_store
+      storage_location: *human_movement_multipliers_store
 
-  - &human_commutes_obj
+  - &human_population_obj
     target: 'object'
     data:
-      storage_location: *human_commutes_store
+      storage_location: *human_population_store
+
+  - &human_random_seed_obj
+    target: 'object'
+    data:
+      storage_location: *human_random_seed_store
+
+  - &human_start_end_date_obj
+    target: 'object'
+    data:
+      storage_location: *human_start_end_date_store
+
+  - &human_stochasitic_mode_obj
+    target: 'object'
+    data:
+      storage_location: *human_stochasitic_mode_store
+
+  - &human_trials_obj
+    target: 'object'
+    data:
+      storage_location: *human_trials_store
+
+
+
+
 
   - &namespace
     target: 'namespace'
