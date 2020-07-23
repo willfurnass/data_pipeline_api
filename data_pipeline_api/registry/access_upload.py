@@ -18,6 +18,7 @@ from data_pipeline_api.registry.common import (
     get_data,
     DataRegistryTarget,
     get_remote_filesystem_and_path,
+    get_reference,
 )
 from data_pipeline_api.registry.upload import upload_from_config
 from data_pipeline_api.file_api import FileAPI
@@ -43,8 +44,14 @@ def _get_input_url(
     :param token: personal access token
     :return: url reference to the input parameter data product version component
     """
+    namespace_ref = get_reference(
+        {DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry_url, token
+    )
+    if namespace_ref is None:
+        raise ValueError(f"No namespace found for {namespace}")
+
     query_data = {
-        DataRegistryField.namespace: namespace,
+        DataRegistryField.namespace: namespace_ref,
         DataRegistryField.name: data_product_name,
         DataRegistryField.version: version,
     }
