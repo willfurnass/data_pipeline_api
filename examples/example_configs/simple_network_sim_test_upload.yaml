@@ -10,30 +10,108 @@ post:
   - &human_commutes_store
     target: 'storage_location'
     data:
-      path: 'simple_network_sim/human/commutes/data/data.csv'
-      hash: 'dae8dd8b1053e2f33979da109259344f0f9e273f'
+      path: 'simple_network_sim/human/commutes/1/data.h5'
       storage_root: *SCRC_FTP
 
-  - &human_compartment_transition_store
+  - &human_compartment_transition_1_store
     target: 'storage_location'
     data:
-      path: 'simple_network_sim/human/compartment-transition/data/data.csv'
-      hash: '3a9f2e43c148633afb7057bd134b859c77f382d7'
+      path: 'simple_network_sim/human/compartment-transition/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_compartment_transition_2_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/compartment-transition/2/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_full_mixing_matrix_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/full-mixing-matrix/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_infection_probability_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/infection-probability/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_infection_probability_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/infection-probability/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_infectious_compartments_1_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/infectious-compartments/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_infectious_compartments_2_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/infectious-compartments/2/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_initial_infections_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/initial-infections/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_locations_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/locations/1/data.json'
       storage_root: *SCRC_FTP
 
   - &human_mixing_matrix_store
     target: 'storage_location'
     data:
-      path: 'simple_network_sim/human/mixing-matrix/data/data.csv'
-      hash: '141e15d0f8f467debbaf3b607971ecd6c6c04833'
+      path: 'simple_network_sim/human/mixing-matrix/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_movement_multipliers_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/movement-multipliers/1/data.h5'
       storage_root: *SCRC_FTP
 
   - &human_population_store
     target: 'storage_location'
     data:
-      path: 'simple_network_sim/human/population/data/data.csv'
-      hash: '1219832fdd6a2d9af5d33b1e10bfa69c6787748c'
+      path: 'simple_network_sim/human/population/1/data.h5'
       storage_root: *SCRC_FTP
+
+  - &human_random_seed_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/random-seed/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_start_end_date_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/start-end-date/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_stochasitic_mode_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/stochastic-mode/1/data.h5'
+      storage_root: *SCRC_FTP
+
+  - &human_trials_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/trials/1/data.h5'
+      storage_root: *SCRC_FTP
+
+
+
+
 
   - &human_population_obj
     target: 'object'
@@ -58,7 +136,7 @@ post:
   - &namespace
     target: 'namespace'
     data:
-      name: 'simple_network_sim'
+      name: 'simple_network_sim_test'
 
   -
     target: 'data_product'
