@@ -16,3 +16,6 @@ repos/*
 
 # sphinx / readthedocs
 doc/build/*
+
+#local data
+sample_input_files/*
