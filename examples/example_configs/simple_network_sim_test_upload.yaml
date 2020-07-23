@@ -1,0 +1,117 @@
+# Upload of some simple network sim data
+
+post:
+  - &SCRC_FTP
+    target: 'storage_root'
+    data:
+      name:  'SCRC_FTP'
+      root: 'ftp://boydorr.gla.ac.uk/'
+
+  - &human_commutes_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/commutes/data/data.csv'
+      hash: 'dae8dd8b1053e2f33979da109259344f0f9e273f'
+      storage_root: *SCRC_FTP
+
+  - &human_compartment_transition_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/compartment-transition/data/data.csv'
+      hash: '3a9f2e43c148633afb7057bd134b859c77f382d7'
+      storage_root: *SCRC_FTP
+
+  - &human_mixing_matrix_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/mixing-matrix/data/data.csv'
+      hash: '141e15d0f8f467debbaf3b607971ecd6c6c04833'
+      storage_root: *SCRC_FTP
+
+  - &human_population_store
+    target: 'storage_location'
+    data:
+      path: 'simple_network_sim/human/population/data/data.csv'
+      hash: '1219832fdd6a2d9af5d33b1e10bfa69c6787748c'
+      storage_root: *SCRC_FTP
+
+  - &human_population_obj
+    target: 'object'
+    data:
+      storage_location: *human_population_store
+
+  - &human_mixing_matrix_obj
+    target: 'object'
+    data:
+      storage_location: *human_mixing_matrix_store
+
+  - &human_compartment_transition_obj
+    target: 'object'
+    data:
+      storage_location: *human_compartment_transition_store
+
+  - &human_commutes_obj
+    target: 'object'
+    data:
+      storage_location: *human_commutes_store
+
+  - &namespace
+    target: 'namespace'
+    data:
+      name: 'simple_network_sim'
+
+  -
+    target: 'data_product'
+    data:
+      name: 'human/population'
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_population_obj
+
+  -
+    target: 'data_product'
+    data:
+      name: 'human/mixing-matrix'
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_mixing_matrix_obj
+
+  -
+    target: 'data_product'
+    data:
+      name: 'human/compartment-transition'
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_compartment_transition_obj
+
+  -
+    target: 'data_product'
+    data:
+      name: 'human/commutes'
+      version: '0.1.0'
+      namespace: *namespace
+      object: *human_commutes_obj
+
+  -
+    target: 'object_component'
+    data:
+      name: 'mixing-matrix'
+      object: *human_mixing_matrix_obj
+
+  -
+    target: 'object_component'
+    data:
+      name: 'commutes'
+      object: *human_commutes_obj
+
+  -
+    target: 'object_component'
+    data:
+      name: 'compartment-transition'
+      object: *human_compartment_transition_obj
+
+  -
+    target: 'object_component'
+    data:
+      name: 'population'
+      object: *human_population_obj
