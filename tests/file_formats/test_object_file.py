@@ -36,4 +36,13 @@ def test_array_roundtrip(tmp_path):
 def test_can_read_R_hdf5_file():
     with open(Path(__file__).parent.parent / "data" / "demographics.h5", "rb") as file:
         array = object_file.read_array(file, "hb/1year/persons")
-        assert array.dimensions[0].title == 'health board'
+        assert array.dimensions[0].title == "health board"
+
+
+def test_table_write_two_different_data_types(tmp_path):
+    with open(tmp_path / "test.h5", "w+b") as file:
+        object_file.write_table(file, "test", pd.DataFrame({"a": [1, 2], "b": [3, 4]}))
+    with open(tmp_path / "test.h5", "r+b") as file:
+        object_file.write_table(
+            file, "test", pd.DataFrame({"a": ["x", "y"], "b": ["c", "d"]})
+        )
