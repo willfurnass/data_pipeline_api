@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 
 import pytest
 
@@ -35,6 +35,11 @@ class MockResponse:
     @property
     def status_code(self):
         return self._status_code
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    get_on_end_point.cache_clear()
 
 
 def test_get_end_point():
@@ -327,3 +332,31 @@ def test_upload_to_storage(remote_uri, filename, return_path, expected_path):
         rfs_and_path.return_value = [fs, return_path]
         path = upload_to_storage(remote_uri, {}, Path("."), Path(filename))
         assert path == expected_path
+
+
+def test_get_on_end_point_paginated_single_page():
+    with patch("requests.get") as get:
+        results = [{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}]
+        json_data_1 = {"count": 1, "next": None, "results": results}
+        get.return_value = MockResponse(json_data_1)
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
+        results2 = [{"a": 1}, {"b": 2}]
+        json_data_2 = {"count": 1, "next": None, "results": results2}
+        get.return_value = MockResponse(json_data_2)
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target2"), TOKEN) == results2
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+
+
+def test_get_on_end_point_paginated_multiple_pages():
+    with patch("requests.get") as get:
+        results = [{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}]
+        json_data_1 = {"count": 2, "next": "target2", "results": results}
+        json_data_2 = {"count": 2, "next": None, "results": results}
+        get.side_effect = [MockResponse(json_data_1), MockResponse(json_data_2)]
+        expected = (results + results).copy()
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == expected
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == expected
+        get.assert_has_calls([call(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN)),
+                              call("target2", headers=get_headers(TOKEN))])
