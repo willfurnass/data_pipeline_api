@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from unittest.mock import patch, Mock
 
 import pytest
@@ -11,7 +12,7 @@ from data_pipeline_api.registry.common import (
     build_query_string,
     DataRegistryField,
     sort_by_semver,
-    DataRegistryTarget,
+    DataRegistryTarget, upload_to_storage,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -312,3 +313,17 @@ def test_sort_by_semver():
         "0.1.1",
         "1.0.0",
     ]
+
+
+@pytest.mark.parametrize(["remote_uri", "filename", "return_path", "expected_path"], [
+    ["ssh://server/srv/ftp/", "test.txt", "/srv/ftp/test.txt", "test.txt"],
+    ["ssh://server/srv/ftp/", "some/path/test.txt", "/srv/ftp/some/path/test.txt", "some/path/test.txt"],
+    ["http://somewebsite.com/", "some/path/test.txt", "http://somewebsite.com/some/path/test.txt", "some/path/test.txt"],
+    ["ssh://server/", "some/path/test.txt", "some/path/test.txt", "some/path/test.txt"],
+])
+def test_upload_to_storage(remote_uri, filename, return_path, expected_path):
+    with patch("data_pipeline_api.registry.common.get_remote_filesystem_and_path") as rfs_and_path:
+        fs = Mock()
+        rfs_and_path.return_value = [fs, return_path]
+        path = upload_to_storage(remote_uri, {}, Path("."), Path(filename))
+        assert path == expected_path

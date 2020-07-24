@@ -352,6 +352,40 @@ def get_reference(query_data: YamlDict, target: str, data_registry_url: str, tok
     return None
 
 
+def upload_to_storage(
+        remote_uri: str,
+        storage_options: Dict[str, Any],
+        data_directory: Path,
+        filename: Path,
+        upload_path: Optional[Union[str, Path]] = None,
+) -> str:
+    """
+    Uploads a file to the remote uri
+
+    :param remote_uri: URI to the root of the storage
+    :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
+    :param data_directory: root of the data directory read from the access log
+    :param filename: file to upload
+    :param upload_path: optional override to the upload path of the file
+    :return: path of the file on the remote storage
+    """
+    split_result = urllib.parse.urlsplit(remote_uri)
+    protocol = split_result.scheme
+    upload_path = upload_path or filename.absolute().relative_to(data_directory.absolute()).as_posix()
+    fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
+    if protocol in {"file", "ssh", "sftp"}:
+        fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
+    logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
+    fs.put(filename.as_posix(), path)
+    if path.startswith(remote_uri):
+        # some remote filesystems expect the root uri in the path, others don't, but the registry path doesn't
+        return path[len(remote_uri):]
+    elif path.startswith(split_result.path):
+        # some remote_uri's include part of what the fs considers the path, so strip it off
+        return path[len(split_result.path):]
+    return path
+
+
 def configure_cli_logging():
     logconf = {
         "version": 1,

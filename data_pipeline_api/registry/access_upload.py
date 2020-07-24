@@ -17,8 +17,8 @@ from data_pipeline_api.registry.common import (
     DataRegistryField,
     get_data,
     DataRegistryTarget,
-    get_remote_filesystem_and_path,
     get_reference,
+    upload_to_storage,
 )
 from data_pipeline_api.registry.upload import upload_from_config
 from data_pipeline_api.file_api import FileAPI
@@ -81,34 +81,6 @@ def _verify_hash(filename: Path, access_calculated_hash: str) -> None:
         raise ValueError(
             f"access log contains hash {access_calculated_hash} but calculated hash of {filename} is {calculated_hash}"
         )
-
-
-def upload_to_storage(
-    remote_uri: str,
-    storage_options: Dict[str, Any],
-    data_directory: Path,
-    filename: Path,
-    upload_path: Optional[Union[str, Path]] = None,
-) -> str:
-    """
-    Uploads a file to the remote uri
-     
-    :param remote_uri: URI to the root of the storage
-    :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials 
-    :param data_directory: root of the data directory read from the access log
-    :param filename: file to upload
-    :param upload_path: optional override to the upload path of the file
-    :return: path of the file on the remote storage
-    """
-    protocol = urllib.parse.urlsplit(remote_uri).scheme
-    upload_path = upload_path or filename.absolute().relative_to(data_directory.absolute()).as_posix()
-    fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
-    if protocol in {"file", "ssh", "sftp"}:
-        fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
-    logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
-    fs.put(filename.as_posix(), path)
-    # some remote filesystems expect the root uri in the path, others don't, but the registry path doesn't
-    return path.replace(remote_uri, "")
 
 
 def _add_storage_root(
