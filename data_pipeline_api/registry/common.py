@@ -260,21 +260,24 @@ def get_on_end_point(end_point: str, token: str, query_str: Optional[str] = None
     json_result = result.json()
     if isinstance(json_result, List):
         return json_result
-    else:  # paginated
-        results = json_result["results"]
-        count = json_result.get("count")
-        if count:
-            pages = math.ceil(count / len(results))
-            logger.info(f"{pages} of results returned")
-        while json_result.get("next"):
-            next_end_point = json_result.get("next")
-            logger.info(f"GET {next_end_point}")
-            result = requests.get(next_end_point, headers=get_headers(token))
-            result.raise_for_status()
-            logger.info(f"GET successful: {result.status_code}")
-            json_result = result.json()
-            results.extend(json_result["results"])
-        return results
+    else:
+        if all(k in json_result for k in ("next", "results")):  # paginated
+            results = json_result["results"]
+            count = json_result.get("count")
+            if count:
+                pages = math.ceil(count / len(results))
+                logger.info(f"{pages} of results returned")
+            while json_result.get("next"):
+                next_end_point = json_result.get("next")
+                logger.info(f"GET {next_end_point}")
+                result = requests.get(next_end_point, headers=get_headers(token))
+                result.raise_for_status()
+                logger.info(f"GET successful: {result.status_code}")
+                json_result = result.json()
+                results.extend(json_result["results"])
+            return results
+        else:
+            return json_result
 
 
 def get_data(
