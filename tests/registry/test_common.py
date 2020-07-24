@@ -392,3 +392,11 @@ def test_get_on_end_point_paginated_no_count():
         assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
         get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
 
+
+def test_get_on_end_point_unpaginated_dict_result():
+    with patch("requests.get") as get:
+        json_data_1 = {"url": "mock_url_v", "version": "1", "model": "mock_url_b"}
+        get.return_value = MockResponse(json_data_1)
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == json_data_1
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == json_data_1
+        get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
