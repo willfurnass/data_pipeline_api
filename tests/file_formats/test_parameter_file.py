@@ -46,17 +46,29 @@ def test_write_np_float_estimate(tmp_path):
         assert parameter_file.read_estimate(TextIOWrapper(file), "test") == estimate
 
 
+def test_encode_distribution():
+    assert parameter_file.encode_distribution(stats.norm(loc=2, scale=3)) == {
+        "type": "distribution",
+        "distribution": "norm",
+        "loc": 2,
+        "scale": 3,
+    }
+
 
 def assert_distribution_roundtrip(tmp_path, distribution):
     with open(tmp_path / "test.toml", "w+b") as file:
-        parameter_file.write_distribution(TextIOWrapper(file), f"test-{distribution.dist.name}", distribution)
+        parameter_file.write_distribution(
+            TextIOWrapper(file), f"test-{distribution.dist.name}", distribution
+        )
 
     def representation(distribution):
         return distribution.dist._parse_args(*distribution.args, **distribution.kwds)
 
     with open(tmp_path / "test.toml", "r+b") as file:
         assert representation(
-            parameter_file.read_distribution(TextIOWrapper(file), f"test-{distribution.dist.name}")
+            parameter_file.read_distribution(
+                TextIOWrapper(file), f"test-{distribution.dist.name}"
+            )
         ) == representation(distribution)
 
 
