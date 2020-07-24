@@ -77,16 +77,15 @@ def write_table(file: IOBase, component: str, table: Table):
         index=False,
         column_dtypes={
             column: (
-                table[column].values.astype(np.string_).dtype
-                if dtype == "O"
-                else dtype
+                table[column].values.astype(np.string_).dtype if dtype == "O" else dtype
             )
             for column, dtype in table.dtypes.items()
         },
     )
-    get_write_group(file, component).require_dataset(
-        "table", shape=records.shape, dtype=records.dtype, data=records
-    )
+    group = get_write_group(file, component)
+    for dataset in group:
+        del group[dataset]
+    group.create_dataset("table", data=records)
 
 
 DIMENSION_PREFIX = "Dimension_"
@@ -172,13 +171,13 @@ def read_array(file: IOBase, component: str) -> Array:
 def write_array(file: IOBase, component: str, array: Array):
     # TODO : More validation on the inputs?
     group = get_write_group(file, component)
-    group.require_dataset(
-        "array", shape=array.data.shape, dtype=array.data.dtype, data=array.data
-    )
+    for dataset in group:
+        del group[dataset]
+    group.create_dataset("array", data=array.data)
     if array.dimensions is not None:
         for i, dimension in enumerate(array.dimensions, start=1):
             if dimension.title is not None:
-                group.require_dataset(
+                group.create_dataset(
                     f"Dimension_{i}_title",
                     dtype=h5py.string_dtype(),
                     shape=(),
@@ -186,7 +185,7 @@ def write_array(file: IOBase, component: str, array: Array):
                 )
             if dimension.names is not None:
                 encoded_names = np.char.encode(dimension.names)
-                group.require_dataset(
+                group.create_dataset(
                     f"Dimension_{i}_names",
                     dtype=h5py.string_dtype(),
                     shape=encoded_names.shape,
@@ -194,20 +193,20 @@ def write_array(file: IOBase, component: str, array: Array):
                 )
             if dimension.values is not None:
                 values = np.array(dimension.values)
-                group.require_dataset(
+                group.create_dataset(
                     f"Dimension_{i}_values",
                     dtype=values.dtype,
                     shape=values.shape,
                     data=values,
                 )
             if dimension.units is not None:
-                group.require_dataset(
+                group.create_dataset(
                     f"Dimension_{i}_units",
                     dtype=h5py.string_dtype(),
                     shape=(),
                     data=dimension.units,
                 )
     if array.units is not None:
-        group.require_dataset(
+        group.create_dataset(
             "units", dtype=h5py.string_dtype(), shape=(), data=array.units,
         )
