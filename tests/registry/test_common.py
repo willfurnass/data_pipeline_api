@@ -381,3 +381,14 @@ def test_get_on_end_point_paginated_multiple_pages():
         assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == expected
         get.assert_has_calls([call(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN)),
                               call("target2", headers=get_headers(TOKEN))])
+
+
+def test_get_on_end_point_paginated_no_count():
+    with patch("requests.get") as get:
+        results = [{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}]
+        json_data_1 = {"next": None, "results": results}
+        get.return_value = MockResponse(json_data_1)
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
+

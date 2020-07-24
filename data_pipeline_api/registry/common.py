@@ -262,9 +262,10 @@ def get_on_end_point(end_point: str, token: str, query_str: Optional[str] = None
         return json_result
     else:  # paginated
         results = json_result["results"]
-        count = json_result["count"]
-        pages = math.ceil(count / len(results))
-        logger.info(f"{pages} of results returned")
+        count = json_result.get("count")
+        if count:
+            pages = math.ceil(count / len(results))
+            logger.info(f"{pages} of results returned")
         while json_result.get("next"):
             next_end_point = json_result.get("next")
             logger.info(f"GET {next_end_point}")
