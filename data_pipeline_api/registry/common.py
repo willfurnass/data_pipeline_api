@@ -1,8 +1,9 @@
 import math
 import re
 import urllib
+from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Union, List, Any, Tuple
+from typing import Optional, Dict, Union, List, Any, Tuple, Set
 import requests
 import logging
 import logging.config
@@ -111,71 +112,6 @@ class DataRegistryField:
     website = "website"
 
 
-DATA_REGISTRY_FILTERS = {
-    DataRegistryTarget.users: {DataRegistryField.username},
-    DataRegistryTarget.groups: set(),
-    DataRegistryTarget.issue: {DataRegistryField.name},
-    DataRegistryTarget.object: {
-        DataRegistryField.last_updated,
-        DataRegistryField.updated_by,
-        DataRegistryField.storage_location,
-        DataRegistryField.data_product,
-        DataRegistryField.code_repo_release,
-        DataRegistryField.object,
-    },
-    DataRegistryTarget.object_component: {
-        DataRegistryField.name,
-        DataRegistryField.last_updated,
-        DataRegistryField.object,
-    },
-    DataRegistryTarget.code_run: {
-        DataRegistryField.run_date,
-        DataRegistryField.run_identifier,
-        DataRegistryField.last_updated,
-    },
-    DataRegistryTarget.storage_root: {
-        DataRegistryField.name,
-        DataRegistryField.root,
-        DataRegistryField.last_updated,
-        DataRegistryField.accessibility,
-    },
-    DataRegistryTarget.storage_location: {
-        DataRegistryField.last_updated,
-        DataRegistryField.path,
-        DataRegistryField.hash,
-    },
-    DataRegistryTarget.source: {DataRegistryField.last_updated, DataRegistryField.name, DataRegistryField.abbreviation},
-    DataRegistryTarget.external_object: {
-        DataRegistryField.last_updated,
-        DataRegistryField.doi_or_unique_name,
-        DataRegistryField.release_date,
-        DataRegistryField.title,
-        DataRegistryField.version,
-    },
-    DataRegistryTarget.quality_controlled: set(),
-    DataRegistryTarget.keyword: {DataRegistryField.last_updated, DataRegistryField.keyphrase},
-    DataRegistryTarget.author: {
-        DataRegistryField.last_updated,
-        DataRegistryField.family_name,
-        DataRegistryField.personal_name,
-    },
-    DataRegistryTarget.licence: {DataRegistryField.last_updated},
-    DataRegistryTarget.namespace: {DataRegistryField.last_updated, DataRegistryField.name},
-    DataRegistryTarget.data_product: {
-        DataRegistryField.last_updated,
-        DataRegistryField.namespace,
-        DataRegistryField.name,
-        DataRegistryField.version,
-    },
-    DataRegistryTarget.code_repo_release: {
-        DataRegistryField.last_updated,
-        DataRegistryField.name,
-        DataRegistryField.version,
-    },
-    DataRegistryTarget.key_value: {DataRegistryField.last_updated, DataRegistryField.key},
-}
-
-
 def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True) -> List[Dict[str, Any]]:
     """
     Sorts a list of dicts containing a version identifier by semver VersionInfo, defaults to descending
@@ -261,26 +197,49 @@ def get_headers(token: str) -> Dict[str, str]:
     return {"Authorization": f"token {token}"} if token else {}
 
 
-def build_query_string(query_data: YamlDict, target: str, data_registry_url: str) -> str:
+def get_fields(target: str, data_registry_url: str, token: str) -> Set[str]:
+    """
+    Returns a list of fields from a target end point by calling OPTIONS
+
+    :param target: target end point of the data registry
+    :param data_registry_url: the url of the data registry
+    :param token: personal access token
+    :return: the set of fields on this target end point
+    """
+    end_point = get_end_point(data_registry_url, target)
+    result = requests.options(end_point, headers=get_headers(token))
+    result.raise_for_status()
+    options = result.json()
+    return set(options.get("actions", {}).get("POST", {}).keys())
+
+
+def build_query_string(query_data: YamlDict, target: str, data_registry_url: str, token: str) -> str:
     """
     Converts a dictionary of query data into a query string
 
     :param query_data: the query data dictionary to convert
     :param target: target end point of the data registry
     :param data_registry_url: the url of the data registry
+    :param token: personal access token
     :return: the query string generated
     """
+    def process(value: Any):
+        if isinstance(value, str):
+            if value is not None and value.startswith(data_registry_url):
+                # retrieve the id from a url
+                return value.split("/")[-2]
+            return value
+        elif isinstance(value, datetime):
+            return f"{value.isoformat()}Z"
+        else:
+            return None
 
-    def id_from_url(url: str):
-        if url is not None and url.startswith(data_registry_url):
-            return url.split("/")[-2]
-        return url
+    fields = get_fields(target, data_registry_url, token)
 
-    filters = DATA_REGISTRY_FILTERS.get(target, set())
+    processed = {k: process(v) for k, v in query_data.items()}
+    valid = {k: v for k, v in processed.items() if k in fields and v is not None}
 
-    return urllib.parse.urlencode(
-        {k: id_from_url(v) for k, v in query_data.items() if k in filters and isinstance(v, str)}
-    )
+    return urllib.parse.urlencode(valid)
 
 
 @lru_cache(maxsize=None)
@@ -303,9 +262,10 @@ def get_on_end_point(end_point: str, token: str, query_str: Optional[str] = None
         return json_result
     else:  # paginated
         results = json_result["results"]
-        count = json_result["count"]
-        pages = math.ceil(count / len(results))
-        logger.info(f"{pages} of results returned")
+        count = json_result.get("count")
+        if count:
+            pages = math.ceil(count / len(results))
+            logger.info(f"{pages} of results returned")
         while json_result.get("next"):
             next_end_point = json_result.get("next")
             logger.info(f"GET {next_end_point}")
@@ -332,7 +292,7 @@ def get_data(
                   If exact is False: 1+ results -> return results in list, 0 results -> return None
     :return: existing data or None if it does not exist
     """
-    query_str = build_query_string(query_data, target, data_registry_url)
+    query_str = build_query_string(query_data, target, data_registry_url, token)
     result = get_on_end_point(get_end_point(data_registry_url, target), token, query_str)
     if not result:
         logger.info(f"No matching data found for query '{query_str}' to target '{target}'")

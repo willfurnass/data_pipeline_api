@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, Mock, call
 
@@ -12,7 +13,7 @@ from data_pipeline_api.registry.common import (
     build_query_string,
     DataRegistryField,
     sort_by_semver,
-    DataRegistryTarget, upload_to_storage,
+    DataRegistryTarget, upload_to_storage, get_fields,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -274,29 +275,49 @@ def test_get_remote_filesystem_and_path_active_ftp():
 
 
 def test_build_query_string():
-    assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == ""
-    assert (
-        build_query_string({DataRegistryField.name: "name"}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == "name=name"
-    )
-    assert build_query_string({"not_a_filter": "not_a_filter"}, DataRegistryTarget.issue, DATA_REGISTRY_URL) == ""
-    assert (
-        build_query_string(
-            {"not_a_filter": "not_a_filter", DataRegistryField.name: "name"},
-            DataRegistryTarget.issue,
-            DATA_REGISTRY_URL,
+    with patch("data_pipeline_api.registry.common.get_fields") as fields:
+        fields.return_value = {DataRegistryField.name}
+        assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
+        assert (
+            build_query_string({DataRegistryField.name: "name"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=name"
         )
-        == "name=name"
-    )
-    assert (
-        build_query_string({DataRegistryField.name: '!"£$%^&*()[]{}'}, DataRegistryTarget.issue, DATA_REGISTRY_URL)
-        == "name=%21%22%C2%A3%24%25%5E%26%2A%28%29%5B%5D%7B%7D"
-    )
-    assert (
-        build_query_string(
-            {DataRegistryField.name: f"{DATA_REGISTRY_URL}/1/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL
+        assert build_query_string({"not_a_filter": "not_a_filter"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
+        assert (
+            build_query_string(
+                {"not_a_filter": "not_a_filter", DataRegistryField.name: "name"},
+                DataRegistryTarget.issue,
+                DATA_REGISTRY_URL,
+                TOKEN
+            )
+            == "name=name"
         )
-        == "name=1"
-    )
+        assert (
+            build_query_string({DataRegistryField.name: '!"£$%^&*()[]{}'}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN)
+            == "name=%21%22%C2%A3%24%25%5E%26%2A%28%29%5B%5D%7B%7D"
+        )
+        assert (
+            build_query_string(
+                {DataRegistryField.name: f"{DATA_REGISTRY_URL}/1/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN
+            )
+            == "name=1"
+        )
+        assert build_query_string({DataRegistryField.name: ["blah"]}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
+        assert build_query_string({DataRegistryField.name: datetime(2020, 7, 24, 12, 1, 2)}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=2020-07-24T12%3A01%3A02Z"
+
+
+def test_get_fields():
+    with patch("requests.options") as options:
+        options.return_value = MockResponse({})
+        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+
+        options.return_value = MockResponse({"actions": {}})
+        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+
+        options.return_value = MockResponse({"actions": {"POST": {}}})
+        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+
+        options.return_value = MockResponse({"actions": {"POST": {"field1": [], "field2": 1, "field3": {"a": 1}}}})
+        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == {"field1", "field2", "field3"}
 
 
 def test_sort_by_semver():
@@ -360,3 +381,14 @@ def test_get_on_end_point_paginated_multiple_pages():
         assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == expected
         get.assert_has_calls([call(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN)),
                               call("target2", headers=get_headers(TOKEN))])
+
+
+def test_get_on_end_point_paginated_no_count():
+    with patch("requests.get") as get:
+        results = [{"url": "mock_url_v", "version": "1", "model": "mock_url_b"}]
+        json_data_1 = {"next": None, "results": results}
+        get.return_value = MockResponse(json_data_1)
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        assert get_on_end_point(get_end_point(DATA_REGISTRY_URL, "target1"), TOKEN) == results
+        get.assert_called_once_with(get_end_point(DATA_REGISTRY_URL, "target1"), headers=get_headers(TOKEN))
+

@@ -13,6 +13,13 @@ def clear_cache():
     get_on_end_point.cache_clear()
 
 
+@pytest.yield_fixture(autouse=True)
+def patch_options():
+    with patch("requests.options") as options:
+        options.return_value = MockResponse({"actions": {"POST": {"name": None}}})
+        yield
+
+
 def test_resolve_references_no_resolution():
     data = {"A": "1", "B": "2"}
     assert resolve_references(data, DATA_REGISTRY_URL, TOKEN) == data
