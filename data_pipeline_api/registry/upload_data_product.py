@@ -15,8 +15,8 @@ from data_pipeline_api.registry.common import (
     DataRegistryTarget,
     sort_by_semver,
     get_reference,
+    upload_to_storage,
 )
-from data_pipeline_api.registry.access_upload import upload_to_storage
 from data_pipeline_api.file_api import FileAPI
 
 
@@ -142,7 +142,7 @@ def upload_data_product_cli(
         storage_root_name=storage_root_name,
         storage_root=storage_root,
         accessibility=accessibility,
-        storage_location_path=storage_location_path or path,
+        storage_location_path=path,
         storage_location_hash=storage_location_hash,
         data_product_name=data_product_name,
         data_product_description=data_product_description,

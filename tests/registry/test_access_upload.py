@@ -1,8 +1,10 @@
 from hashlib import sha1
 from datetime import datetime as dt
+
 import pytest
 
-from data_pipeline_api.registry.access_upload import _verify_hash, _create_target_data_dict, unique_posts, to_github_uri
+from data_pipeline_api.registry.access_upload import _verify_hash, _create_target_data_dict, unique_posts, \
+    to_github_uri
 
 
 @pytest.fixture()
