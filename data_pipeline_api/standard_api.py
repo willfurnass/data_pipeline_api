@@ -2,7 +2,6 @@ from io import TextIOWrapper
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Union, NamedTuple, Optional, Sequence
-import numpy as np
 from data_pipeline_api.file_api import FileAPI
 from data_pipeline_api.metadata import Metadata
 from data_pipeline_api.file_formats.parameter_file import (
@@ -40,9 +39,17 @@ class StandardAPI:
     """The StandardAPI class provides access to data products conforming to the Standard
     API specification.
     """
+    @classmethod
+    def from_config(
+        cls,
+        config_filename: Union[Path, str],
+        uri: str,
+        git_sha: str,
+    ):
+        return cls(FileAPI(config_filename), uri, git_sha)
 
-    def __init__(self, config_filename: Union[Path, str], uri: str, git_sha: str):
-        self.file_api = FileAPI(config_filename)
+    def __init__(self, file_api: FileAPI, uri: str, git_sha: str):
+        self.file_api = file_api
         self.file_api.set_metadata("uri", uri)
         self.file_api.set_metadata("git_sha", git_sha)
 
