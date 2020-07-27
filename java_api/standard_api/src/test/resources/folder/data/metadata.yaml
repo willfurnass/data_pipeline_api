@@ -1,0 +1,30 @@
+-
+  data_product: parameter
+  component: example-estimate
+  version: 1.0.0
+  filename: parameter/example1.toml
+-
+  data_product: parameter
+  component: example-distribution
+  version: 1.0.0
+  filename: parameter/example1.toml
+-
+  data_product: parameter
+  component: example-samples
+  version: 1.0.0
+  filename: parameter/example1.toml
+-
+  data_product: object
+  component: example-table
+  version: 1.0.0
+  filename: object/example4.h5
+-
+  data_product: object
+  component: example-array
+  version: 1.0.0
+  filename: object/example5.h5
+-
+  data_product: object
+  component: grid1km/10year/females
+  version: 1.0.0
+  filename: object/example5.h5
