@@ -115,7 +115,14 @@ class Downloader:
             if data_products:
                 data_products = sort_by_semver(data_products)
                 if block.get((DataRegistryTarget.object_component, DataRegistryField.name)) is None:
-                    data_products = [next(iter(data_products))]  # if no component specified, take the latest upfront
+                    # if globbing has been used we might have multiple data products so take the first
+                    # as we've sorted by semver, by name
+                    grouped_data_products = {}
+                    for data_product in data_products:
+                        data_product_name = data_product[DataRegistryField.name]
+                        if data_product_name not in grouped_data_products:
+                            grouped_data_products[data_product_name] = data_product
+                    data_products = list(grouped_data_products.values())
                 for data_product in data_products:
                     cblock = block.copy()
                     for k, v in data_product.items():
@@ -231,11 +238,17 @@ class Downloader:
             )
             if external_objects:
                 external_objects = sort_by_semver(external_objects)
-                external_object = next(iter(external_objects))
-                cblock = block.copy()
-                for k, v in external_object.items():
-                    cblock[DataRegistryTarget.external_object, k] = v
-                resolved.append(cblock)
+                grouped_external_objects = {}
+                for external_object in external_objects:
+                    external_object_name = external_object[DataRegistryField.doi_or_unique_name]
+                    if external_object_name not in grouped_external_objects:
+                        grouped_external_objects[external_object_name] = external_object
+                external_objects = list(grouped_external_objects.values())
+                for external_object in external_objects:
+                    cblock = block.copy()
+                    for k, v in external_object.items():
+                        cblock[DataRegistryTarget.external_object, k] = v
+                    resolved.append(cblock)
         return resolved
 
     def _write_metadata_data_product(self, stream: IO):
