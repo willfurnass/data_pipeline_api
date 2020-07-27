@@ -323,7 +323,7 @@ class Downloader:
 
     def _external_object_pipe(self, input_blocks: List[DownloaderDict]) -> List[DownloaderDict]:
         for fn in [
-            self._resolved_external_objects,
+            self._resolve_external_objects,
             self._resolve_objects,
             self._resolve_storage_locations,
             self._resolve_storage_roots,
