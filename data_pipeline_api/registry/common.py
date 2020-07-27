@@ -56,6 +56,7 @@ class DataRegistryTarget:
     data_product = "data_product"
     code_repo_release = "code_repo_release"
     key_value = "key_value"
+    text_file = "text_file"
 
 
 class DataRegistryField:
@@ -105,6 +106,7 @@ class DataRegistryField:
     storage_location = "storage_location"
     storage_root = "storage_root"
     submission_script = "submission_script"
+    text = "text"
     title = "title"
     updated_by = "updated_by"
     url = "url"
@@ -230,7 +232,12 @@ def build_query_string(query_data: YamlDict, target: str, data_registry_url: str
         if isinstance(value, str):
             if value is not None and value.startswith(data_registry_url):
                 # retrieve the id from a url
-                return value.split("/")[-2]
+                id_ = value.split("/")[-2]
+                try:
+                    int(id_)
+                except ValueError:
+                    return value  # it was some other reference than an id reference
+                return id_
             return value
         elif isinstance(value, datetime):
             return f"{value.isoformat()}Z"

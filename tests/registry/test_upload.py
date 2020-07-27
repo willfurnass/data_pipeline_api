@@ -1,10 +1,17 @@
+from hashlib import sha1
 from unittest.mock import patch, call
 
 import pytest
 import yaml
 
-from data_pipeline_api.registry.upload import resolve_references, upload_from_config
-from data_pipeline_api.registry.common import get_end_point, get_headers, get_on_end_point
+from data_pipeline_api.registry.upload import resolve_references, upload_from_config, upload_text_to_text_table
+from data_pipeline_api.registry.common import (
+    get_end_point,
+    get_headers,
+    get_on_end_point,
+    DataRegistryTarget,
+    DataRegistryField,
+)
 from tests.registry.test_common import DATA_REGISTRY_URL, TOKEN, MockResponse
 
 
@@ -45,14 +52,16 @@ def test_resolve_references_version():
 
 
 def test_upload_from_config_with_patch_present():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 patch:
     - 
         target: 'end_point_1'
         data:
             name: 'A'
             description: 'patched A'
-    """)
+    """
+    )
     with patch("requests.get") as get:
         with patch("requests.patch") as rpatch:
             get.return_value = MockResponse([{"name": "A", "description": "initial A", "url": "mock_url_a"}])
@@ -63,14 +72,16 @@ patch:
 
 
 def test_upload_from_config_with_post_not_present():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 post:
     -
         target: 'end_point_1'
         data:
             name: 'B'
             description: 'posted B'
-    """)
+    """
+    )
     with patch("requests.get") as get:
         with patch("requests.post") as post:
             get.return_value = MockResponse([])
@@ -83,14 +94,16 @@ post:
 
 
 def test_upload_from_config_with_post_present():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 post:
     -
         target: 'end_point_1'
         data:
             name: 'B'
             description: 'posted B'
-    """)
+    """
+    )
     with patch("requests.get") as get:
         with patch("requests.post") as post:
             get.return_value = MockResponse([{"name": "B", "description": "initial B", "url": "mock_url_b"}])
@@ -99,14 +112,16 @@ post:
 
 
 def test_upload_from_config_with_patch_not_present():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 patch:
     - 
         target: 'end_point_1'
         data:
             name: 'A'
             description: 'patched A'
-""")
+"""
+    )
     with patch("requests.get") as get:
         with patch("requests.patch") as rpatch:
             get.return_value = MockResponse([])
@@ -115,32 +130,34 @@ patch:
 
 
 def test_upload_from_config_good_version():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 post:
     - 
         target: 'end_point_1'
         data:
             version: '1.1.1'
-    """)
+    """
+    )
     with patch("requests.get") as get:
         with patch("requests.post") as post:
             get.return_value = MockResponse([])
             upload_from_config(config, DATA_REGISTRY_URL, TOKEN)
             post.assert_called_once_with(
-                get_end_point(DATA_REGISTRY_URL, "end_point_1"),
-                data={"version": "1.1.1"},
-                headers=get_headers(TOKEN),
+                get_end_point(DATA_REGISTRY_URL, "end_point_1"), data={"version": "1.1.1"}, headers=get_headers(TOKEN),
             )
 
 
 def test_upload_from_config_bad_version():
-    config = yaml.safe_load("""
+    config = yaml.safe_load(
+        """
 post:
     - 
         target: 'end_point_1'
         data:
             version: '1'
-    """)
+    """
+    )
     with patch("requests.get") as get:
         get.return_value = MockResponse([])
         with pytest.raises(ValueError):
@@ -173,3 +190,47 @@ def test_resolve_references_recurse():
                 call({"name": "B", "b": "C"}, "t", DATA_REGISTRY_URL, TOKEN),
             ]
         )
+
+
+def test_upload_text_to_text_table():
+    with patch("data_pipeline_api.registry.upload.upload_from_config") as upload:
+        with patch("data_pipeline_api.registry.upload.get_reference") as get_ref:
+            ref_mock = f"{DATA_REGISTRY_URL}/1/"
+            get_ref.return_value = ref_mock
+            upload_text_to_text_table("test text", DATA_REGISTRY_URL, TOKEN)
+            upload.assert_has_calls(
+                [
+                    call(
+                        {
+                            "post": [
+                                {"target": DataRegistryTarget.text_file, "data": {DataRegistryField.text: "test text"}},
+                                {
+                                    "target": DataRegistryTarget.storage_root,
+                                    "data": {
+                                        DataRegistryField.root: f"{DATA_REGISTRY_URL}text_file/",
+                                        DataRegistryField.name: "text_file",
+                                    },
+                                },
+                            ]
+                        },
+                        DATA_REGISTRY_URL,
+                        TOKEN,
+                    ),
+                    call(
+                        {
+                            "post": [
+                                {
+                                    "target": DataRegistryTarget.storage_location,
+                                    "data": {
+                                        DataRegistryField.storage_root: ref_mock,
+                                        DataRegistryField.hash: sha1("test text".encode("utf-8")).hexdigest(),
+                                        DataRegistryField.path: "1/?format=text",
+                                    },
+                                }
+                            ]
+                        },
+                        DATA_REGISTRY_URL,
+                        TOKEN,
+                    ),
+                ]
+            )
