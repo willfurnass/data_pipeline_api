@@ -305,6 +305,7 @@ def test_build_query_string():
         )
         assert build_query_string({DataRegistryField.name: ["blah"]}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
         assert build_query_string({DataRegistryField.name: dt(2020, 7, 24, 12, 1, 2)}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=2020-07-24T12%3A01%3A02Z"
+        assert build_query_string({DataRegistryField.name: f"{DATA_REGISTRY_URL}/text_file/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=data%2F%2Ftext_file%2F"
 
 
 def test_get_fields():
