@@ -1,5 +1,6 @@
 import logging
 import logging.config
+from hashlib import sha1
 from pathlib import Path
 from typing import Dict, Union, List
 
@@ -8,10 +9,69 @@ import requests
 import semver
 import yaml
 
-from data_pipeline_api.registry.common import configure_cli_logging, YamlDict, get_reference, get_end_point, \
-    get_headers, get_on_end_point, DATA_REGISTRY_ACCESS_TOKEN, DATA_REGISTRY_URL, DEFAULT_DATA_REGISTRY_URL, DataRegistryField
+from data_pipeline_api.registry.common import (
+    configure_cli_logging,
+    YamlDict,
+    get_reference,
+    get_end_point,
+    get_headers,
+    get_on_end_point,
+    DATA_REGISTRY_ACCESS_TOKEN,
+    DATA_REGISTRY_URL,
+    DEFAULT_DATA_REGISTRY_URL,
+    DataRegistryField,
+    DataRegistryTarget,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def upload_text_to_text_table(text: str, data_registry_url: str, token: str) -> str:
+    """
+    Uploads text to the text_file table and creates a storage_root and storage_location for it
+
+    :param text: text to upload
+    :param data_registry_url: the url of the data registry
+    :param token: personal access token
+    :return: storage_location url reference for this text
+    """
+    hash_ = sha1(text.encode("utf-8")).hexdigest()
+    text_data = {DataRegistryField.text: text}
+    storage_root_data = {
+        DataRegistryField.root: get_end_point(data_registry_url, DataRegistryTarget.text_file),
+        DataRegistryField.name: "text_file",
+    }
+    post_data = {
+        "post": [
+            {"target": DataRegistryTarget.text_file, "data": text_data},
+            {"target": DataRegistryTarget.storage_root, "data": storage_root_data},
+        ]
+    }
+    upload_from_config(post_data, data_registry_url, token)
+    text_ref = get_reference(text_data, DataRegistryTarget.text_file, data_registry_url, token)
+    storage_root_ref = get_reference(storage_root_data, DataRegistryTarget.storage_root, data_registry_url, token)
+    storage_location_data = {
+        DataRegistryField.storage_root: storage_root_ref,
+        DataRegistryField.hash: hash_,
+        DataRegistryField.path: f"{text_ref.split('/')[-2]}/?format=text",
+    }
+    post_data = {"post": [{"target": DataRegistryTarget.storage_location, "data": storage_location_data}]}
+    upload_from_config(post_data, data_registry_url, token)
+    return get_reference(storage_location_data, DataRegistryTarget.storage_location, data_registry_url, token)
+
+
+def upload_to_text_table(filename: Path, data_registry_url: str, token: str) -> str:
+    """
+    Uploads text from a file to the text_file table and create a storage_root and storage_location for it
+
+    :param filename: file to upload
+    :param data_registry_url: the url of the data registry
+    :param token: personal access token
+    :return: storage_location url reference for this text
+    """
+    with open(filename, "r") as f:
+        text = f.read()
+    return upload_text_to_text_table(text, data_registry_url, token)
 
 
 def resolve_references(data: YamlDict, data_registry_url: str, token: str) -> Dict[str, str]:
