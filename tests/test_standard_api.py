@@ -13,7 +13,7 @@ CONFIG_PATH = Path(__file__).parent / "data" / "config.yaml"
 
 @pytest.fixture
 def standard_api():
-    return StandardAPI(CONFIG_PATH, "test_uri", "test_git_sha")
+    return StandardAPI.from_config(CONFIG_PATH, "test_uri", "test_git_sha")
 
 
 def test_write_estimate(standard_api):
