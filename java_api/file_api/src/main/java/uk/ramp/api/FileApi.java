@@ -1,13 +1,14 @@
 package uk.ramp.api;
 
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.ref.Cleaner;
 import java.lang.ref.Cleaner.Cleanable;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -106,7 +107,15 @@ public class FileApi implements AutoCloseable {
    * @return FileChannel for input
    * @param query input query
    */
-  public CleanableFileChannel openForRead(MetadataItem query) throws IOException {
+  public CleanableFileChannel openForRead(MetadataItem query) {
+    try {
+      return openForReadCheckedExc(query);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private CleanableFileChannel openForReadCheckedExc(MetadataItem query) throws IOException {
     var overriddenQuery = overridesApplier.applyReadOverrides(query);
     var metaDataItem = metadataSelector.find(overriddenQuery);
     var normalisedFilename = metaDataItem.normalisedFilename();
@@ -122,13 +131,20 @@ public class FileApi implements AutoCloseable {
    * @return FileChannel for output
    * @param query input query
    */
-  public CleanableFileChannel openForWrite(MetadataItem query) throws IOException {
+  public CleanableFileChannel openForWrite(MetadataItem query) {
+    try {
+      return openForWriteChecked(query);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private CleanableFileChannel openForWriteChecked(MetadataItem query) throws IOException {
     var overriddenQuery = overridesApplier.applyWriteOverrides(query);
     var normalisedFilename = overriddenQuery.normalisedFilename();
-    Files.createDirectories(Path.of(normalisedFilename).getParent());
-    Files.createFile(Path.of(normalisedFilename));
     Runnable onClose = () -> executeOnCloseFileHandle(query, overriddenQuery);
-    return new CleanableFileChannel(FileChannel.open(Path.of(normalisedFilename), WRITE), onClose);
+    return new CleanableFileChannel(
+        FileChannel.open(Path.of(normalisedFilename), CREATE, WRITE), onClose);
   }
 
   private void executeOnCloseFileHandle(MetadataItem queryMeta, MetadataItem accessedMeta) {

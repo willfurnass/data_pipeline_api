@@ -14,8 +14,9 @@ from data_pipeline_api.registry.common import (
     DataRegistryField,
     DataRegistryTarget,
     sort_by_semver,
+    get_reference,
+    upload_to_storage,
 )
-from data_pipeline_api.registry.access_upload import upload_to_storage
 from data_pipeline_api.file_api import FileAPI
 
 
@@ -124,15 +125,17 @@ def upload_data_product_cli(
     path = upload_to_storage(
         remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path
     )
-    query = {DataRegistryField.name: data_product_name}
-    if data_product_version:
-        query["version"] = data_product_version
-    data_products = get_data(query, DataRegistryTarget.data_product, data_registry, token, False)
-    if data_products:
-        latest = next(iter(sort_by_semver(data_products)))
-        data_product_version = str(semver.parse_version_info(latest[DataRegistryField.version]).bump_minor())
-    elif not data_product_version:
-        data_product_version = "0.1.0"
+    namespace_ref = get_reference({DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry, token)
+    if namespace_ref:
+        query = {DataRegistryField.name: data_product_name, DataRegistryField.namespace: namespace_ref}
+        if data_product_version:
+            query["version"] = data_product_version
+        data_products = get_data(query, DataRegistryTarget.data_product, data_registry, token, False)
+        if data_products:
+            latest = next(iter(sort_by_semver(data_products)))
+            data_product_version = str(semver.parse_version_info(latest[DataRegistryField.version]).bump_minor())
+        elif not data_product_version:
+            data_product_version = "0.1.0"
 
     populated_yaml = template.format(
         namespace=namespace,

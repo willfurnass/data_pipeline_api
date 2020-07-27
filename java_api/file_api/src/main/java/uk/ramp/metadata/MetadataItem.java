@@ -63,6 +63,8 @@ public interface MetadataItem {
 
   Optional<List<IssueItem>> issues();
 
+  Optional<String> description();
+
   default boolean isSuperSetOf(MetadataItem key) {
     return List.<Function<MetadataItem, Optional<String>>>of(
             MetadataItem::internalFilename,
@@ -75,7 +77,8 @@ public interface MetadataItem {
             MetadataItem::runId,
             MetadataItem::source,
             metadataItem -> issuesInComparableFormat(metadataItem.issues().orElse(List.of())),
-            MetadataItem::namespace)
+            MetadataItem::namespace,
+            MetadataItem::description)
         .stream()
         .map(func -> func.andThen(s -> s.orElse("")))
         .allMatch(func -> keyIsEitherNotPresentOrEqual(func.apply(key), func.apply(this)));
@@ -94,6 +97,14 @@ public interface MetadataItem {
   }
 
   default MetadataItem applyOverrides(List<OverrideItem> overrides) {
+    return applyOverrides(overrides, false);
+  }
+
+  default MetadataItem applyOverridesIfEmpty(List<OverrideItem> overrides) {
+    return applyOverrides(overrides, true);
+  }
+
+  private MetadataItem applyOverrides(List<OverrideItem> overrides, boolean onlyOverrideIfEmpty) {
     List<MetadataItem> overridesToApply =
         overrides.stream()
             .filter(overrideItem -> overrideItem.where().map(this::isSuperSetOf).orElse(true))
@@ -103,62 +114,103 @@ public interface MetadataItem {
 
     MetadataItem overriddenMetadataItem = ImmutableMetadataItem.copyOf(this);
     for (MetadataItem override : overridesToApply) {
-      overriddenMetadataItem = applyOverride(overriddenMetadataItem, override);
+      overriddenMetadataItem = applyOverride(overriddenMetadataItem, override, onlyOverrideIfEmpty);
     }
     return overriddenMetadataItem;
   }
 
-  private MetadataItem applyOverride(MetadataItem baseMetadata, MetadataItem metadataOverride) {
+  private boolean shouldOverrideField(
+      Function<MetadataItem, Boolean> isFieldPresent,
+      MetadataItem baseMetadata,
+      MetadataItem overrideMetadata,
+      boolean onlyOverrideIfEmpty) {
+    boolean isBaseFieldPresent = isFieldPresent.apply(baseMetadata);
+    boolean isOverrideFieldPresent = isFieldPresent.apply(overrideMetadata);
+
+    if (!isOverrideFieldPresent) {
+      return false;
+    }
+    if (onlyOverrideIfEmpty) {
+      return !isBaseFieldPresent;
+    }
+    return true;
+  }
+
+  private MetadataItem applyOverride(
+      MetadataItem baseMetadata, MetadataItem metadataOverride, boolean onlyOverrideIfEmpty) {
     var newMetadataItem = ImmutableMetadataItem.copyOf(baseMetadata);
 
-    if (metadataOverride.internalFilename().isPresent()) {
+    Function<Function<MetadataItem, Boolean>, Boolean> shouldOverride =
+        fieldFunc ->
+            shouldOverrideField(fieldFunc, baseMetadata, metadataOverride, onlyOverrideIfEmpty);
+
+    Function<MetadataItem, Boolean> isFilenamePresent = meta -> meta.internalFilename().isPresent();
+    Function<MetadataItem, Boolean> isComponentPresent = meta -> meta.component().isPresent();
+    Function<MetadataItem, Boolean> isDataProductPresent = meta -> meta.dataProduct().isPresent();
+    Function<MetadataItem, Boolean> isInternalVersionPresent =
+        meta -> meta.internalVersion().isPresent();
+    Function<MetadataItem, Boolean> isExtensionPresent = meta -> meta.extension().isPresent();
+    Function<MetadataItem, Boolean> isVerifiedHashPresent = meta -> meta.verifiedHash().isPresent();
+    Function<MetadataItem, Boolean> isCalculatedHashPresent =
+        meta -> meta.calculatedHash().isPresent();
+    Function<MetadataItem, Boolean> isRunIdPresent = meta -> meta.runId().isPresent();
+    Function<MetadataItem, Boolean> isSourcePresent = meta -> meta.source().isPresent();
+    Function<MetadataItem, Boolean> isDataDirectoryPresent =
+        meta -> meta.dataDirectory().isPresent();
+    Function<MetadataItem, Boolean> isIssuesPresent = meta -> meta.issues().isPresent();
+
+    if (shouldOverride.apply(isFilenamePresent)) {
       newMetadataItem =
           newMetadataItem.withInternalFilename(metadataOverride.internalFilename().get());
     }
 
-    if (metadataOverride.component().isPresent()) {
+    if (shouldOverride.apply(isComponentPresent)) {
       newMetadataItem = newMetadataItem.withComponent(metadataOverride.component().get());
     }
 
-    if (metadataOverride.dataProduct().isPresent()) {
+    if (shouldOverride.apply(isDataProductPresent)) {
       newMetadataItem = newMetadataItem.withDataProduct(metadataOverride.dataProduct().get());
     }
 
-    if (metadataOverride.internalVersion().isPresent()) {
+    if (shouldOverride.apply(isInternalVersionPresent)) {
       newMetadataItem =
           newMetadataItem.withInternalVersion(metadataOverride.internalVersion().get());
     }
 
-    if (metadataOverride.extension().isPresent()) {
+    if (shouldOverride.apply(isExtensionPresent)) {
       newMetadataItem = newMetadataItem.withExtension(metadataOverride.extension().get());
     }
 
-    if (metadataOverride.verifiedHash().isPresent()) {
+    if (shouldOverride.apply(isVerifiedHashPresent)) {
       newMetadataItem = newMetadataItem.withVerifiedHash(metadataOverride.verifiedHash().get());
     }
 
-    if (metadataOverride.calculatedHash().isPresent()) {
+    if (shouldOverride.apply(isCalculatedHashPresent)) {
       newMetadataItem = newMetadataItem.withCalculatedHash(metadataOverride.calculatedHash().get());
     }
 
-    if (metadataOverride.runId().isPresent()) {
+    if (shouldOverride.apply(isRunIdPresent)) {
       newMetadataItem = newMetadataItem.withRunId(metadataOverride.runId().get());
     }
 
-    if (metadataOverride.source().isPresent()) {
+    if (shouldOverride.apply(isSourcePresent)) {
       newMetadataItem = newMetadataItem.withSource(metadataOverride.source().get());
     }
 
-    if (metadataOverride.dataDirectory().isPresent()) {
+    if (shouldOverride.apply(isDataDirectoryPresent)) {
       newMetadataItem = newMetadataItem.withDataDirectory(metadataOverride.dataDirectory().get());
     }
 
-    if (metadataOverride.issues().isPresent()) {
+    if (shouldOverride.apply(isIssuesPresent)) {
       newMetadataItem = newMetadataItem.withIssues(metadataOverride.issues().get());
     }
 
     if (metadataOverride.namespace().isPresent()) {
       newMetadataItem = newMetadataItem.withNamespace(metadataOverride.namespace().get());
+    }
+
+    if (metadataOverride.description().isPresent()) {
+      newMetadataItem = newMetadataItem.withDescription(metadataOverride.description().get());
     }
 
     return newMetadataItem;

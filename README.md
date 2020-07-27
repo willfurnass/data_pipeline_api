@@ -41,16 +41,11 @@ conda install -c ScottishCovidResponse data-pipeline-api
 
 ### Pip
 
-We don't have wheels pushed anywhere, but pip supports pulling installing from
-git. You need to install PyYaml and setuptools_scm as they are setup
-requirements.
+You can install this package via pip with
 
 ```bash
-pip install pyyaml setuptools-scm
-pip install git+https://github.com/ScottishCovidResponse/data_pipeline_api.git@VERSION
+pip install data-pipeline-api
 ```
-
-Replace version with the latest version of this package. You can find it by running:
 
 ```bash
 git clone https://github.com/ScottishCovidResponse/data_pipeline_api.git

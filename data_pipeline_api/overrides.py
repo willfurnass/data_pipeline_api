@@ -1,6 +1,6 @@
 from logging import getLogger
 from typing import Iterable, NamedTuple, Sequence, Tuple
-from data_pipeline_api.metadata import Metadata, is_superset, log_format_metadata
+from data_pipeline_api.metadata import Metadata, matches, log_format_metadata
 
 logger = getLogger(__name__)
 
@@ -24,7 +24,7 @@ class Overrides:
 
     def find(self, metadata: Metadata) -> Iterable[Override]:
         return filter(
-            lambda override: is_superset(metadata, override.where), self._overrides,
+            lambda override: matches(metadata, override.where), self._overrides,
         )
 
     def apply(self, metadata: Metadata):

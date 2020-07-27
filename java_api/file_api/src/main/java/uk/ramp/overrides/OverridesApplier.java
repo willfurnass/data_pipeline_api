@@ -26,7 +26,9 @@ public class OverridesApplier {
         () ->
             Paths.get(
                     query.dataProduct().orElseThrow(),
-                    query.runId().orElseThrow() + "." + query.extension().orElseThrow())
+                    query.runId().orElse(config.runId().orElseThrow())
+                        + "."
+                        + query.extension().orElseThrow())
                 .toString();
     OverrideItem filenameOverride =
         ImmutableOverrideItem.builder()
@@ -47,7 +49,7 @@ public class OverridesApplier {
     return query
         .applyOverrides(new ArrayList<>(config.writeQueryOverrides()))
         .applyOverrides(List.of(runIdOverride))
-        .applyOverrides(List.of(filenameOverride))
+        .applyOverridesIfEmpty(List.of(filenameOverride))
         .applyOverrides(List.of(dataDirectoryOverride));
   }
 

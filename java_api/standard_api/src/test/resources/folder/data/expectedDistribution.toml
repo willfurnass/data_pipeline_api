@@ -1,0 +1,5 @@
+[example-distribution-w]
+distribution = "gamma"
+shape = 1.0
+scale = 2.0
+type = "distribution"

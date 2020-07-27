@@ -23,3 +23,28 @@
   component: example-array
   version: 1.0.0
   filename: object/example.h5
+-
+  data_product: parameter
+  component: example-estimate
+  version: 2.0.0
+  filename: parameter/example-v2.toml
+-
+  data_product: parameter
+  component: example-distribution
+  version: 2.0.0
+  filename: parameter/example-v2.toml
+-
+  data_product: parameter
+  component: example-samples
+  version: 2.0.0
+  filename: parameter/example-v2.toml
+-
+  data_product: object
+  component: example-table
+  version: 2.0.0
+  filename: object/example-v2.h5
+-
+  data_product: object
+  component: example-array
+  version: 2.0.0
+  filename: object/example-v2.h5

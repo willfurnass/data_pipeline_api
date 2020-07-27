@@ -32,9 +32,10 @@ def test_read_estimate_as_distribution(standard_api):
             api.read_distribution("parameter", "example-estimate")
 
 
-def test_read_estimate_as_sample(standard_api):
-    with standard_api as api:
-        assert api.read_sample("parameter", "example-estimate") == 1.0
+def test_read_estimate_as_samples(standard_api):
+    with pytest.raises(ValueError):
+        with standard_api as api:
+            api.read_samples("parameter", "example-estimate")
 
 
 def test_write_distribution(standard_api):
@@ -59,10 +60,10 @@ def test_read_distribution_as_distribution(standard_api):
     )
 
 
-def test_read_distribution_as_sample(standard_api):
-    np.random.seed(0)
-    with standard_api as api:
-        assert api.read_sample("parameter", "example-distribution") == 1.59174901632622
+def test_read_distribution_as_samples(standard_api):
+    with pytest.raises(ValueError):
+        with standard_api as api:
+            api.read_samples("parameter", "example-distribution")
 
 
 def test_write_samples(standard_api):
@@ -81,10 +82,9 @@ def test_read_samples_as_distribution(standard_api):
             api.read_distribution("parameter", "example-samples")
 
 
-def test_read_samples_as_sample(standard_api):
-    np.random.seed(0)
+def test_read_samples_as_samples(standard_api):
     with standard_api as api:
-        assert api.read_sample("parameter", "example-samples") == 1.0
+        np.array_equal(api.read_samples("parameter", "example-samples"), np.array([1, 2, 3]))
 
 
 def test_read_table(standard_api):

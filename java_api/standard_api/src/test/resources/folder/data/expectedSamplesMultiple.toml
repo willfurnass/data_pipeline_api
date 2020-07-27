@@ -1,0 +1,6 @@
+[example-samples-w1]
+samples = [1, 2, 3]
+type = "samples"
+[example-samples-w2]
+samples = [1, 2, 3]
+type = "samples"

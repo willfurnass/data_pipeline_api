@@ -18,6 +18,9 @@ from data_pipeline_api.registry.common import (
     get_data,
     DataRegistryTarget,
     get_remote_filesystem_and_path,
+    unique_dicts,
+    get_reference,
+    upload_to_storage,
 )
 from data_pipeline_api.registry.upload import upload_from_config
 from data_pipeline_api.file_api import FileAPI
@@ -43,8 +46,14 @@ def _get_input_url(
     :param token: personal access token
     :return: url reference to the input parameter data product version component
     """
+    namespace_ref = get_reference(
+        {DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry_url, token
+    )
+    if namespace_ref is None:
+        raise ValueError(f"No namespace found for {namespace}")
+
     query_data = {
-        DataRegistryField.namespace: namespace,
+        DataRegistryField.namespace: namespace_ref,
         DataRegistryField.name: data_product_name,
         DataRegistryField.version: version,
     }
@@ -74,34 +83,6 @@ def _verify_hash(filename: Path, access_calculated_hash: str) -> None:
         raise ValueError(
             f"access log contains hash {access_calculated_hash} but calculated hash of {filename} is {calculated_hash}"
         )
-
-
-def upload_to_storage(
-    remote_uri: str,
-    storage_options: Dict[str, Any],
-    data_directory: Path,
-    filename: Path,
-    upload_path: Optional[Union[str, Path]] = None,
-) -> str:
-    """
-    Uploads a file to the remote uri
-     
-    :param remote_uri: URI to the root of the storage
-    :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials 
-    :param data_directory: root of the data directory read from the access log
-    :param filename: file to upload
-    :param upload_path: optional override to the upload path of the file
-    :return: path of the file on the remote storage
-    """
-    protocol = urllib.parse.urlsplit(remote_uri).scheme
-    upload_path = upload_path or filename.absolute().relative_to(data_directory.absolute()).as_posix()
-    fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
-    if protocol in {"file", "ssh", "sftp"}:
-        fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
-    logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
-    fs.put(filename.as_posix(), path)
-    # some remote filesystems expect the root uri in the path, others don't, but the registry path doesn't
-    return path.replace(remote_uri, "")
 
 
 def _add_storage_root(
@@ -140,7 +121,7 @@ def _add_data_product_output_posts(
     posts: List[YamlDict],
     path: str,
     data_product_name: str,
-    namespace: str,
+    namespace_str: str,
     model_version_str: str,
     run_id: str,
     component_name: str,
@@ -154,7 +135,7 @@ def _add_data_product_output_posts(
     :param posts: List of posts to the data registry, will be modified
     :param path: StorageLocation path
     :param data_product_name: Name of the output data product
-    :param namespace: namespace that the data product is a member of
+    :param namespace_str: namespace that the data product is a member of
     :param model_version_str: version number of the model
     :param run_id: id of the run
     :param component_name: name of the output component
@@ -171,6 +152,7 @@ def _add_data_product_output_posts(
         },
     )
     obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: storage_location})
+    namespace = _create_target_data_dict(DataRegistryTarget.namespace, {DataRegistryField.name: namespace_str})
     data_product = _create_target_data_dict(
         DataRegistryTarget.data_product,
         {
@@ -187,7 +169,7 @@ def _add_data_product_output_posts(
             DataRegistryField.object: obj,
         },
     )
-    posts.extend([storage_location, obj, data_product, object_component])
+    posts.extend([storage_location, obj, namespace, data_product, object_component])
     logger.debug(f"Creating ObjectComponent: {object_component}")
     return object_component
 
@@ -228,18 +210,6 @@ def _add_model_run(
     )
     logger.debug(f"Created ModelRun: {code_run}")
     posts.append(code_run)
-
-
-def unique_posts(posts: List[YamlDict]) -> List[YamlDict]:
-    """
-    Removes duplicate posts from the list of posts while maintaining their ordering.
-
-    :param posts: List of posts to the data registry, will be modified
-    :return: Unique list of posts to the data registry
-    """
-    set_of_yamls = {yaml.safe_dump(d): None for d in posts}
-    logger.info(f"Removed {len(posts) - len(set_of_yamls)} duplicate POSTs.")
-    return [yaml.safe_load(t) for t in set_of_yamls.keys()]
 
 
 def _get_accessibility(config):
@@ -395,7 +365,7 @@ def upload_model_run(
     namespace = config.get("namespace")
     model_version_str = config_yaml["model_version"]
     model_name = config_yaml["model_name"]
-    open_timestamp = config_yaml["open_timestamp"]
+    open_timestamp = config["open_timestamp"]
     model_git_sha = config["metadata"]["git_sha"]
     model_uri = config["metadata"]["uri"]
 
@@ -448,7 +418,7 @@ def upload_model_run(
         posts, run_id, open_timestamp, inputs, outputs, model_config_obj, submission_script_obj, code_repo,
     )
 
-    posts = unique_posts(posts)
+    posts = unique_dicts(posts)
 
     upload_from_config({"post": posts}, data_registry_url, token)
 

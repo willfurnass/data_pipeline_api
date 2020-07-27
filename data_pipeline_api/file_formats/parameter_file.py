@@ -79,7 +79,8 @@ def read_distribution(file: TextIOBase, component: str) -> Distribution:
         raise ValueError(f"{parameter['type']} != 'distribution'")
 
 
-def write_distribution(file: TextIOBase, component: str, distribution: Distribution):
+def encode_distribution(distribution: Distribution) -> Dict[str, Any]:
+    """Encode distribution into a serialisable format."""
     shape, loc, scale = distribution.dist._parse_args(
         *distribution.args, **distribution.kwds
     )
@@ -93,8 +94,13 @@ def write_distribution(file: TextIOBase, component: str, distribution: Distribut
         parameter["shape"] = shape[0]
     if scale:
         parameter["scale"] = scale
+    return parameter
+
+
+def write_distribution(file: TextIOBase, component: str, distribution: Distribution):
+    """Write distribution to file under component."""
     write_parameter(
-        file, component, parameter,
+        file, component, encode_distribution(distribution),
     )
 
 
