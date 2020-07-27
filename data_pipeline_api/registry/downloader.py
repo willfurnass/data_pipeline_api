@@ -137,6 +137,7 @@ class Downloader:
                     DataRegistryTarget.object_component,
                     self._data_registry_url,
                     self._token,
+                    exact=False,
                 )
                 if components:
                     obj = get_on_end_point(object_ref, self._token)
