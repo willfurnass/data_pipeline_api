@@ -3,6 +3,7 @@ import logging
 import os
 import urllib
 from collections import defaultdict
+from functools import partial
 from pathlib import Path
 
 from typing import Dict, Optional, List, Tuple, Any, Union, IO
@@ -324,10 +325,10 @@ class Downloader:
     def _external_object_pipe(self, input_blocks: List[DownloaderDict]) -> List[DownloaderDict]:
         for fn in [
             self._resolve_external_objects,
-            self._resolve_objects,
-            self._resolve_storage_locations,
+            partial(self._resolve_objects, external=True),
+            partial(self._resolve_storage_locations, external=True),
             self._resolve_storage_roots,
-            self._resolve_components,
+            partial(self._resolve_components, external=True),
             unique_dicts,
         ]:
             input_blocks = fn(input_blocks)
