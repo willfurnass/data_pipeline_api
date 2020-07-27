@@ -22,7 +22,7 @@ from data_pipeline_api.registry.common import (
     get_reference,
     upload_to_storage,
 )
-from data_pipeline_api.registry.upload import upload_from_config
+from data_pipeline_api.registry.upload import upload_from_config, upload_to_text_table
 from data_pipeline_api.file_api import FileAPI
 
 logger = logging.getLogger(__name__)
@@ -295,6 +295,29 @@ def _add_code_repo(
     return code_repo_obj
 
 
+def _upload_file_to_text_table(
+        posts: List[YamlDict],
+        filename: Union[str, Path],
+        data_registry_url: str,
+        token: str
+) -> YamlDict:
+    """
+    for a given filename, uploads its contents to the text_file table and returns a reference to the object that will be
+    posted
+
+    :param posts: List of posts to the data registry, will be modified
+    :param filename: path to the file to upload
+    :param data_registry_url: base url of the data registry
+    :param token: personal access token
+    :return: object reference to the uploaded file
+    """
+    filename = Path(filename)
+    location = upload_to_text_table(filename, data_registry_url, token)
+    obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: location})
+    posts.append(obj)
+    return obj
+
+
 def _upload_file_to_storage(
     posts: List[YamlDict],
     filename: Union[str, Path],
@@ -338,6 +361,7 @@ def upload_model_run(
     storage_options: Dict[str, str],
     data_registry_url: str,
     token: str,
+    text_file_table: bool = True,
 ) -> None:
     """
     Reads the provided configuration files and then calls PATCH or POST with the data to the data registry as
@@ -351,6 +375,7 @@ def upload_model_run(
     :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
     :param data_registry_url: base url of the data registry
     :param token: personal access token
+    :param text_file_table: If true, model_config and submission_script are uploaded to the text_file table in the data_registry
     """
     remote_uri_override = remote_uri_override or remote_uri
     config_filename = Path(config_filename)
@@ -409,10 +434,14 @@ def upload_model_run(
             )
             outputs.append(object_component)
 
-    model_config_obj = _upload_file_to_storage(posts, model_config_filename, remote_uri, storage_options, storage_root)
-    submission_script_obj = _upload_file_to_storage(
-        posts, submission_script_filename, remote_uri, storage_options, storage_root
-    )
+    if text_file_table:
+        model_config_obj = _upload_file_to_text_table(posts, model_config_filename, data_registry_url, token)
+        submission_script_obj = _upload_file_to_text_table(posts, submission_script_filename, data_registry_url, token)
+    else:
+        model_config_obj = _upload_file_to_storage(posts, model_config_filename, remote_uri, storage_options, storage_root)
+        submission_script_obj = _upload_file_to_storage(
+            posts, submission_script_filename, remote_uri, storage_options, storage_root,
+        )
 
     _add_model_run(
         posts, run_id, open_timestamp, inputs, outputs, model_config_obj, submission_script_obj, code_repo,
@@ -463,8 +492,13 @@ def upload_model_run(
     help=f"data registry access token. Defaults to {DATA_REGISTRY_ACCESS_TOKEN} env if not passed."
     f" access tokens can be created from the data registry's get-token end point",
 )
+@click.option(
+    "--text-file-table/--no-text-file-table", default=True,
+    help="Whether to upload the model-config and submission-script to the text_file table of the data registry "
+         "(default), or to the remote-uri"
+)
 def upload_model_run_cli(
-    config, model_config, submission_script, remote_uri, remote_option, remote_uri_override, data_registry, token
+    config, model_config, submission_script, remote_uri, remote_option, remote_uri_override, data_registry, token, text_file_table,
 ):
     configure_cli_logging()
     data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
@@ -484,6 +518,7 @@ def upload_model_run_cli(
         storage_options=remote_options,
         data_registry_url=data_registry,
         token=token,
+        text_file_table=text_file_table,
     )
 
 
