@@ -24,6 +24,7 @@ from data_pipeline_api.registry.common import (
 )
 from data_pipeline_api.registry.upload import upload_from_config, upload_to_text_table
 from data_pipeline_api.file_api import FileAPI
+from data_pipeline_api.registry.utils import get_remote_options
 
 logger = logging.getLogger(__name__)
 
@@ -502,7 +503,9 @@ def upload_model_run_cli(
 ):
     configure_cli_logging()
     data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
-    remote_options = dict(remote_option) if remote_option else {}
+    remote_options = get_remote_options()
+    arg_remote_options = dict(remote_option) if remote_option else {}
+    remote_options.update(arg_remote_options)
     remote_uri_override = remote_uri_override or remote_uri
     if not token:
         raise ValueError(
