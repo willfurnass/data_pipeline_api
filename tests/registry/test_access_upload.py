@@ -3,8 +3,7 @@ from datetime import datetime as dt
 
 import pytest
 
-from data_pipeline_api.registry.access_upload import _verify_hash, _create_target_data_dict, unique_posts, \
-    to_github_uri
+from data_pipeline_api.registry.access_upload import _verify_hash, _create_target_data_dict, to_github_uri
 
 
 @pytest.fixture()
@@ -30,17 +29,6 @@ def test_verify_hash(tmp_file_calculated_hash, calculated_hash):
 
 def test_create_target_data_dict():
     assert _create_target_data_dict("a_target", {"key": "value"}) == {"target": "a_target", "data": {"key": "value"}}
-
-
-def test_unique_posts():
-    assert unique_posts([{"a": 1}, {"b": 2}, {"a": 1}]) == [{"a": 1}, {"b": 2}]
-    assert unique_posts([{"a": 1}, {"b": 2}, {"a": 3}]) == [{"a": 1}, {"b": 2}, {"a": 3}]
-    now = dt.now()
-    assert unique_posts([{"a": now}, {"a": 1}, {"a": now}]) == [{"a": now}, {"a": 1}]
-    assert unique_posts([{"a": {"a": {"a": 1}}}, {"b": {"b": {"b": 1}}}, {"a": {"a": {"a": 1}}}]) == [
-        {"a": {"a": {"a": 1}}},
-        {"b": {"b": {"b": 1}}},
-    ]
 
 
 @pytest.mark.parametrize(
