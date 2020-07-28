@@ -51,3 +51,9 @@ write:
       component: example-distribution-w
     use:
       filename: actualDistribution.toml
+
+  - where:
+      data_product: parameter
+      component: example-distribution-w-categorical
+    use:
+      filename: actualDistributionCategorical.toml

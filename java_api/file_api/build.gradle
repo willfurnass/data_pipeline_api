@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id "com.diffplug.gradle.spotless" version "4.4.0"
     id "maven-publish"
+    id "jacoco"
 }
 
 group 'uk.ramp'
@@ -49,5 +50,16 @@ publishing {
         gpr(MavenPublication) {
             from(components.java)
         }
+    }
+}
+
+test {
+    finalizedBy jacocoTestReport
+}
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        html.enabled false
     }
 }

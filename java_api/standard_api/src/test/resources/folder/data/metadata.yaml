@@ -10,6 +10,11 @@
   filename: parameter/example1.toml
 -
   data_product: parameter
+  component: example-distribution-categorical
+  version: 1.0.0
+  filename: parameter/example1.toml
+-
+  data_product: parameter
   component: example-samples
   version: 1.0.0
   filename: parameter/example1.toml

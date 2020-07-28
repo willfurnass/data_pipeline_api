@@ -58,5 +58,7 @@ matrix:
       jdk: openjdk11
       language: java
       script: "./gradlew build"
-      after_success: "./gradlew publish"
+      after_success: 
+        - bash <(curl -s https://codecov.io/bash)
+        - ./gradlew publish
 

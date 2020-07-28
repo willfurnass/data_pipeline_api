@@ -9,12 +9,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.ramp.distribution.Distribution;
 import uk.ramp.distribution.Distribution.DistributionType;
 import uk.ramp.distribution.ImmutableDistribution;
+import uk.ramp.distribution.ImmutableMinMax;
+import uk.ramp.distribution.MinMax;
 import uk.ramp.samples.ImmutableSamples;
 import uk.ramp.samples.Samples;
 
@@ -38,6 +41,46 @@ public class StandardApiIntegrationTest {
           .internalScale(2)
           .internalType(DistributionType.gamma)
           .build();
+
+  private final MinMax firstMinMax =
+      ImmutableMinMax.builder()
+          .isLowerInclusive(true)
+          .isUpperInclusive(true)
+          .lowerBoundary(0)
+          .upperBoundary(4)
+          .build();
+
+  private final MinMax secondMinMax =
+      ImmutableMinMax.builder()
+          .isLowerInclusive(true)
+          .isUpperInclusive(true)
+          .lowerBoundary(5)
+          .upperBoundary(9)
+          .build();
+
+  private final MinMax thirdMinMax =
+      ImmutableMinMax.builder()
+          .isLowerInclusive(true)
+          .isUpperInclusive(true)
+          .lowerBoundary(10)
+          .upperBoundary(14)
+          .build();
+
+  private final MinMax fourthMinMax =
+      ImmutableMinMax.builder()
+          .isLowerInclusive(true)
+          .isUpperInclusive(true)
+          .lowerBoundary(15)
+          .upperBoundary(20)
+          .build();
+
+  private final Distribution categoricalDistribution =
+      ImmutableDistribution.builder()
+          .internalType(DistributionType.categorical)
+          .bins(List.of(firstMinMax, secondMinMax, thirdMinMax, fourthMinMax))
+          .weights(List.of(0.4, 0.1, 0.1, 0.4))
+          .build();
+
   private final Number estimate = 1.0;
 
   private String configPath;
@@ -53,6 +96,7 @@ public class StandardApiIntegrationTest {
     Files.deleteIfExists(Path.of(dataDirectoryPath, "actualSamples.toml"));
     Files.deleteIfExists(Path.of(dataDirectoryPath, "actualSamplesMultiple.toml"));
     Files.deleteIfExists(Path.of(dataDirectoryPath, "actualDistribution.toml"));
+    Files.deleteIfExists(Path.of(dataDirectoryPath, "actualDistributionCategorical.toml"));
     Files.deleteIfExists(Path.of(dataDirectoryPath, "parameter/runId.toml"));
     Files.deleteIfExists(Path.of("access-runId.yaml"));
     samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
@@ -86,6 +130,15 @@ public class StandardApiIntegrationTest {
   }
 
   @Test
+  public void testReadCategoricalDistribution() {
+    var stdApi = new StandardApi(Path.of(configPath));
+    String dataProduct = "parameter";
+    String component = "example-distribution-categorical";
+
+    assertThat(stdApi.readDistribution(dataProduct, component)).isEqualTo(categoricalDistribution);
+  }
+
+  @Test
   public void testWriteDistribution() throws IOException {
     var stdApi = new StandardApi(Path.of(configPath));
     String dataProduct = "parameter";
@@ -93,6 +146,17 @@ public class StandardApiIntegrationTest {
     stdApi.writeDistribution(dataProduct, component, distribution);
 
     assertEqualFileContents("actualDistribution.toml", "expectedDistribution.toml");
+  }
+
+  @Test
+  public void testWriteCategoricalDistribution() throws IOException {
+    var stdApi = new StandardApi(Path.of(configPath));
+    String dataProduct = "parameter";
+    String component = "example-distribution-w-categorical";
+    stdApi.writeDistribution(dataProduct, component, categoricalDistribution);
+
+    assertEqualFileContents(
+        "actualDistributionCategorical.toml", "expectedDistributionCategorical.toml");
   }
 
   @Test
