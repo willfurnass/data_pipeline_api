@@ -39,19 +39,17 @@ class StandardAPI:
     """The StandardAPI class provides access to data products conforming to the Standard
     API specification.
     """
+
     @classmethod
     def from_config(
-        cls,
-        config_filename: Union[Path, str],
-        uri: str,
-        git_sha: str,
+        cls, config_filename: Union[Path, str], uri: str, git_sha: str,
     ):
         return cls(FileAPI(config_filename), uri, git_sha)
 
     def __init__(self, file_api: FileAPI, uri: str, git_sha: str):
         self.file_api = file_api
-        self.file_api.set_metadata("uri", uri)
-        self.file_api.set_metadata("git_sha", git_sha)
+        self.file_api.set_run_metadata("uri", uri)
+        self.file_api.set_run_metadata("git_sha", git_sha)
 
     def __enter__(self):
         self.file_api.__enter__()

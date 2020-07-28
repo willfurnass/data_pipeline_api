@@ -1,6 +1,9 @@
 import pytest
+import logging
 from pathlib import Path
 from data_pipeline_api.file_api import FileAPI
+
+logging.basicConfig(level="DEBUG")
 
 
 @pytest.fixture
@@ -31,6 +34,7 @@ def configuration_file(tmp_path: Path) -> Path:
         file.write(
             """
 data_directory: .
+run_id: test_run
 access_log: access.yaml
 fail_on_hash_mismatch: False
 """
@@ -54,7 +58,7 @@ def test_write(tmp_path: Path, configuration_file: Path):
     with FileAPI(configuration_file) as api:
         with api.open_for_write(data_product="test", extension="txt") as file:
             file.write("contents3".encode())
-        with open(tmp_path / "test" / f"{api.run_id}.txt") as file:
+        with open(tmp_path / "test" / "test_run.txt") as file:
             assert file.read() == "contents3"
 
 
@@ -124,3 +128,28 @@ fail_on_hash_mismatch: False
     with FileAPI(configuration_file):
         pass
     assert access_file_path.exists()
+
+
+def test_set_get_run_metadata():
+    with FileAPI() as api:
+        api.set_run_metadata("key", "value")
+        assert api.get_run_metadata("key") == "value"
+
+
+@pytest.mark.parametrize(
+    ("key"), FileAPI.RESERVED_RUN_METADATA_KEYS,
+)
+def test_cannot_set_reserved_run_metadata_keys(key):
+    with pytest.raises(ValueError):
+        FileAPI().set_run_metadata(key, "value")
+
+
+def test_access_file_contains_run_metadata(tmp_path):
+    configuration_file = tmp_path / "config.yaml"
+    with open(configuration_file, "w") as file:
+        file.write("access_log: access.yaml")
+    with FileAPI(configuration_file):
+        pass
+    with FileAPI():
+        pass
+    assert (tmp_path / "access.yaml").exists()

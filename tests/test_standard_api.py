@@ -84,7 +84,9 @@ def test_read_samples_as_distribution(standard_api):
 
 def test_read_samples_as_samples(standard_api):
     with standard_api as api:
-        np.array_equal(api.read_samples("parameter", "example-samples"), np.array([1, 2, 3]))
+        np.array_equal(
+            api.read_samples("parameter", "example-samples"), np.array([1, 2, 3])
+        )
 
 
 def test_read_table(standard_api):
@@ -116,16 +118,18 @@ def test_access_log_contains_uri_and_git_sha(standard_api):
     with standard_api:
         pass
     with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
-        assert yaml.safe_load(access_file)["metadata"] == {
-            "uri": "test_uri",
-            "git_sha": "test_git_sha",
-        }
+        run_metadata = yaml.safe_load(access_file)["run_metadata"]
+        assert run_metadata["uri"] == "test_uri"
+        assert run_metadata["git_sha"] == "test_git_sha"
 
 
 def test_issue_logging(standard_api):
     with standard_api as api:
         api.write_estimate(
-            "parameter", "example-estimate", 1.0, issues=[Issue("test issue 1", 1), Issue("test issue 2", 2)]
+            "parameter",
+            "example-estimate",
+            1.0,
+            issues=[Issue("test issue 1", 1), Issue("test issue 2", 2)],
         )
     with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
         access_yaml = yaml.safe_load(access_file)
@@ -146,5 +150,9 @@ def test_description(standard_api):
         )
     with open(CONFIG_PATH.parent / "access-example.yaml") as access_file:
         access_yaml = yaml.safe_load(access_file)
-        assert access_yaml["io"][0]["call_metadata"]["description"] == "test description"
-        assert access_yaml["io"][0]["access_metadata"]["description"] == "test description"
+        assert (
+            access_yaml["io"][0]["call_metadata"]["description"] == "test description"
+        )
+        assert (
+            access_yaml["io"][0]["access_metadata"]["description"] == "test description"
+        )
