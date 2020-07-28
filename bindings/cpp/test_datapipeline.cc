@@ -60,9 +60,9 @@ int main()
 
   // read_sample
   cout << "read_sample:" << endl;
-  cout << "  parameter/example-estimate -> " << dp.read_sample("parameter", "example-estimate") << endl;
-  cout << "  parameter/example-distribution -> " << dp.read_sample("parameter", "example-distribution") << endl;
-  cout << "  parameter/example-samples -> " << dp.read_sample("parameter", "example-samples") << endl;
+//  cout << "  parameter/example-estimate -> " << dp.read_sample("parameter", "example-estimate") << endl;
+//  cout << "  parameter/example-distribution -> " << dp.read_sample("parameter", "example-distribution") << endl;
+//  cout << "  parameter/example-samples -> " << dp.read_sample("parameter", "example-samples") << endl;
 
   // read_table
   Table table = dp.read_table("object", "example-table");
