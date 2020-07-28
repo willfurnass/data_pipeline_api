@@ -30,3 +30,7 @@ def test_versions_must_be_semver():
 
 def test_missing_version_is_ok():
     MetadataStore([{"key": "world"}])
+
+
+def test_can_be_initalised_with_None():
+    MetadataStore(None)
