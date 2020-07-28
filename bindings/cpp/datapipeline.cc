@@ -89,7 +89,7 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
 
   for (const auto &colname: colnames) {
     
-    string dtype = py::str(dataframe.attr("dtypes").attr(colname.c_str()));
+    string dtype = py::str(dataframe.attr("dtypes")[colname.c_str()]);
 
     if (dtype == "float64") {
       vector<double> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<double>>();
