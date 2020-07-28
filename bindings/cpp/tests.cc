@@ -51,10 +51,10 @@ TEST_CASE("read_distribution","[!shouldfail]") {
 TEST_CASE("read_sample") {
   INIT_DP;
 
-  CHECK(dp.read_sample("parameter", "example-estimate") == 1);
+  CHECK_THROWS_AS(dp.read_sample("parameter", "example-estimate"), pybind11::error_already_set);
   pybind11::module::import("numpy.random").attr("seed")(0);
-  CHECK(dp.read_sample("parameter", "example-distribution") == 1.59174901632622);
-  CHECK(dp.read_sample("parameter", "example-samples") == 2);
+  CHECK_THROWS_AS(dp.read_sample("parameter", "example-distribution"), pybind11::error_already_set);
+  CHECK(dp.read_sample("parameter", "example-samples") == vector<double>{1,2,3});
 }
 
 TEST_CASE("write_samples") {

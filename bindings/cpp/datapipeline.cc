@@ -54,9 +54,9 @@ Distribution DataPipeline::read_distribution(const string &data_product, const s
 }
 
 
-double DataPipeline::read_sample(const string &data_product, const string &component)
+vector<double> DataPipeline::read_sample(const string &data_product, const string &component)
 {
-  return py::float_(api.attr("read_sample")(data_product, component));
+  return api.attr("read_samples")(data_product, component).cast<vector<double>>();
 }
 
 void DataPipeline::write_estimate(const string &data_product, const string &component, double estimate)

@@ -28,7 +28,7 @@ class DataPipeline
   DataPipeline(const string &config_file, const string &uri, const string &git_sha);
   double read_estimate(string data_product, const string &component);
   Distribution read_distribution(const string &data_product, const string &component);
-  double read_sample(const string &data_product, const string &component);
+  vector<double> read_sample(const string &data_product, const string &component);
     void write_estimate(const string &data_product, const string &component, double estimate);
   void write_distribution(const string &data_product, const string &component,
                           const Distribution &d);
