@@ -77,7 +77,7 @@ class FileAPI:
             if "calculated_hash" in metadata:
                 metadata["verified_hash"] = metadata.pop("calculated_hash")
 
-        with open(metadata_filename,'a') as metadata_store_file:
+        with open(metadata_filename,'w') as metadata_store_file:
             yaml.dump(metadata_list, metadata_store_file, sort_keys=False)
 
     def __init__(self, config_filename: Union[Path, str]):

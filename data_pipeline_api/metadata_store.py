@@ -27,7 +27,7 @@ class MetadataStore:
         then be searched by matching against Metadata fragments.
         """
         try:
-            self._metadata_records = tuple(
+            self._metadata_records = list(
                 MetadataRecord(
                     metadata=metadata,
                     version=VersionInfo.parse(metadata[MetadataKey.version])
@@ -38,7 +38,6 @@ class MetadataStore:
             )
         except Exception as exception:
             raise ValueError("invalid metadata") from exception
-        self._additional_metadata_records = []
 
     def find(self, metadata: Metadata) -> Optional[Metadata]:
         try:
@@ -66,11 +65,21 @@ class MetadataStore:
                     if MetadataKey.version in metadata
                     else None,
                 )
-        # self._metadata_records = tuple(list(self._metadata_records)+[record])
-        self._additional_metadata_records = self._additional_metadata_records+[record]
+
+        existing_data_products = [rec.metadata["data_product"] for rec in self._metadata_records]
+
+        found = False
+        for i in range(0,len(self._metadata_records)):
+            if self._metadata_records[i].metadata["data_product"] == metadata["data_product"]:
+                self._metadata_records[i] = record
+                found = True
+                break # Only replace the first
+
+        if not found:
+            self._metadata_records = list(self._metadata_records)+[record]
 
     def metadata_list(self):
-        return [record.metadata for record in self._additional_metadata_records]
+        return [record.metadata for record in self._metadata_records]
 
     def __str__(self):
         return str(self._metadata_records)
