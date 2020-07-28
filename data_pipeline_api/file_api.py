@@ -194,10 +194,6 @@ class FileAPI:
         )
         logger.info("recorded %s(%s)", access_type, log_format_metadata(call_metadata))
 
-        print("self._metadata_store =",self._metadata_store)
-
-        pprint.pprint(self._metadata_store,width=1)
-
         self._metadata_store.add(access_metadata)
 
         # {'data_product': 'parameter', 'component': 'example-estimate', 'version': '1.0.0', 'filename': 'parameter/example.toml'}
