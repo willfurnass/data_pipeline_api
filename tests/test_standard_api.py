@@ -6,6 +6,7 @@ import yaml
 import numpy as np
 import pandas as pd
 from scipy import stats
+from data_pipeline_api.file_api import RunMetadata
 from data_pipeline_api.standard_api import StandardAPI, Array, Issue
 
 DATA_ROOT = Path(__file__).parent / "data"
@@ -15,7 +16,7 @@ DATA_ROOT = Path(__file__).parent / "data"
 def standard_api(tmp_path):
     for filename in ("config.yaml", "metadata.yaml", "object", "parameter"):
         os.symlink(DATA_ROOT / filename, tmp_path / filename)
-    return StandardAPI.from_config(tmp_path / "config.yaml", "test_uri", "test_git_sha")
+    return StandardAPI.from_config(tmp_path / "config.yaml", "test_git_repo", "test_git_sha")
 
 
 def test_write_estimate(standard_api):
@@ -121,8 +122,8 @@ def test_access_log_contains_uri_and_git_sha(tmp_path, standard_api):
         pass
     with open(tmp_path / "access-example.yaml") as access_file:
         run_metadata = yaml.safe_load(access_file)["run_metadata"]
-        assert run_metadata["uri"] == "test_uri"
-        assert run_metadata["git_sha"] == "test_git_sha"
+        assert run_metadata[RunMetadata.git_repo] == "test_git_repo"
+        assert run_metadata[RunMetadata.git_sha] == "test_git_sha"
 
 
 def test_issue_logging(tmp_path, standard_api):
