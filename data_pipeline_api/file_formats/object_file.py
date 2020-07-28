@@ -85,7 +85,7 @@ def write_table(file: IOBase, component: str, table: Table):
     group = get_write_group(file, component)
     for dataset in group:
         del group[dataset]
-    group.create_dataset("table", data=records)
+    group.create_dataset("table", data=records, track_times=False)
 
 
 DIMENSION_PREFIX = "Dimension_"
@@ -173,7 +173,7 @@ def write_array(file: IOBase, component: str, array: Array):
     group = get_write_group(file, component)
     for dataset in group:
         del group[dataset]
-    group.create_dataset("array", data=array.data)
+    group.create_dataset("array", data=array.data, track_times=False)
     if array.dimensions is not None:
         for i, dimension in enumerate(array.dimensions, start=1):
             if dimension.title is not None:
@@ -182,6 +182,7 @@ def write_array(file: IOBase, component: str, array: Array):
                     dtype=h5py.string_dtype(),
                     shape=(),
                     data=dimension.title,
+                    track_times=False,
                 )
             if dimension.names is not None:
                 encoded_names = np.char.encode(dimension.names)
@@ -190,6 +191,7 @@ def write_array(file: IOBase, component: str, array: Array):
                     dtype=h5py.string_dtype(),
                     shape=encoded_names.shape,
                     data=encoded_names,
+                    track_times=False,
                 )
             if dimension.values is not None:
                 values = np.array(dimension.values)
@@ -198,6 +200,7 @@ def write_array(file: IOBase, component: str, array: Array):
                     dtype=values.dtype,
                     shape=values.shape,
                     data=values,
+                    track_times=False,
                 )
             if dimension.units is not None:
                 group.create_dataset(
@@ -205,8 +208,10 @@ def write_array(file: IOBase, component: str, array: Array):
                     dtype=h5py.string_dtype(),
                     shape=(),
                     data=dimension.units,
+                    track_times=False,
                 )
     if array.units is not None:
         group.create_dataset(
             "units", dtype=h5py.string_dtype(), shape=(), data=array.units,
+                    track_times=False,
         )
