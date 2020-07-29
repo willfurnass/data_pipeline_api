@@ -1,6 +1,8 @@
+import fnmatch
 import itertools
 import logging
 import os
+import re
 import urllib
 from collections import defaultdict
 from functools import partial
@@ -178,13 +180,15 @@ class Downloader:
 
         resolved = []
         for block in versioned_blocks:
+            cname = None if external else block.get((DataRegistryTarget.object_component, DataRegistryField.name))
             components = block[DataRegistryTarget.object, DataRegistryField.components]
             for component_url in components:
                 cblock = block.copy()
                 component = get_on_end_point(component_url, self._token)
-                for k, v in component.items():
-                    cblock[DataRegistryTarget.object_component, k] = v
-                resolved.append(cblock)
+                if not cname or re.match(fnmatch.translate(cname), component[DataRegistryField.name]):
+                    for k, v in component.items():
+                        cblock[DataRegistryTarget.object_component, k] = v
+                    resolved.append(cblock)
         return resolved
 
     def _resolve_storage_locations(
