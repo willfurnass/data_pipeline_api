@@ -308,6 +308,25 @@ def test_build_query_string():
         assert build_query_string({DataRegistryField.name: f"{DATA_REGISTRY_URL}/text_file/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=data%2F%2Ftext_file%2F"
 
 
+def test_build_query_string_no_token():
+    with patch("data_pipeline_api.registry.common.get_fields") as fields:
+        assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL, None) == ""
+        assert (
+            build_query_string({DataRegistryField.name: "name"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, None) == "name=name"
+        )
+        assert build_query_string({"not_a_filter": "not_a_filter"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, None) == "not_a_filter=not_a_filter"
+        assert (
+            build_query_string(
+                {"not_a_filter": "not_a_filter", DataRegistryField.name: "name"},
+                DataRegistryTarget.issue,
+                DATA_REGISTRY_URL,
+                None
+            )
+            == "not_a_filter=not_a_filter&name=name"
+        )
+        fields.assert_not_called()
+
+
 def test_get_fields():
     with patch("requests.options") as options:
         options.return_value = MockResponse({})

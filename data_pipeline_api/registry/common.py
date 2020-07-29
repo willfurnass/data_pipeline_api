@@ -211,6 +211,8 @@ def get_fields(target: str, data_registry_url: str, token: str) -> Set[str]:
     :param token: personal access token
     :return: the set of fields on this target end point
     """
+    if token is None:
+        logger.warning("Getting fields with no token provided, no fields will be returned.")
     end_point = get_end_point(data_registry_url, target)
     result = requests.options(end_point, headers=get_headers(token))
     result.raise_for_status()
@@ -218,7 +220,7 @@ def get_fields(target: str, data_registry_url: str, token: str) -> Set[str]:
     return set(options.get("actions", {}).get("POST", {}).keys())
 
 
-def build_query_string(query_data: YamlDict, target: str, data_registry_url: str, token: str) -> str:
+def build_query_string(query_data: YamlDict, target: str, data_registry_url: str, token: Optional[str]) -> str:
     """
     Converts a dictionary of query data into a query string
 
@@ -244,10 +246,12 @@ def build_query_string(query_data: YamlDict, target: str, data_registry_url: str
         else:
             return None
 
-    fields = get_fields(target, data_registry_url, token)
-
     processed = {k: process(v) for k, v in query_data.items()}
-    valid = {k: v for k, v in processed.items() if k in fields and v is not None}
+    if token:
+        fields = get_fields(target, data_registry_url, token)
+        valid = {k: v for k, v in processed.items() if k in fields and v is not None}
+    else:
+        valid = {k: v for k, v in processed.items() if v is not None}
 
     return urllib.parse.urlencode(valid)
 
