@@ -283,6 +283,12 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
                 _component_dict("ns", "othername", "c", "0.0.1", [1], a=1),
             ],
         ],
+        [
+            [_component_dict("ns", "name", "c*", "2.0.0", [1]), _component_dict("ns", "name", "c*", "1.0.0", [1])],
+            {"a": 1, DataRegistryField.name: "c123"},
+            False,
+            [_component_dict("ns", "name", "c123", "2.0.0", [1], a=1)],
+        ],
     ],
 )
 def test_downloader_resolve_components(downloader, input_block, return_value, external, expected):
