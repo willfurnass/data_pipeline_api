@@ -505,6 +505,7 @@ def test_download_data_public_file(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -524,6 +525,7 @@ def test_download_data_public_dir(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -539,10 +541,35 @@ def test_download_data_not_public(downloader):
     with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
         with patch.object(Path, "mkdir"):
             downloader._resolved_data_products = [
-                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,}
+                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,
+                 (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",}
             ]
             fs = Mock()
             fs_path.return_value = fs, "path"
             downloader._download()
             fs_path.assert_not_called()
             fs.assert_not_called()
+
+
+def test_download_data_twice(downloader):
+    with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
+        with patch.object(Path, "mkdir"):
+            downloader._resolved_data_products = [
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
+                    (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                    "full_output_filename": "output_path",
+                },
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                }
+            ]
+            fs = Mock()
+            fs_path.return_value = fs, "path"
+            fs.isdir.return_value = False
+            downloader._download()
+            fs_path.assert_called_once_with("http", "http://source_uri", "source_path")
+            fs.get.assert_called_once_with("path", "output_path", block_size=0)
