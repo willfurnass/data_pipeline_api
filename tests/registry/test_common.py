@@ -15,7 +15,7 @@ from data_pipeline_api.registry.common import (
     DataRegistryTarget,
     unique_dicts,
     upload_to_storage,
-    get_fields,
+    get_filter_fields,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -277,7 +277,7 @@ def test_get_remote_filesystem_and_path_active_ftp():
 
 
 def test_build_query_string():
-    with patch("data_pipeline_api.registry.common.get_fields") as fields:
+    with patch("data_pipeline_api.registry.common.get_filter_fields") as fields:
         fields.return_value = {DataRegistryField.name}
         assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
         assert (
@@ -308,19 +308,16 @@ def test_build_query_string():
         assert build_query_string({DataRegistryField.name: f"{DATA_REGISTRY_URL}/text_file/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=data%2F%2Ftext_file%2F"
 
 
-def test_get_fields():
+def test_get_filter_fields():
     with patch("requests.options") as options:
         options.return_value = MockResponse({})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
 
-        options.return_value = MockResponse({"actions": {}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+        options.return_value = MockResponse({"filter_fields": []})
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
 
-        options.return_value = MockResponse({"actions": {"POST": {}}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
-
-        options.return_value = MockResponse({"actions": {"POST": {"field1": [], "field2": 1, "field3": {"a": 1}}}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == {"field1", "field2", "field3"}
+        options.return_value = MockResponse({"filter_fields": ["field1", "field2", "field3"]})
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == {"field1", "field2", "field3"}
 
 
 def test_sort_by_semver():
