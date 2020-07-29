@@ -53,6 +53,10 @@ cd data_pipeline_api
 git tag --sort=v:refname
 ```
 
+## Data Registry Interactions
+
+See [registry README](data_pipeline_api/registry/README.md).
+
 ## Releasing a new version
 
 New versions can be released from the master branch at any time. Whenever a git
