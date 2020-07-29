@@ -1,6 +1,8 @@
+import fnmatch
 import itertools
 import logging
 import os
+import re
 import urllib
 from collections import defaultdict
 from functools import partial
@@ -178,13 +180,15 @@ class Downloader:
 
         resolved = []
         for block in versioned_blocks:
+            cname = None if external else block.get((DataRegistryTarget.object_component, DataRegistryField.name))
             components = block[DataRegistryTarget.object, DataRegistryField.components]
             for component_url in components:
                 cblock = block.copy()
                 component = get_on_end_point(component_url, self._token)
-                for k, v in component.items():
-                    cblock[DataRegistryTarget.object_component, k] = v
-                resolved.append(cblock)
+                if not cname or re.match(fnmatch.translate(cname), component[DataRegistryField.name]):
+                    for k, v in component.items():
+                        cblock[DataRegistryTarget.object_component, k] = v
+                    resolved.append(cblock)
         return resolved
 
     def _resolve_storage_locations(
@@ -288,9 +292,13 @@ class Downloader:
             yaml.safe_dump(metadatas, stream)
 
     def _download(self):
+        downloaded_hashes = set()
         for block in itertools.chain(self._resolved_data_products, self._resolved_external_objects):
             accessibility = block[DataRegistryTarget.storage_root, DataRegistryField.accessibility]
-            if accessibility == 0:  # public
+            block_hash = block[DataRegistryTarget.storage_location, DataRegistryField.hash]
+            if block_hash in downloaded_hashes:
+                logger.debug(f"Storage location with hash {block_hash} has already been downloaded, skipping download")
+            elif accessibility == 0:  # public
                 source_uri = block[DataRegistryTarget.storage_root, DataRegistryField.root]
                 source_path = block[DataRegistryTarget.storage_location, DataRegistryField.path]
                 output_path = Path(block[FULL_OUTPUT_FILENAME])
@@ -308,6 +316,7 @@ class Downloader:
                     fs.get(source_path, output_path.as_posix(), **kwargs)
             else:
                 logger.info(f"Data is not public, skipping download")
+            downloaded_hashes.add(block_hash)
 
     def _data_product_pipe(self, input_blocks: List[DownloaderDict]) -> List[DownloaderDict]:
         for fn in [

@@ -1,5 +1,7 @@
 import io
+import itertools
 from pathlib import Path
+from typing import List
 from unittest.mock import patch, Mock
 
 import pytest
@@ -237,7 +239,7 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
         ],
         [
             [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {},
+            {DataRegistryField.name: "c"},
             False,
             [_component_dict("ns", "name", "c", "1.0.0", [1])],
         ],
@@ -249,19 +251,19 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
         ],
         [
             [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {"a": 1},
+            {"a": 1, DataRegistryField.name: "c"},
             False,
             [_component_dict("ns", "name", "c", "1.0.0", [1], a=1)],
         ],
         [
             [_component_dict("ns", "name", "c", "1.0.0", [1]), _component_dict("ns", "name", "c", "2.0.0", [1])],
-            {"a": 1},
+            {"a": 1, DataRegistryField.name: "c"},
             False,
             [_component_dict("ns", "name", "c", "2.0.0", [1], a=1)],
         ],
         [
             [_component_dict("ns", "name", "c", "2.0.0", [1]), _component_dict("ns", "name", "c", "1.0.0", [1])],
-            {"a": 1},
+            {"a": 1, DataRegistryField.name: "c"},
             False,
             [_component_dict("ns", "name", "c", "2.0.0", [1], a=1)],
         ],
@@ -273,7 +275,7 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
                 _component_dict("ns", "name", "c2", "0.0.1", [1]),
                 _component_dict("ns", "othername", "c", "0.0.1", [1]),
             ],
-            {"a": 1},
+            [{"a": 1, DataRegistryField.name: "c"}, {"a": 1, DataRegistryField.name: "c2"}, {"a": 1, DataRegistryField.name: "c"}],
             False,
             [
                 _component_dict("ns", "name", "c", "2.0.0", [1], a=1),
@@ -281,11 +283,19 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
                 _component_dict("ns", "othername", "c", "0.0.1", [1], a=1),
             ],
         ],
+        [
+            [_component_dict("ns", "name", "c*", "2.0.0", [1]), _component_dict("ns", "name", "c*", "1.0.0", [1])],
+            {"a": 1, DataRegistryField.name: "c123"},
+            False,
+            [_component_dict("ns", "name", "c123", "2.0.0", [1], a=1)],
+        ],
     ],
 )
 def test_downloader_resolve_components(downloader, input_block, return_value, external, expected):
     with patch("data_pipeline_api.registry.downloader.get_on_end_point") as get_on_end_point:
-        get_on_end_point.return_value = return_value
+        if not isinstance(return_value, List):
+            return_value = [return_value]
+        get_on_end_point.side_effect = itertools.cycle(return_value)
         result = downloader._resolve_components(input_block, external=external)
         assert result == expected
 
@@ -501,6 +511,7 @@ def test_download_data_public_file(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -520,6 +531,7 @@ def test_download_data_public_dir(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -535,10 +547,35 @@ def test_download_data_not_public(downloader):
     with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
         with patch.object(Path, "mkdir"):
             downloader._resolved_data_products = [
-                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,}
+                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,
+                 (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",}
             ]
             fs = Mock()
             fs_path.return_value = fs, "path"
             downloader._download()
             fs_path.assert_not_called()
             fs.assert_not_called()
+
+
+def test_download_data_twice(downloader):
+    with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
+        with patch.object(Path, "mkdir"):
+            downloader._resolved_data_products = [
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
+                    (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                    "full_output_filename": "output_path",
+                },
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                }
+            ]
+            fs = Mock()
+            fs_path.return_value = fs, "path"
+            fs.isdir.return_value = False
+            downloader._download()
+            fs_path.assert_called_once_with("http", "http://source_uri", "source_path")
+            fs.get.assert_called_once_with("path", "output_path", block_size=0)
