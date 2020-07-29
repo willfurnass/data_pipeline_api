@@ -142,7 +142,8 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
                 logger.info(f"{method} {end_point}: {data}")
                 result = requests_func(end_point, data=data, headers=get_headers(token))
                 result.raise_for_status()
-                logger.info(f"{method} successful: {result.status_code}")
+                url = result.json().get(DataRegistryField.url)
+                logger.info(f"{method} successful: {result.status_code}. URL: {url}")
             elif fail_fast and post:
                 raise ValueError(f"fail_fast POST was attempted but data already existed at {end_point}: {data}")
             elif fail_fast:
