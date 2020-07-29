@@ -202,20 +202,20 @@ def get_headers(token: str) -> Dict[str, str]:
     return {"Authorization": f"token {token}"} if token else {}
 
 
-def get_fields(target: str, data_registry_url: str, token: str) -> Set[str]:
+def get_filter_fields(target: str, data_registry_url: str, token: str) -> Set[str]:
     """
-    Returns a list of fields from a target end point by calling OPTIONS
+    Returns a list of filterable fields from a target end point by calling OPTIONS
 
     :param target: target end point of the data registry
     :param data_registry_url: the url of the data registry
     :param token: personal access token
-    :return: the set of fields on this target end point
+    :return: the set of filterable fields on this target end point
     """
     end_point = get_end_point(data_registry_url, target)
     result = requests.options(end_point, headers=get_headers(token))
     result.raise_for_status()
     options = result.json()
-    return set(options.get("actions", {}).get("POST", {}).keys())
+    return set(options.get("filter_fields", []))
 
 
 def build_query_string(query_data: YamlDict, target: str, data_registry_url: str, token: str) -> str:
@@ -244,7 +244,7 @@ def build_query_string(query_data: YamlDict, target: str, data_registry_url: str
         else:
             return None
 
-    fields = get_fields(target, data_registry_url, token)
+    fields = get_filter_fields(target, data_registry_url, token)
 
     processed = {k: process(v) for k, v in query_data.items()}
     valid = {k: v for k, v in processed.items() if k in fields and v is not None}
