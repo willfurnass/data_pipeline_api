@@ -1,5 +1,6 @@
 import math
 import re
+import socket
 import urllib
 from datetime import datetime
 from pathlib import Path
@@ -163,7 +164,7 @@ def get_remote_filesystem_and_path(
         if protocol == "ftp":
             try:
                 fs.ftp.dir()
-            except TimeoutError:
+            except (TimeoutError, socket.timeout):
                 fs.ftp.set_pasv(False)
         return fs, uri
     elif protocol == "github":

@@ -1,4 +1,5 @@
 import os
+import socket
 from pathlib import Path
 from unittest.mock import patch, Mock, call
 from datetime import datetime as dt
@@ -263,9 +264,10 @@ def test_get_remote_filesystem_and_path(patch_fs, protocol, uri, path, kwargs, e
     rfs.assert_called_once_with(**expected_call)
 
 
-def test_get_remote_filesystem_and_path_active_ftp():
+@pytest.mark.parametrize(["error"], [[TimeoutError], [socket.timeout]])
+def test_get_remote_filesystem_and_path_active_ftp(error):
     def timeout():
-        raise TimeoutError
+        raise error
 
     with patch(f"data_pipeline_api.registry.common.FTPFileSystem") as rfs:
         new_fs = Mock()
