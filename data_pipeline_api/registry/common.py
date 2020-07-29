@@ -1,4 +1,5 @@
 import math
+import os
 import re
 import socket
 import urllib
@@ -21,6 +22,7 @@ from fsspec.implementations.sftp import SFTPFileSystem
 from fsspec.utils import infer_storage_options
 from s3fs import S3FileSystem
 
+from data_pipeline_api.file_api import FileAPI
 
 logger = logging.getLogger(__name__)
 
@@ -366,6 +368,9 @@ def upload_to_storage(
     fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
     if protocol in {"file", "ssh", "sftp"}:
         fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)
+    sha1 = FileAPI.calculate_hash(filename)
+    path_root, path_ext = os.path.splitext(path)
+    path = f"{path_root}_{sha1}{path_ext}"
     logger.info(f"Uploading {filename.as_posix()} to {path} on {remote_uri}")
     fs.put(filename.as_posix(), path)
     if path.startswith(remote_uri):
