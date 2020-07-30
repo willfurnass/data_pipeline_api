@@ -2,8 +2,8 @@ from io import IOBase
 from uuid import uuid4
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional, Any, Iterable, Dict
-from functools import wraps
+from typing import Union, Optional, Any, Iterable, Dict, List
+from dataclasses import dataclass
 from hashlib import sha1
 from logging import getLogger, WARNING, DEBUG
 import yaml
@@ -15,12 +15,64 @@ from data_pipeline_api.overrides import Overrides
 logger = getLogger(__name__)
 
 
-class AccessType:
-    """File access type constants.
+@dataclass(frozen=True)
+class FileAccess:
+    """Represents a generic file access.
     """
 
-    READ = "read"
-    WRITE = "write"
+    timestamp: datetime
+    call_metadata: Metadata
+    access_metadata: Metadata
+    path: Path
+
+    def to_access_log_record(
+        self, hash_cache: Optional[Dict[Path, str]] = None
+    ) -> Dict[str, Any]:
+        if hash_cache is None:
+            hash_cache = {}
+        access_metadata = self.access_metadata.copy()
+        if MetadataKey.calculated_hash not in access_metadata:
+            absolute_path = self.path.resolve()
+            try:
+                access_metadata[MetadataKey.calculated_hash] = hash_cache[absolute_path]
+            except KeyError:
+                access_metadata[MetadataKey.calculated_hash] = hash_cache[
+                    absolute_path
+                ] = FileAPI.calculate_hash(absolute_path)
+        return {
+            "timestamp": self.timestamp,
+            "call_metadata": self.call_metadata,
+            "access_metadata": access_metadata,
+        }
+
+
+class ReadAccess(FileAccess):
+    """Represents a file read.
+    """
+
+    def to_access_log_record(
+        self, hash_cache: Optional[Dict[Path, str]] = None
+    ) -> Dict[str, Any]:
+        return dict(type="read", **super().to_access_log_record(hash_cache))
+
+
+@dataclass(frozen=True)
+class WriteAccess(FileAccess):
+    """Represents a file write.
+    """
+
+    file_handle: IOBase
+
+    def to_access_log_record(
+        self, hash_cache: Optional[Dict[Path, str]] = None
+    ) -> Dict[str, Any]:
+        if not self.file_handle.closed:
+            logger.warning(
+                "the file handle to write to %s is still open, attempting to flush",
+                self.path,
+            )
+            self.file_handle.flush()
+        return dict(type="write", **super().to_access_log_record(hash_cache))
 
 
 class FileAPI:
@@ -45,7 +97,11 @@ class FileAPI:
             message = sha1(file.read())
         if extra_bytes:
             message.update(extra_bytes)
-        return message.hexdigest()
+        hexdigest = message.hexdigest()
+        logger.debug(
+            "calculated hash of %s as %s", filename, hexdigest,
+        )
+        return hexdigest
 
     @staticmethod
     def construct_overrides(overrides: Iterable[Dict[str, Dict[str, Any]]]):
@@ -77,7 +133,7 @@ class FileAPI:
         metadata, and a configuration file, which provides mechanisms for influencing
         the metadata lookup process.
         """
-        self._accesses = []
+        self._accesses: List[FileAccess] = []
         self._run_metadata = {}
 
         self._open_timestamp = datetime.now()
@@ -138,50 +194,6 @@ class FileAPI:
         logger.debug("loading metadata store from %s", metadata_store_filename)
         self._metadata_store = FileAPI.construct_metadata_store(metadata_store_filename)
 
-    def _record_access(
-        self,
-        access_type: str,
-        call_metadata: Metadata,
-        access_metadata: Metadata,
-        path: Path,
-    ):
-        logger.debug("recording a %s", access_type)
-        access_time = datetime.now()
-        access_metadata = access_metadata.copy()
-        access_metadata[MetadataKey.calculated_hash] = FileAPI.calculate_hash(path)
-        logger.debug(
-            "calculated hash of %s as %s",
-            path,
-            access_metadata[MetadataKey.calculated_hash],
-        )
-        if access_type == AccessType.READ and self._fail_on_hash_mismatch:
-            if (
-                access_metadata[MetadataKey.calculated_hash]
-                == access_metadata[MetadataKey.verified_hash]
-            ):
-                logger.debug("verified hash")
-            else:
-                logger.critical(
-                    "found hash mismatch %s != %s",
-                    access_metadata[MetadataKey.calculated_hash],
-                    access_metadata[MetadataKey.verified_hash],
-                )
-                raise ValueError(
-                    (
-                        "calculated hash {calculated_hash} != "
-                        "verified hash {verified_hash}"
-                    ).format(**access_metadata)
-                )
-        self._accesses.append(
-            {
-                "type": access_type,
-                "timestamp": access_time,
-                "call_metadata": call_metadata,
-                "access_metadata": access_metadata,
-            }
-        )
-        logger.info("recorded %s(%s)", access_type, log_format_metadata(call_metadata))
-
     def get_read_metadata(self, metadata: Metadata) -> Metadata:
         read_metadata = metadata.copy()
         self._read_overrides.apply(read_metadata)
@@ -194,14 +206,33 @@ class FileAPI:
         """
         logger.debug("starting open_for_read(%s)", log_format_metadata(call_metadata))
         read_metadata = self.get_read_metadata(call_metadata)
-        try:
-            filename = Path(read_metadata[MetadataKey.filename])
-        except KeyError:
-            raise KeyError(f"could not find {MetadataKey.filename} in {read_metadata}")
-        path = self._data_directory / filename
+        path = self._data_directory / read_metadata[MetadataKey.filename]
+        read_metadata[MetadataKey.calculated_hash] = FileAPI.calculate_hash(path)
+
+        if self._fail_on_hash_mismatch:
+            if (
+                read_metadata[MetadataKey.calculated_hash]
+                == read_metadata[MetadataKey.verified_hash]
+            ):
+                logger.debug("verified hash")
+            raise ValueError(
+                (
+                    "calculated hash {calculated_hash} != "
+                    "verified hash {verified_hash}"
+                ).format(**read_metadata)
+            )
+
         logger.debug("open('%s', mode='rb')", path)
         file = open(path, mode="rb")
-        self._record_access(AccessType.READ, call_metadata, read_metadata, path)
+        self._accesses.append(
+            ReadAccess(
+                timestamp=datetime.now(),
+                call_metadata=call_metadata,
+                access_metadata=read_metadata,
+                path=path,
+            )
+        )
+        logger.info("recorded read(%s)", log_format_metadata(call_metadata))
         return file
 
     def get_write_metadata(self, metadata: Metadata) -> Metadata:
@@ -232,16 +263,16 @@ class FileAPI:
             mode = "w+b"
         logger.debug("open('%s', mode='%s')", path, mode)
         file = open(path, mode=mode)
-        # Wrap the file close method with something to record the file access.
-        close_file = file.close
-
-        @wraps(close_file)
-        def close():
-            file.flush()
-            self._record_access(AccessType.WRITE, call_metadata, write_metadata, path)
-            return close_file()
-
-        file.close = close
+        self._accesses.append(
+            WriteAccess(
+                timestamp=datetime.now(),
+                call_metadata=call_metadata,
+                access_metadata=write_metadata,
+                path=path,
+                file_handle=file,
+            )
+        )
+        logger.info("recorded write(%s)", log_format_metadata(call_metadata))
         return file
 
     def set_run_metadata(self, key: str, value: Any):
@@ -256,23 +287,26 @@ class FileAPI:
         """
         return self._run_metadata[key]
 
+    def _generate_access_log(self) -> Dict[str, Any]:
+        calculated_path_hashes = {}
+        return {
+            "run_metadata": dict(close_timestamp=datetime.now(), **self._run_metadata),
+            "config": self._config,
+            "io": [
+                access.to_access_log_record(calculated_path_hashes)
+                for access in self._accesses
+            ],
+        }
+
     def close(self):
         """Close the session and write the access log.
         """
-
         if self._access_log_path:
-            self._run_metadata["close_timestamp"] = datetime.now()
             with open(self._access_log_path, "w") as output_file:
                 yaml.dump(
-                    {
-                        "run_metadata": self._run_metadata,
-                        "config": self._config,
-                        "io": self._accesses,
-                    },
-                    output_file,
-                    sort_keys=False,
+                    self._generate_access_log(), output_file, sort_keys=False,
                 )
-            logger.info("wrote %s accesses to access log", len(self._accesses))
+            logger.info("wrote access log")
         else:
             logger.warning("did not write access log")
 
