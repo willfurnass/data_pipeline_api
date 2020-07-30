@@ -264,13 +264,21 @@ def _add_code_repo(
     """
     storage_root_uri = to_github_uri(model_uri, model_git_sha)
 
+    if storage_root_uri != model_uri:
+        # if it's changed, it's now a github uri, we know the split to the first @ is going to be the root to sha split
+        root, sha_and_path = storage_root_uri.split("@", maxsplit=1)
+        path = "@" + sha_and_path
+    else:
+        root = storage_root_uri
+        path = "/"
+
     code_repo_storage = _create_target_data_dict(
-        DataRegistryTarget.storage_root, {DataRegistryField.name: model_uri, DataRegistryField.root: storage_root_uri,},
+        DataRegistryTarget.storage_root, {DataRegistryField.name: root, DataRegistryField.root: root, },
     )
     code_repo_location = _create_target_data_dict(
         DataRegistryTarget.storage_location,
         {
-            DataRegistryField.path: "/",
+            DataRegistryField.path: path,
             DataRegistryField.hash: model_git_sha,
             DataRegistryField.storage_root: code_repo_storage,
         },
