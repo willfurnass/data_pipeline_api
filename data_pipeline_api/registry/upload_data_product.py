@@ -116,6 +116,8 @@ def upload_data_product_cli(
 
     data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     remote_uri_override = remote_uri_override or remote_uri
+    remote_uri = remote_uri.strip()
+    remote_uri_override = remote_uri_override.strip()
     storage_root_name = storage_root_name or urllib.parse.urlparse(remote_uri_override).netloc
     storage_root = remote_uri_override
     remote_options = get_remote_options()
@@ -126,7 +128,7 @@ def upload_data_product_cli(
     storage_location_hash = FileAPI.calculate_hash(data_product_path)
 
     path = upload_to_storage(
-        remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path
+        remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path, path_prefix=namespace
     )
     namespace_ref = get_reference({DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry, token)
     if namespace_ref:

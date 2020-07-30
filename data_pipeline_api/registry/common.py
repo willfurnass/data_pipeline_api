@@ -351,6 +351,7 @@ def upload_to_storage(
         data_directory: Path,
         filename: Path,
         upload_path: Optional[Union[str, Path]] = None,
+        path_prefix: Optional[str] = None,
 ) -> str:
     """
     Uploads a file to the remote uri
@@ -360,11 +361,13 @@ def upload_to_storage(
     :param data_directory: root of the data directory read from the access log
     :param filename: file to upload
     :param upload_path: optional override to the upload path of the file
+    :param path_prefix: Optional prefix onto the remote path, e.g. namespace
     :return: path of the file on the remote storage
     """
     split_result = urllib.parse.urlsplit(remote_uri)
     protocol = split_result.scheme
-    upload_path = upload_path or filename.absolute().relative_to(data_directory.absolute()).as_posix()
+    path_prefix = Path(path_prefix) if path_prefix else Path()
+    upload_path = (path_prefix / (upload_path or filename.absolute().relative_to(data_directory.absolute()))).as_posix()
     fs, path = get_remote_filesystem_and_path(protocol, remote_uri, upload_path, **storage_options)
     if protocol in {"file", "ssh", "sftp"}:
         fs.makedirs(Path(path).parent.as_posix(), exist_ok=True)

@@ -99,7 +99,7 @@ def _get_external_object_url(
 ) -> str:
     """
     Gets the url reference of an external object
-    
+
     :param doi_or_unique_name: Identifier of the external object
     :param version: version of the external object
     :param component_name: name of the external object component used as input
@@ -418,6 +418,7 @@ def _upload_file_to_storage(
     remote_uri: str,
     storage_options: Dict[str, str],
     storage_root: Union[str, YamlDict],
+    namespace: Optional[str] = None,
 ) -> YamlDict:
     """
     for a given filename, uploads it to the remote uri and returns a reference to the object that will be posted
@@ -427,10 +428,11 @@ def _upload_file_to_storage(
     :param remote_uri: URI to the root of the storage for uploading
     :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
     :param storage_root: existing reference to the storage_root that this was uploaded to
+    :param namespace: namespace of the file being uploaded, if provided will be prefixed onto the upload path
     :return: object reference to the uploaded file
     """
     filename = Path(filename)
-    path = upload_to_storage(remote_uri, storage_options, filename.parent, filename)
+    path = upload_to_storage(remote_uri, storage_options, filename.parent, filename, path_prefix=namespace)
     file_hash = FileAPI.calculate_hash(filename)
     location = _create_target_data_dict(
         DataRegistryTarget.storage_location,
@@ -529,7 +531,7 @@ def upload_model_run(
                 _verify_hash(filename, access_calculated_hash)
 
                 path = upload_to_storage(
-                    remote_uri, remote_options, data_directory, filename
+                    remote_uri, remote_options, data_directory, filename, path_prefix=namespace
                 )
 
                 object_component = _add_data_product_output_posts(
@@ -568,10 +570,10 @@ def upload_model_run(
         )
     else:
         model_config_obj = _upload_file_to_storage(
-            posts, model_config_filename, remote_uri, remote_options, storage_root
+            posts, model_config_filename, remote_uri, remote_options, storage_root, namespace
         )
         submission_script_obj = _upload_file_to_storage(
-            posts, submission_script_filename, remote_uri, remote_options, storage_root,
+            posts, submission_script_filename, remote_uri, remote_options, storage_root, namespace
         )
 
     _add_model_run(
