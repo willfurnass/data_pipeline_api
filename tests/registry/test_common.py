@@ -354,20 +354,22 @@ def test_unique_dicts():
     ]
 
 
-@pytest.mark.parametrize(["remote_uri", "filename", "return_path", "expected_path"], [
-    ["ssh://server/srv/ftp/", "test.txt", "/srv/ftp/test.txt", "test_abc.txt"],
-    ["ssh://server/srv/ftp/", "some/path/test.txt", "/srv/ftp/some/path/test.txt", "some/path/test_abc.txt"],
-    ["http://somewebsite.com/", "some/path/test.txt", "http://somewebsite.com/some/path/test.txt", "some/path/test_abc.txt"],
-    ["ssh://server/", "some/path/test.txt", "some/path/test.txt", "some/path/test_abc.txt"],
+@pytest.mark.parametrize(["remote_uri", "filename", "return_path", "prefix", "expected_path"], [
+    ["ssh://server/srv/ftp/", "test.txt", "/srv/ftp/test.txt", None, "test_abc.txt"],
+    ["ssh://server/srv/ftp/", "some/path/test.txt", "/srv/ftp/some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["http://somewebsite.com/", "some/path/test.txt", "http://somewebsite.com/some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["ssh://server/", "some/path/test.txt", "some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["ssh://server/", "some/path/test.txt", "prefix/some/path/test.txt", "prefix", "prefix/some/path/test_abc.txt"],
 ])
-def test_upload_to_storage(remote_uri, filename, return_path, expected_path):
+def test_upload_to_storage(remote_uri, filename, return_path, prefix, expected_path):
     with patch("data_pipeline_api.registry.common.get_remote_filesystem_and_path") as rfs_and_path:
         with patch("data_pipeline_api.registry.common.FileAPI") as file_api:
             file_api.calculate_hash.return_value = "abc"
             fs = Mock()
             rfs_and_path.return_value = [fs, return_path]
-            path = upload_to_storage(remote_uri, {}, Path("."), Path(filename))
+            path = upload_to_storage(remote_uri, {}, Path("."), Path(filename), path_prefix=prefix)
             assert path == expected_path
+            rfs_and_path.assert_called_once_with(remote_uri.split(":")[0], remote_uri, "/".join(filter(None, [prefix, filename])))
 
 
 def test_get_on_end_point_paginated_single_page():
