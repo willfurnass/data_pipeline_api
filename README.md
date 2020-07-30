@@ -36,7 +36,7 @@ This is most useful for testing and development.
 A packaged version can be installed via [Anaconda Cloud](https://anaconda.org/scottishcovidresponse/data_pipeline_api) for use in other applications:
 
 ```bash
-conda install -c ScottishCovidResponse data-pipeline-api
+conda install -c scottishcovidresponse data-pipeline-api
 ```
 
 ### Pip
