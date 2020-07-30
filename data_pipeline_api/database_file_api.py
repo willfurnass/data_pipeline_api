@@ -45,6 +45,7 @@ class DatabaseFileAPI(FileAPI):
                     self._run_metadata,
                     [{"where": self.get_read_metadata(call_metadata)}],
                     get_access_token(),
+                    self._root,
                 )
                 self.load_metadata_store()
                 return super().open_for_read(**call_metadata)
