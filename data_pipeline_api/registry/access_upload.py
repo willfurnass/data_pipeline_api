@@ -310,6 +310,7 @@ def to_github_uri(input_uri: str, git_sha: str = "master") -> str:
             split_uri = input_uri.split("/")
             org = split_uri[3]
             repo = split_uri[4]
+            repo = repo[:-len(".git")] if repo.endswith(".git") else repo
             path = "/".join(split_uri[5:])
             github_uri = f"github://{org}:{repo}@{git_sha}/{path}"
         except IndexError:
