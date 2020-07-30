@@ -11,7 +11,7 @@ from data_pipeline_api.registry.common import (
     DATA_REGISTRY_ACCESS_TOKEN,
 )
 from data_pipeline_api.registry.downloader import Downloader
-from data_pipeline_api.file_api import RunMetadata
+from data_pipeline_api.file_api import RunMetadata, FileAPI
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _parse_read_config(
 
 
 def download_from_configs(
-    run_metadata: Dict[str, Any], read_configs: ReadConfigs, token: str
+    run_metadata: Dict[str, Any], read_configs: ReadConfigs, token: str, root_dir: Optional[Union[Path, str]] = None
 ) -> None:
     """
     Iterates through the config read blocks and downloads the relevant data for each block
@@ -69,9 +69,13 @@ def download_from_configs(
     :param run_metadata: dictionary of run metadata
     :param read_configs: list of read blocks
     :param token: personal access token
+    :param root_dir: root directory to instantiate the data in, defaults to current working directory
     """
+    unnormalised_data_directory = Path(run_metadata[RunMetadata.data_directory])
+    root_dir = Path(root_dir) if root_dir is not None else Path.cwd()
+    data_directory = FileAPI.normalise_path(root_dir, unnormalised_data_directory)
     downloader = Downloader(
-        data_directory=run_metadata[RunMetadata.data_directory],
+        data_directory=data_directory,
         data_registry_url=run_metadata.get(RunMetadata.data_registry_url),
         token=token,
     )
@@ -105,6 +109,7 @@ def download_from_config_file(config_filename: Union[Path, str], token: str) -> 
     :param token: personal access token
     """
     config_filename = Path(config_filename)
+    root = config_filename.parent
     with open(config_filename, "r") as cf:
         config = yaml.safe_load(cf)
     run_metadata = config.get("run_metadata", {})
@@ -112,7 +117,7 @@ def download_from_config_file(config_filename: Union[Path, str], token: str) -> 
     if not read_configs:
         raise ValueError("No read config specified in configuration file")
 
-    download_from_configs(run_metadata, read_configs, token)
+    download_from_configs(run_metadata, read_configs, token, root)
 
 
 @click.command(context_settings=dict(max_content_width=200))
