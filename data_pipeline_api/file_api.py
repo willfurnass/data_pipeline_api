@@ -237,12 +237,13 @@ class FileAPI:
                 == read_metadata[MetadataKey.verified_hash]
             ):
                 logger.debug("verified hash")
-            raise ValueError(
-                (
-                    "calculated hash {calculated_hash} != "
-                    "verified hash {verified_hash}"
-                ).format(**read_metadata)
-            )
+            else:
+                raise ValueError(
+                    (
+                        "calculated hash {calculated_hash} != "
+                        "verified hash {verified_hash}"
+                    ).format(**read_metadata)
+                )
 
         logger.debug("open('%s', mode='rb')", path)
         file = open(path, mode="rb")
