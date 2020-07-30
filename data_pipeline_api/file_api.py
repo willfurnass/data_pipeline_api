@@ -75,12 +75,31 @@ class WriteAccess(FileAccess):
         return dict(type="write", **super().to_access_log_record(hash_cache))
 
 
+class RunMetadata:
+    run_id = "run_id"
+    open_timestamp = "open_timestamp"
+    close_timestamp = "close_timestamp"
+    data_directory = "data_directory"
+
+    git_repo = "git_repo"
+    git_sha = "git_sha"
+    default_input_namespace = "default_input_namespace"
+    default_output_namespace = "default_output_namespace"
+    data_registry_url = "data_registry_url"
+    remote_uri = "remote_uri"
+    remote_uri_override = "remote_uri_override"
+    model_version = "model_version"
+    model_name = "model_name"
+    description = "description"
+    submission_script = "submission_script"
+
+
 class FileAPI:
     RESERVED_RUN_METADATA_KEYS = {
-        "run_id",
-        "open_timestamp",
-        "close_timestamp",
-        "data_directory",
+        RunMetadata.run_id,
+        RunMetadata.open_timestamp,
+        RunMetadata.close_timestamp,
+        RunMetadata.data_directory,
     }
 
     @staticmethod
@@ -137,7 +156,6 @@ class FileAPI:
         self._run_metadata = {}
 
         self._open_timestamp = datetime.now()
-        self._run_metadata["open_timestamp"] = self._open_timestamp
         logger.debug("open_timestamp = %s", self._open_timestamp)
 
         if config_filename is None:
@@ -153,7 +171,6 @@ class FileAPI:
         logger.debug("root = %s", self._root.resolve())
 
         self._run_id = self._config.get("run_id", uuid4().hex)
-        self._run_metadata["run_id"] = self._run_id
         logger.debug("run_id = %s", self._run_id)
 
         self._fail_on_hash_mismatch = self._config.get("fail_on_hash_mismatch", True)
@@ -165,7 +182,7 @@ class FileAPI:
 
         data_directory = self._config.get("data_directory", self._root)
         self._unnormalised_data_directory = Path(data_directory)
-        self._run_metadata["data_directory"] = str(self._unnormalised_data_directory)
+
         self._data_directory = FileAPI.normalise_path(
             self._root, self._unnormalised_data_directory
         )
@@ -181,7 +198,12 @@ class FileAPI:
             )
         logger.debug("access_log_path = %s", self._access_log_path)
 
-        self._run_metadata.update(self._config.get("metadata", {}))
+        # Carefully set up the run metadata, preferring overrides from config.
+        self._run_metadata["run_id"] = self._run_id
+        self._run_metadata["data_directory"] = str(self._unnormalised_data_directory)
+        self._run_metadata["open_timestamp"] = self._open_timestamp
+        self._run_metadata.update(self._config.get("run_metadata", {}))
+
         self._read_overrides = FileAPI.construct_overrides(self._config.get("read", ()))
         self._write_overrides = FileAPI.construct_overrides(
             self._config.get("write", ())
@@ -276,14 +298,14 @@ class FileAPI:
         return file
 
     def set_run_metadata(self, key: str, value: Any):
-        """Set run-level metadata.
+        """Set the value for a run-level metadata key.
         """
         if key in FileAPI.RESERVED_RUN_METADATA_KEYS:
             raise ValueError(f"{key} is reserved")
         self._run_metadata[key] = value
 
     def get_run_metadata(self, key: str) -> Any:
-        """Get run-level metadata.
+        """Get the value for a run-level metadata key.
         """
         return self._run_metadata[key]
 

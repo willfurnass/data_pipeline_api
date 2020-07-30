@@ -23,8 +23,12 @@ from data_pipeline_api.registry.common import (
     upload_to_storage,
 )
 from data_pipeline_api.registry.upload import upload_from_config, upload_to_text_table
-from data_pipeline_api.file_api import FileAPI
-from data_pipeline_api.registry.utils import get_remote_options
+from data_pipeline_api.file_api import FileAPI, RunMetadata
+from data_pipeline_api.metadata import MetadataKey
+from data_pipeline_api.registry.utils import (
+    get_remote_options,
+    get_data_registry_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +37,16 @@ def _create_target_data_dict(target: str, data: YamlDict) -> YamlDict:
     return {"target": target, "data": data}
 
 
-def _get_input_url(
-    data_product_name: str, namespace: str, version: str, component_name: str, data_registry_url: str, token: str
+def _get_data_product_url(
+    data_product_name: str,
+    namespace: str,
+    version: str,
+    component_name: str,
+    data_registry_url: str,
+    token: str,
 ) -> str:
     """
-    Gets the url reference of an input parameter
+    Gets the url reference of a data product
     
     :param data_product_name: Name of the data product
     :param namespace: namespace that the data product is a member of
@@ -45,10 +54,13 @@ def _get_input_url(
     :param component_name: name of the data product component used as input
     :param data_registry_url: base url of the data registry
     :param token: personal access token
-    :return: url reference to the input parameter data product version component
+    :return: url reference to the data product version component
     """
     namespace_ref = get_reference(
-        {DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry_url, token
+        {DataRegistryField.name: namespace},
+        DataRegistryTarget.namespace,
+        data_registry_url,
+        token,
     )
     if namespace_ref is None:
         raise ValueError(f"No namespace found for {namespace}")
@@ -59,16 +71,61 @@ def _get_input_url(
         DataRegistryField.version: version,
     }
 
-    data_product = get_data(query_data, DataRegistryTarget.data_product, data_registry_url, token)
+    data_product = get_data(
+        query_data, DataRegistryTarget.data_product, data_registry_url, token
+    )
     obj = data_product["object"]
 
     query_data = {
         DataRegistryField.object: obj,
         DataRegistryField.name: component_name,
     }
-    object_component = get_data(query_data, DataRegistryTarget.object_component, data_registry_url, token)
+    object_component = get_data(
+        query_data, DataRegistryTarget.object_component, data_registry_url, token
+    )
     url = object_component["url"]
-    logger.info(f"Retrieved {url} for {namespace}/{data_product_name}/{component_name}/{version}")
+    logger.info(
+        f"Retrieved {url} for {namespace}/{data_product_name}/{version}/{component_name}"
+    )
+    return url
+
+
+def _get_external_object_url(
+    doi_or_unique_name: str,
+    version: str,
+    component_name: str,
+    data_registry_url: str,
+    token: str,
+) -> str:
+    """
+    Gets the url reference of an external object
+    
+    :param doi_or_unique_name: Identifier of the external object
+    :param version: version of the external object
+    :param component_name: name of the external object component used as input
+    :param data_registry_url: base url of the data registry
+    :param token: personal access token
+    :return: url reference to the external object version component
+    """
+    query_data = {
+        DataRegistryField.doi_or_unique_name: doi_or_unique_name,
+        DataRegistryField.version: version,
+    }
+
+    data_product = get_data(
+        query_data, DataRegistryTarget.external_object, data_registry_url, token
+    )
+    obj = data_product["object"]
+
+    query_data = {
+        DataRegistryField.object: obj,
+        DataRegistryField.name: component_name,
+    }
+    object_component = get_data(
+        query_data, DataRegistryTarget.object_component, data_registry_url, token
+    )
+    url = object_component["url"]
+    logger.info(f"Retrieved {url} for {doi_or_unique_name}/{version}/{component_name}")
     return url
 
 
@@ -87,7 +144,11 @@ def _verify_hash(filename: Path, access_calculated_hash: str) -> None:
 
 
 def _add_storage_root(
-    posts: List[YamlDict], remote_uri: str, accessibility: int, data_registry_url: str, token: str
+    posts: List[YamlDict],
+    remote_uri: str,
+    accessibility: int,
+    data_registry_url: str,
+    token: str,
 ) -> Union[YamlDict, str]:
     """
     Gets the storage root, adds it to the list of objects to post to the data registry, and returns them
@@ -100,10 +161,15 @@ def _add_storage_root(
     :return: the storage root dict or reference url
     """
     storage_root = get_data(
-        {DataRegistryField.root: remote_uri}, DataRegistryTarget.storage_root, data_registry_url, token
+        {DataRegistryField.root: remote_uri},
+        DataRegistryTarget.storage_root,
+        data_registry_url,
+        token,
     )
     if storage_root is None:
-        logger.info(f"No storage_root found for {remote_uri}, creating new storage_root")
+        logger.info(
+            f"No storage_root found for {remote_uri}, creating new storage_root"
+        )
         storage_root = _create_target_data_dict(
             DataRegistryTarget.storage_root,
             {
@@ -152,8 +218,13 @@ def _add_data_product_output_posts(
             DataRegistryField.storage_root: storage_root,
         },
     )
-    obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: storage_location})
-    namespace = _create_target_data_dict(DataRegistryTarget.namespace, {DataRegistryField.name: namespace_str})
+    obj = _create_target_data_dict(
+        DataRegistryTarget.object,
+        {DataRegistryField.storage_location: storage_location},
+    )
+    namespace = _create_target_data_dict(
+        DataRegistryTarget.namespace, {DataRegistryField.name: namespace_str}
+    )
     data_product = _create_target_data_dict(
         DataRegistryTarget.data_product,
         {
@@ -166,7 +237,9 @@ def _add_data_product_output_posts(
     object_component = _create_target_data_dict(
         DataRegistryTarget.object_component,
         {
-            DataRegistryField.name: component_name if component_name else data_product_name,
+            DataRegistryField.name: component_name
+            if component_name
+            else data_product_name,
             DataRegistryField.object: obj,
         },
     )
@@ -184,6 +257,7 @@ def _add_model_run(
     model_config: YamlDict,
     submission_script: YamlDict,
     code_repo: YamlDict,
+    description: str,
 ) -> None:
     """
     Generates the post required for adding a model run and appends it to the list of posts.
@@ -196,6 +270,7 @@ def _add_model_run(
     :param model_config: model config target for this code run
     :param submission_script: submission script target for this code run
     :param code_repo: code repo script target for this code run
+    :param description: description of this code run
     """
     code_run = _create_target_data_dict(
         DataRegistryTarget.code_run,
@@ -207,6 +282,7 @@ def _add_model_run(
             DataRegistryField.submission_script: submission_script,
             DataRegistryField.inputs: inputs,
             DataRegistryField.outputs: outputs,
+            DataRegistryField.description: description,
         },
     )
     logger.debug(f"Created ModelRun: {code_run}")
@@ -249,7 +325,11 @@ def to_github_uri(input_uri: str, git_sha: str = "master") -> str:
 
 
 def _add_code_repo(
-    posts: List[YamlDict], model_name: str, model_version: str, model_git_sha: str, model_uri: str
+    posts: List[YamlDict],
+    model_name: str,
+    model_version: str,
+    model_git_sha: str,
+    model_uri: str,
 ) -> YamlDict:
     """
     Creates a code_repo_release and storage_location for the model and adds them to the list of objects to post to the
@@ -273,7 +353,8 @@ def _add_code_repo(
         path = "/"
 
     code_repo_storage = _create_target_data_dict(
-        DataRegistryTarget.storage_root, {DataRegistryField.name: root, DataRegistryField.root: root, },
+        DataRegistryTarget.storage_root,
+        {DataRegistryField.name: root, DataRegistryField.root: root,},
     )
     code_repo_location = _create_target_data_dict(
         DataRegistryTarget.storage_location,
@@ -299,16 +380,18 @@ def _add_code_repo(
             DataRegistryField.object: code_repo_obj,
         },
     )
-    posts.extend([code_repo_storage, code_repo_location, code_repo_obj, code_repo_release])
+    posts.extend(
+        [code_repo_storage, code_repo_location, code_repo_obj, code_repo_release]
+    )
 
     return code_repo_obj
 
 
 def _upload_file_to_text_table(
-        posts: List[YamlDict],
-        filename: Union[str, Path],
-        data_registry_url: str,
-        token: str
+    posts: List[YamlDict],
+    filename: Union[str, Path],
+    data_registry_url: str,
+    token: str,
 ) -> YamlDict:
     """
     for a given filename, uploads its contents to the text_file table and returns a reference to the object that will be
@@ -322,7 +405,9 @@ def _upload_file_to_text_table(
     """
     filename = Path(filename)
     location = upload_to_text_table(filename, data_registry_url, token)
-    obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: location})
+    obj = _create_target_data_dict(
+        DataRegistryTarget.object, {DataRegistryField.storage_location: location}
+    )
     posts.append(obj)
     return obj
 
@@ -356,7 +441,9 @@ def _upload_file_to_storage(
         },
     )
     posts.append(location)
-    obj = _create_target_data_dict(DataRegistryTarget.object, {DataRegistryField.storage_location: location})
+    obj = _create_target_data_dict(
+        DataRegistryTarget.object, {DataRegistryField.storage_location: location}
+    )
     posts.append(obj)
     return obj
 
@@ -365,10 +452,7 @@ def upload_model_run(
     config_filename: Union[Path, str],
     model_config_filename: Union[Path, str],
     submission_script_filename: Union[Path, str],
-    remote_uri: str,
-    remote_uri_override: Optional[str],
-    storage_options: Dict[str, str],
-    data_registry_url: str,
+    remote_options: Dict[str, str],
     token: str,
     text_file_table: bool = True,
 ) -> None:
@@ -379,81 +463,127 @@ def upload_model_run(
     :param config_filename: file path to the configuration file
     :param model_config_filename: file path to the model configuration file
     :param submission_script_filename: file path to the submission script file
-    :param remote_uri: URI to the root of the storage for uploading
-    :param remote_uri_override: URI to the root of the storage that gets put into the data registry as the URI
-    :param storage_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
-    :param data_registry_url: base url of the data registry
+    :param remote_options: (key, value) pairs that are passed to the remote storage, e.g. credentials
     :param token: personal access token
     :param text_file_table: If true, model_config and submission_script are uploaded to the text_file table in the data_registry
     """
-    remote_uri_override = remote_uri_override or remote_uri
     config_filename = Path(config_filename)
     with open(config_filename, "r") as cf:
         config = yaml.safe_load(cf)
-    data_directory = Path(config["data_directory"])
+
+    accessibility = _get_accessibility(config)
+    run_metadata = config["run_metadata"]
+
+    data_directory = Path(run_metadata[RunMetadata.data_directory])
     if not data_directory.is_absolute():
         data_directory = config_filename.parent / data_directory
-    run_id = config["run_id"]
-    config_yaml = config["config"]
-    accessibility = _get_accessibility(config)
-    namespace = config.get("namespace")
-    model_version_str = config_yaml["model_version"]
-    model_name = config_yaml["model_name"]
-    open_timestamp = config["open_timestamp"]
-    model_git_sha = config["metadata"]["git_sha"]
-    model_uri = config["metadata"]["uri"]
+    run_id = run_metadata[RunMetadata.run_id]
+    namespace = run_metadata.get(RunMetadata.default_output_namespace)
+    model_version_str = run_metadata[RunMetadata.model_version]
+    model_name = run_metadata[RunMetadata.model_name]
+    open_timestamp = run_metadata[RunMetadata.open_timestamp]
+    model_git_sha = run_metadata[RunMetadata.git_sha]
+    model_uri = run_metadata[RunMetadata.git_repo]
+    remote_uri = run_metadata[RunMetadata.remote_uri]
+    remote_uri_override = run_metadata.get(RunMetadata.remote_uri_override, remote_uri)
+    data_registry_url = run_metadata.get(
+        RunMetadata.data_registry_url, get_data_registry_url()
+    )
+    description = run_metadata[RunMetadata.description]
 
     inputs = []
     outputs = []
     posts = []
 
-    storage_root = _add_storage_root(posts, remote_uri_override, accessibility, data_registry_url, token)
-    code_repo = _add_code_repo(posts, model_name, model_version_str, model_git_sha, model_uri)
+    storage_root = _add_storage_root(
+        posts, remote_uri_override, accessibility, data_registry_url, token
+    )
+    code_repo = _add_code_repo(
+        posts, model_name, model_version_str, model_git_sha, model_uri
+    )
 
     for event in config["io"]:
         read = event["type"] == "read"
         metadata = event["access_metadata"]
-        data_product_name = metadata["data_product"]
-        component = metadata.get("component")
-        version = metadata.get("version", "")
-        event_namespace = metadata.get("namespace", namespace)
-        if event_namespace is None:
-            raise ValueError(f"No namespace specified for {event}")
-        access_calculated_hash = metadata["calculated_hash"]
-        filename = data_directory / Path(metadata["filename"])
-        if read:
-            inputs.append(
-                _get_input_url(data_product_name, event_namespace, version, component, data_registry_url, token)
-            )
+        component = metadata.get(MetadataKey.component)
+        version = metadata.get(MetadataKey.version, "")
+        access_calculated_hash = metadata[MetadataKey.calculated_hash]
+        filename = data_directory / Path(metadata[MetadataKey.filename])
+        if MetadataKey.data_product in metadata:
+            data_product_name = metadata[MetadataKey.data_product]
+            event_namespace = metadata.get(MetadataKey.namespace, namespace)
+            if event_namespace is None:
+                raise ValueError(f"No namespace specified for {event}")
+            if read:
+                inputs.append(
+                    _get_data_product_url(
+                        data_product_name,
+                        event_namespace,
+                        version,
+                        component,
+                        data_registry_url,
+                        token,
+                    )
+                )
+            else:
+                _verify_hash(filename, access_calculated_hash)
+
+                path = upload_to_storage(
+                    remote_uri, remote_options, data_directory, filename
+                )
+
+                object_component = _add_data_product_output_posts(
+                    posts,
+                    path,
+                    data_product_name,
+                    event_namespace,
+                    model_version_str,
+                    run_id,
+                    component,
+                    access_calculated_hash,
+                    storage_root,
+                )
+                outputs.append(object_component)
+        elif MetadataKey.doi_or_unique_name in metadata:
+            doi_or_unique_name = metadata[MetadataKey.doi_or_unique_name]
+            if read:
+                inputs.append(
+                    _get_external_object_url(
+                        doi_or_unique_name, version, component, data_registry_url, token
+                    )
+                )
+            else:
+                raise ValueError("can only read external objects")
         else:
-            _verify_hash(filename, access_calculated_hash)
-
-            path = upload_to_storage(remote_uri, storage_options, data_directory, filename)
-
-            object_component = _add_data_product_output_posts(
-                posts,
-                path,
-                data_product_name,
-                event_namespace,
-                model_version_str,
-                run_id,
-                component,
-                access_calculated_hash,
-                storage_root,
+            raise ValueError(
+                "metadata did not contain a data product or an external object"
             )
-            outputs.append(object_component)
 
     if text_file_table:
-        model_config_obj = _upload_file_to_text_table(posts, model_config_filename, data_registry_url, token)
-        submission_script_obj = _upload_file_to_text_table(posts, submission_script_filename, data_registry_url, token)
+        model_config_obj = _upload_file_to_text_table(
+            posts, model_config_filename, data_registry_url, token
+        )
+        submission_script_obj = _upload_file_to_text_table(
+            posts, submission_script_filename, data_registry_url, token
+        )
     else:
-        model_config_obj = _upload_file_to_storage(posts, model_config_filename, remote_uri, storage_options, storage_root)
+        model_config_obj = _upload_file_to_storage(
+            posts, model_config_filename, remote_uri, remote_options, storage_root
+        )
         submission_script_obj = _upload_file_to_storage(
-            posts, submission_script_filename, remote_uri, storage_options, storage_root,
+            posts, submission_script_filename, remote_uri, remote_options, storage_root,
         )
 
     _add_model_run(
-        posts, run_id, open_timestamp, inputs, outputs, model_config_obj, submission_script_obj, code_repo,
+        posts,
+        run_id,
+        open_timestamp,
+        inputs,
+        outputs,
+        model_config_obj,
+        submission_script_obj,
+        code_repo,
+        description,
     )
 
     posts = unique_dicts(posts)
@@ -463,15 +593,23 @@ def upload_model_run(
 
 @click.command(context_settings=dict(max_content_width=200))
 @click.option(
-    "--config", required=True, type=click.Path(exists=True), help="Path to the access yaml file.",
+    "--config",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to the access yaml file.",
 )
 @click.option(
-    "--model-config", required=True, type=click.Path(exists=True), help="Path to the model config yaml file.",
+    "--model-config",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to the model config yaml file.",
 )
 @click.option(
-    "--submission-script", required=True, type=click.Path(exists=True), help="Path to the submission script file.",
+    "--submission-script",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to the submission script file.",
 )
-@click.option("--remote-uri", "-u", required=True, type=str, help="URI to the root of the storage")
 @click.option(
     "--remote-option",
     "-o",
@@ -481,20 +619,6 @@ def upload_model_run(
     help="(key, value) pairs that are passed to the remote storage, e.g. credentials",
 )
 @click.option(
-    "--remote-uri-override",
-    type=str,
-    help="URI to the root of the storage to post in the registry"
-    " required if the URI to use for download from the registry"
-    " is different from that used to upload the item",
-)
-@click.option(
-    "--data-registry",
-    type=str,
-    envvar=f"{DATA_REGISTRY_URL}",
-    help=f"URL of the data registry API. Defaults to {DATA_REGISTRY_URL} env "
-    f"variable followed by {DEFAULT_DATA_REGISTRY_URL}.",
-)
-@click.option(
     "--token",
     type=str,
     envvar=f"{DATA_REGISTRY_ACCESS_TOKEN}",
@@ -502,19 +626,18 @@ def upload_model_run(
     f" access tokens can be created from the data registry's get-token end point",
 )
 @click.option(
-    "--text-file-table/--no-text-file-table", default=True,
+    "--text-file-table/--no-text-file-table",
+    default=True,
     help="Whether to upload the model-config and submission-script to the text_file table of the data registry "
-         "(default), or to the remote-uri"
+    "(default), or to the remote-uri",
 )
 def upload_model_run_cli(
-    config, model_config, submission_script, remote_uri, remote_option, remote_uri_override, data_registry, token, text_file_table,
+    config, model_config, submission_script, remote_option, token, text_file_table,
 ):
     configure_cli_logging()
-    data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     remote_options = get_remote_options()
     arg_remote_options = dict(remote_option) if remote_option else {}
     remote_options.update(arg_remote_options)
-    remote_uri_override = remote_uri_override or remote_uri
     if not token:
         raise ValueError(
             f"Personal Access Token must be provided through either --token cmd line arg "
@@ -524,12 +647,9 @@ def upload_model_run_cli(
         config_filename=config,
         model_config_filename=model_config,
         submission_script_filename=submission_script,
-        remote_uri=remote_uri,
-        remote_uri_override=remote_uri_override,
-        storage_options=remote_options,
-        data_registry_url=data_registry,
-        token=token,
         text_file_table=text_file_table,
+        remote_options=remote_options,
+        token=token,
     )
 
 

@@ -1,11 +1,11 @@
 from io import TextIOWrapper
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Union, NamedTuple, Optional, Sequence
-from data_pipeline_api.file_api import FileAPI
+from typing import Union, NamedTuple, Optional, Sequence, Type
+from data_pipeline_api.file_api import FileAPI, RunMetadata
 from data_pipeline_api.metadata import Metadata
 from data_pipeline_api.file_formats.parameter_file import (
-    Type,
+    Type as ParameterType,
     Estimate,
     Distribution,
     Samples,
@@ -42,14 +42,18 @@ class StandardAPI:
 
     @classmethod
     def from_config(
-        cls, config_filename: Union[Path, str], uri: str, git_sha: str,
+        cls,
+        config_filename: Union[Path, str],
+        uri: str,
+        git_sha: str,
+        file_api_class: Type[FileAPI] = FileAPI,
     ):
-        return cls(FileAPI(config_filename), uri, git_sha)
+        return cls(file_api_class(config_filename), uri, git_sha)
 
     def __init__(self, file_api: FileAPI, uri: str, git_sha: str):
         self.file_api = file_api
-        self.file_api.set_run_metadata("uri", uri)
-        self.file_api.set_run_metadata("git_sha", git_sha)
+        self.file_api.set_run_metadata(RunMetadata.git_repo, uri)
+        self.file_api.set_run_metadata(RunMetadata.git_sha, git_sha)
 
     def __enter__(self):
         self.file_api.__enter__()
@@ -116,11 +120,11 @@ class StandardAPI:
         """
         with self.open_parameter_file_for_read(data_product, component) as file:
             parameter_type = read_type(file, component)
-            if parameter_type is Type.POINT_ESTIMATE:
+            if parameter_type is ParameterType.POINT_ESTIMATE:
                 return read_estimate(file, component)
-            if parameter_type is Type.DISTRIBUTION:
+            if parameter_type is ParameterType.DISTRIBUTION:
                 return read_distribution(file, component).mean()
-            if parameter_type is Type.SAMPLES:
+            if parameter_type is ParameterType.SAMPLES:
                 return read_samples(file, component).mean()
             raise ValueError(f"unrecognised type {parameter_type}")
 
@@ -149,11 +153,11 @@ class StandardAPI:
         """
         with self.open_parameter_file_for_read(data_product, component) as file:
             parameter_type = read_type(file, component)
-            if parameter_type is Type.POINT_ESTIMATE:
+            if parameter_type is ParameterType.POINT_ESTIMATE:
                 raise ValueError("point-estimate cannot be read as a distribution")
-            if parameter_type is Type.DISTRIBUTION:
+            if parameter_type is ParameterType.DISTRIBUTION:
                 return read_distribution(file, component)
-            if parameter_type is Type.SAMPLES:
+            if parameter_type is ParameterType.SAMPLES:
                 raise ValueError("samples cannot be read as a distribution")
             raise ValueError(f"unrecognised type {parameter_type}")
 
@@ -182,11 +186,11 @@ class StandardAPI:
         """
         with self.open_parameter_file_for_read(data_product, component) as file:
             parameter_type = read_type(file, component)
-            if parameter_type is Type.POINT_ESTIMATE:
+            if parameter_type is ParameterType.POINT_ESTIMATE:
                 raise ValueError("point-estimate cannot be read as samples")
-            if parameter_type is Type.DISTRIBUTION:
+            if parameter_type is ParameterType.DISTRIBUTION:
                 raise ValueError("distribution cannot be read as samples")
-            if parameter_type is Type.SAMPLES:
+            if parameter_type is ParameterType.SAMPLES:
                 return read_samples(file, component)
             raise ValueError(f"unrecognised type {parameter_type}")
 
