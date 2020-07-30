@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import pytest
 from data_pipeline_api.file_api import FileAPI, FileAccess, ReadAccess, WriteAccess
 
@@ -15,6 +15,8 @@ def configuration_file(tmp_path: Path) -> Path:
     with open(tmp_path / "version2.txt", "w") as file:
         file.write("contents2")
 
+    hash1 = FileAPI.calculate_hash(tmp_path / "version1.txt")
+    hash2 = FileAPI.calculate_hash(tmp_path / "version2.txt")
     metadata_file = tmp_path / "metadata.yaml"
     with open(metadata_file, "w") as file:
         file.write(
@@ -23,11 +25,13 @@ def configuration_file(tmp_path: Path) -> Path:
   data_product: test
   version: 1.0.0
   filename: version1.txt
+  verified_hash: {hash1}
 -
   data_product: test
   version: 2.0.0
   filename: version2.txt
-"""
+  verified_hash: {hash2}
+""".format(hash1=hash1, hash2=hash2)
         )
 
     configuration_file = tmp_path / "config.yaml"
@@ -37,7 +41,7 @@ def configuration_file(tmp_path: Path) -> Path:
 data_directory: .
 run_id: test_run
 access_log: access.yaml
-fail_on_hash_mismatch: False
+fail_on_hash_mismatch: True
 """
         )
     return configuration_file
@@ -61,6 +65,16 @@ def test_write(tmp_path: Path, configuration_file: Path):
             file.write("contents3".encode())
         with open(tmp_path / "test" / "test_run.txt") as file:
             assert file.read() == "contents3"
+
+
+def test_read_hash_mismatch(configuration_file: Path):
+    file_api = FileAPI(configuration_file)
+
+    with pytest.raises(ValueError):
+        with patch("data_pipeline_api.file_api.FileAPI.calculate_hash") as mock_hash:
+            mock_hash.return_value = "some_random_hash"
+            with file_api.open_for_read(data_product="test", version="1.0.0") as file:
+                pass
 
 
 # TODO : test access logging.
