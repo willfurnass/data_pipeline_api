@@ -5,7 +5,7 @@ from typing import Union, NamedTuple, Optional, Sequence, Type
 from data_pipeline_api.file_api import FileAPI, RunMetadata
 from data_pipeline_api.metadata import Metadata
 from data_pipeline_api.file_formats.parameter_file import (
-    Type as ParameterType,
+    ParameterType,
     Estimate,
     Distribution,
     Samples,

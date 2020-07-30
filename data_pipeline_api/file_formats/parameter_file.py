@@ -1,8 +1,8 @@
-import toml
 from io import TextIOBase
 from enum import Enum
 from numbers import Real
-from typing import Union, Sequence, Dict, Any
+from typing import Union, Dict, Any, Tuple
+import toml
 import numpy as np
 from scipy import stats
 
@@ -16,7 +16,7 @@ Distribution = Union[stats.rv_discrete, stats.rv_continuous]
 Samples = np.ndarray
 
 
-class Type(Enum):
+class ParameterType(Enum):
     POINT_ESTIMATE = "point-estimate"
     DISTRIBUTION = "distribution"
     SAMPLES = "samples"
@@ -35,9 +35,9 @@ def write_parameter(file: TextIOBase, component: str, parameter: ParameterCompon
     toml.dump(parameter_data, file)
 
 
-def read_type(file: TextIOBase, component: str) -> Type:
+def read_type(file: TextIOBase, component: str) -> ParameterType:
     parameter = read_parameter(file, component)
-    return Type(parameter["type"])
+    return ParameterType(parameter["type"])
 
 
 # ======================================================================================
@@ -47,7 +47,7 @@ def read_type(file: TextIOBase, component: str) -> Type:
 
 def read_estimate(file: TextIOBase, component: str) -> Estimate:
     parameter = read_parameter(file, component)
-    if Type(parameter["type"]) is Type.POINT_ESTIMATE:
+    if ParameterType(parameter["type"]) is ParameterType.POINT_ESTIMATE:
         # TODO : validate
         return parameter["value"]
     else:
@@ -64,37 +64,94 @@ def write_estimate(file: TextIOBase, component: str, estimate: Estimate):
 # Distribution
 # ======================================================================================
 
-distribution_parsers = {
-    "gamma": lambda data: stats.gamma(a=data["shape"], scale=data["scale"]),
-    "norm": lambda data: stats.norm(loc=data["loc"], scale=data["scale"]),
+
+class Categorical(stats._multivariate.multinomial_frozen):
+    """A scipy-compatible categorical distribution, built on top of a multinomial.
+    """
+
+    def __init__(self, categories, p):
+        super().__init__(n=1, p=p)
+        self.categories = np.array(categories)
+
+    def rvs(self, size=1, random_state=None):
+        return self.categories[
+            super().rvs(size=size, random_state=random_state).argmax(axis=-1)
+        ]
+
+
+def distribution_parameters(
+    distribution: Distribution,
+) -> Tuple[Tuple[float, ...], float, float]:
+    """Extract the parameters from a scipy rv_frozen object, in the form
+    ((shape, ...), loc, scale).
+    """
+    return distribution.dist._parse_args(*distribution.args, **distribution.kwds)
+
+
+# Mapping between scipy and standard names.
+distribution_name_mapping = {
+    "gamma": "gamma",
+    "norm": "normal",
+    "uniform": "uniform",
+    "poisson": "poisson",
+    "expon": "exponential",
+    "beta": "beta",
 }
 
-
-def read_distribution(file: TextIOBase, component: str) -> Distribution:
-    parameter = read_parameter(file, component)
-    if Type(parameter["type"]) is Type.DISTRIBUTION:
-        # TODO : validate
-        return distribution_parsers[parameter["distribution"]](parameter)
-    else:
-        raise ValueError(f"{parameter['type']} != 'distribution'")
+# Functions to encode (scipy) distribution parameters.
+distribution_parameter_encoders = {
+    "gamma": lambda shapes, loc, scale: dict(k=shapes[0], theta=scale),
+    "normal": lambda shapes, loc, scale: dict(mu=loc, sigma=scale),
+    "uniform": lambda shapes, loc, scale: dict(a=loc, b=loc + scale),
+    "poisson": lambda shapes, loc, scale: {"lambda": shapes[0]},
+    "exponential": lambda shapes, loc, scale: {"lambda": 1 / scale},
+    "beta": lambda shapes, loc, scale: dict(alpha=shapes[0], beta=shapes[1]),
+}
 
 
 def encode_distribution(distribution: Distribution) -> Dict[str, Any]:
     """Encode distribution into a serialisable format."""
-    shape, loc, scale = distribution.dist._parse_args(
-        *distribution.args, **distribution.kwds
+    if isinstance(distribution, Categorical):
+        name = "categorical"
+        encoded_parameters = {
+            "bins": [str(c) for c in distribution.categories],
+            "weights": list(distribution.p),
+        }
+    elif isinstance(distribution, stats.distributions.rv_frozen):
+        name = distribution_name_mapping[distribution.dist.name]
+        encoded_parameters = distribution_parameter_encoders[name](
+            *distribution_parameters(distribution)
+        )
+    else:
+        raise ValueError(f"Do not have a codec for {distribution}")
+    return dict(type="distribution", distribution=name, **encoded_parameters)
+
+
+# Functions to decode serialised distributions.
+distribution_decoders = {
+    "categorical": lambda data: Categorical(data["bins"], data["weights"]),
+    "gamma": lambda data: stats.gamma(data["k"], scale=data["theta"]),
+    "normal": lambda data: stats.norm(data["mu"], data["sigma"]),
+    "uniform": lambda data: stats.uniform(data["a"], data["b"] - data["a"]),
+    "poisson": lambda data: stats.poisson(data["lambda"]),
+    "exponential": lambda data: stats.expon(scale=1 / data["lambda"]),
+    "beta": lambda data: stats.beta(data["alpha"], data["beta"]),
+}
+
+
+def decode_distribution(encoded_distribution: Dict[str, Any]) -> Distribution:
+    """Decode distribution from serialised format.
+    """
+    return distribution_decoders[encoded_distribution["distribution"]](
+        encoded_distribution
     )
-    parameter = {
-        "type": "distribution",
-        "distribution": distribution.dist.name,
-    }
-    if loc:
-        parameter["loc"] = loc
-    if shape:
-        parameter["shape"] = shape[0]
-    if scale:
-        parameter["scale"] = scale
-    return parameter
+
+
+def read_distribution(file: TextIOBase, component: str) -> Distribution:
+    parameter = read_parameter(file, component)
+    if ParameterType(parameter["type"]) is ParameterType.DISTRIBUTION:
+        return decode_distribution(parameter)
+    raise ValueError(f"{parameter['type']} != 'distribution'")
 
 
 def write_distribution(file: TextIOBase, component: str, distribution: Distribution):
@@ -111,7 +168,7 @@ def write_distribution(file: TextIOBase, component: str, distribution: Distribut
 
 def read_samples(file: TextIOBase, component: str) -> Samples:
     parameter = read_parameter(file, component)
-    if Type(parameter["type"]) is Type.SAMPLES:
+    if ParameterType(parameter["type"]) is ParameterType.SAMPLES:
         return np.array(parameter["samples"])
     else:
         raise ValueError(f"{parameter['type']} != 'samples'")
