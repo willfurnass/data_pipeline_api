@@ -20,6 +20,8 @@ cat >$tmpfile <<EOF
 #define GIT_URL "$upstream_url"
 EOF
 
+# TODO: Add a macro for whether the repo is dirty or not
+
 # TODO: probably want to convert the Git URL above from ssh to http
 
 if [ -r $outfile ]; then
