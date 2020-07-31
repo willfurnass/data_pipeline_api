@@ -20,7 +20,7 @@ const string uri = GIT_URL;
 
 TEST_CASE("write_estimate") {
   INIT_DP;
-  CHECK_NOTHROW(dp.write_estimate("parameter", "example-estimate", 1.0));
+  CHECK_NOTHROW(dp.write_estimate("output-parameter", "example-estimate", 1.0));
 }
 
 TEST_CASE("read_estimate") {
@@ -33,7 +33,7 @@ TEST_CASE("read_estimate") {
 TEST_CASE("write_distribution", "[!shouldfail]") {
   INIT_DP;
   Distribution dist;
-  CHECK_NOTHROW(dp.write_distribution("parameter", "example-distribution", dist));
+  CHECK_NOTHROW(dp.write_distribution("output-parameter", "example-distribution", dist));
 }
 
 TEST_CASE("read_distribution","[!shouldfail]") {
@@ -59,7 +59,7 @@ TEST_CASE("read_sample") {
 
 TEST_CASE("write_samples") {
   INIT_DP;
-  CHECK_NOTHROW(dp.write_samples("parameter", "example-samples", vector<int>{1,2,3}));
+  CHECK_NOTHROW(dp.write_samples("output-parameter", "example-samples", vector<int>{1,2,3}));
 }
 
 TEST_CASE("read_table") {
@@ -100,5 +100,5 @@ TEST_CASE("write_array") {
   array(2) = 3;
 
   // Get error "'memoryview' object has no attribute 'dtype'". 
-  CHECK_NOTHROW(dp.write_array("object", "example-array", array));
+  CHECK_NOTHROW(dp.write_array("output-object", "example-array", array));
 }
