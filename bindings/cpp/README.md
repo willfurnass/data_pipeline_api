@@ -45,7 +45,7 @@ make test
 
 Follow the above instructions, but be sure to run
 ```
-module load python/3.6
+module load python/3.7
 ```
 first. The default python does not have python3-config, which is required for the compilation.
 
