@@ -24,7 +24,8 @@ def test_get_repo_info():
     if git_installed:
         assert (
             repo_info.uri
-            == "https://github.com/ScottishCovidResponse/data_pipeline_api.git"
+            in ["https://github.com/ScottishCovidResponse/data_pipeline_api.git",
+                "git@github.com:ScottishCovidResponse/data_pipeline_api.git"]
         )
     else:
         assert repo_info == RepoInfo(git_sha="", uri="default_repo", is_dirty=True)
