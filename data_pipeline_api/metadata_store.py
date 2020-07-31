@@ -20,24 +20,27 @@ class MetadataRecord(NamedTuple):
 
 
 class MetadataStore:
-    def __init__(self, metadata_sequence: Sequence[Metadata]):
+    def __init__(self, metadata_sequence: Optional[Sequence[Metadata]] = None):
         """The MetadataStore class provides a simple metadata lookup mechanism.
 
         A MetadataStore is initialised with a Sequence of Metadata objects, which can
         then be searched by matching against Metadata fragments.
         """
-        try:
-            self._metadata_records = tuple(
-                MetadataRecord(
-                    metadata=metadata,
-                    version=VersionInfo.parse(metadata[MetadataKey.version])
-                    if MetadataKey.version in metadata
-                    else None,
+        if metadata_sequence is None:
+            self._metadata_records = ()
+        else:
+            try:
+                self._metadata_records = tuple(
+                    MetadataRecord(
+                        metadata=metadata,
+                        version=VersionInfo.parse(metadata[MetadataKey.version])
+                        if MetadataKey.version in metadata
+                        else None,
+                    )
+                    for metadata in metadata_sequence
                 )
-                for metadata in metadata_sequence
-            )
-        except Exception as exception:
-            raise ValueError("invalid metadata") from exception
+            except Exception as exception:
+                raise ValueError("invalid metadata") from exception
 
     def find(self, metadata: Metadata) -> Optional[Metadata]:
         try:

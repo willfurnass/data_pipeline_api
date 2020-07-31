@@ -11,7 +11,7 @@ basicConfig(
 
 CONFIG_PATH = Path(__file__).parent.parent / "tests" / "data" / "config.yaml"
 
-with StandardAPI(CONFIG_PATH, "uri", "git_sha") as api:
+with StandardAPI.from_config(CONFIG_PATH, "uri", "git_sha") as api:
     api.write_estimate(
         "output-parameter",
         "example-estimate-from-estimate",

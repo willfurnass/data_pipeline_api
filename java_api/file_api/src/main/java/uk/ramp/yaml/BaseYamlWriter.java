@@ -1,5 +1,6 @@
 package uk.ramp.yaml;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature;
@@ -19,7 +20,8 @@ public class BaseYamlWriter implements YamlWriter {
             .disable(Feature.WRITE_DOC_START_MARKER)
             .registerModule(new Jdk8Module())
             .registerModule(new JavaTimeModule())
-            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+            .setSerializationInclusion(Include.NON_DEFAULT);
   }
 
   @Override

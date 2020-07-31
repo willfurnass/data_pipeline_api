@@ -16,6 +16,7 @@ import uk.ramp.metadata.ImmutableMetadataItem;
 @JsonSerialize
 @JsonDeserialize
 public interface Config {
+
   @JsonProperty("data_directory")
   Optional<String> internalDataDirectory();
 

@@ -1,5 +1,7 @@
 import io
+import itertools
 from pathlib import Path
+from typing import List
 from unittest.mock import patch, Mock
 
 import pytest
@@ -49,15 +51,33 @@ def test_downloader_add_data_product(downloader):
 
 def test_downloader_add_external_object(downloader):
     downloader.add_external_object("name")
-    downloader.add_external_object("name", "v")
+    downloader.add_external_object("name", title="title")
+    downloader.add_external_object("name", version="v")
+    downloader.add_external_object("name", component="component")
     assert downloader._external_objects == [
         {
             (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name",
+            (DataRegistryTarget.external_object, DataRegistryField.title): None,
             (DataRegistryTarget.external_object, DataRegistryField.version): None,
+            (DataRegistryTarget.object_component, DataRegistryField.name): None,
         },
         {
             (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name",
+            (DataRegistryTarget.external_object, DataRegistryField.title): "title",
+            (DataRegistryTarget.external_object, DataRegistryField.version): None,
+            (DataRegistryTarget.object_component, DataRegistryField.name): None,
+        },
+        {
+            (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name",
+            (DataRegistryTarget.external_object, DataRegistryField.title): None,
             (DataRegistryTarget.external_object, DataRegistryField.version): "v",
+            (DataRegistryTarget.object_component, DataRegistryField.name): None,
+        },
+        {
+            (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name",
+            (DataRegistryTarget.external_object, DataRegistryField.title): None,
+            (DataRegistryTarget.external_object, DataRegistryField.version): None,
+            (DataRegistryTarget.object_component, DataRegistryField.name): "component",
         },
     ]
 
@@ -211,14 +231,21 @@ def test_downloader_resolve_objects(
             assert result == expected
 
 
-def _component_dict(namespace, name, component, version, components, **kwargs):
+def _component_dict(namespace, name, component, version, components, doi, title, **kwargs):
     d = {
-        (DataRegistryTarget.namespace, DataRegistryField.name): namespace,
-        (DataRegistryTarget.data_product, DataRegistryField.name): name,
         (DataRegistryTarget.object_component, DataRegistryField.name): component,
-        (DataRegistryTarget.data_product, DataRegistryField.version): version,
         (DataRegistryTarget.object, DataRegistryField.components): components,
     }
+    external = bool(doi)
+    if external:
+        d[DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name] = doi
+        d[DataRegistryTarget.external_object, DataRegistryField.title] = title
+        d[DataRegistryTarget.external_object, DataRegistryField.version] = version
+    else:
+        d[DataRegistryTarget.namespace, DataRegistryField.name] = namespace
+        d[DataRegistryTarget.data_product, DataRegistryField.name] = name
+        d[DataRegistryTarget.data_product, DataRegistryField.version] = version
+
     for k, v in kwargs.items():
         d[DataRegistryTarget.object_component, k] = v
     return d
@@ -227,65 +254,101 @@ def _component_dict(namespace, name, component, version, components, **kwargs):
 @pytest.mark.parametrize(
     ["input_block", "return_value", "external", "expected"],
     [
-        [[_component_dict("ns", "name", "c", "1.0.0", [])], None, True, []],
-        [[_component_dict("ns", "name", "c", "1.0.0", [])], None, False, []],
+        [[_component_dict(None, None, "c", "1.0.0", [], "doi", "title")], None, True, []],
+        [[_component_dict("ns", "name", "c", "1.0.0", [], None, None)], None, False, []],
         [
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {},
+            [_component_dict(None, None, "c", "1.0.0", [1], "doi", "title")],
+            {DataRegistryField.name: "c"},
             True,
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
+            [_component_dict(None, None, "c", "1.0.0", [1], "doi", "title")],
         ],
         [
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {},
+            [_component_dict("ns", "name", "c", "1.0.0", [1], None, None)],
+            {DataRegistryField.name: "c"},
             False,
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
+            [_component_dict("ns", "name", "c", "1.0.0", [1], None, None)],
         ],
         [
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {"a": 1},
+            [_component_dict(None, None, "c", "1.0.0", [1], "doi", "title")],
+            {"a": 1, DataRegistryField.name: "c"},
             True,
-            [_component_dict("ns", "name", "c", "1.0.0", [1], a=1)],
+            [_component_dict(None, None, "c", "1.0.0", [1], "doi", "title", a=1)],
         ],
         [
-            [_component_dict("ns", "name", "c", "1.0.0", [1])],
-            {"a": 1},
+            [_component_dict("ns", "name", "c", "1.0.0", [1], None, None)],
+            {"a": 1, DataRegistryField.name: "c"},
             False,
-            [_component_dict("ns", "name", "c", "1.0.0", [1], a=1)],
+            [_component_dict("ns", "name", "c", "1.0.0", [1], None, None, a=1)],
         ],
         [
-            [_component_dict("ns", "name", "c", "1.0.0", [1]), _component_dict("ns", "name", "c", "2.0.0", [1])],
-            {"a": 1},
+            [_component_dict("ns", "name", "c", "1.0.0", [1], None, None), _component_dict("ns", "name", "c", "2.0.0", [1], None, None)],
+            {"a": 1, DataRegistryField.name: "c"},
             False,
-            [_component_dict("ns", "name", "c", "2.0.0", [1], a=1)],
+            [_component_dict("ns", "name", "c", "2.0.0", [1], None, None, a=1)],
         ],
         [
-            [_component_dict("ns", "name", "c", "2.0.0", [1]), _component_dict("ns", "name", "c", "1.0.0", [1])],
-            {"a": 1},
+            [_component_dict(None, None, "c", "1.0.0", [1], "doi", "title"), _component_dict(None, None, "c", "2.0.0", [1], "doi", "title")],
+            {"a": 1, DataRegistryField.name: "c"},
+            True,
+            [_component_dict(None, None, "c", "2.0.0", [1], "doi", "title", a=1)],
+        ],
+        [
+            [_component_dict("ns", "name", "c", "2.0.0", [1], None, None), _component_dict("ns", "name", "c", "1.0.0", [1], None, None)],
+            {"a": 1, DataRegistryField.name: "c"},
             False,
-            [_component_dict("ns", "name", "c", "2.0.0", [1], a=1)],
+            [_component_dict("ns", "name", "c", "2.0.0", [1], None, None, a=1)],
         ],
         [
             [
-                _component_dict("ns", "name", "c", "2.0.0", [1]),
-                _component_dict("ns", "name", "c", "1.0.0", [1]),
-                _component_dict("ns", "name", "c2", "0.1.0", [1]),
-                _component_dict("ns", "name", "c2", "0.0.1", [1]),
-                _component_dict("ns", "othername", "c", "0.0.1", [1]),
+                _component_dict("ns", "name", "c", "2.0.0", [1], None, None),
+                _component_dict("ns", "name", "c", "1.0.0", [1], None, None),
+                _component_dict("ns", "name", "c2", "0.1.0", [1], None, None),
+                _component_dict("ns", "name", "c2", "0.0.1", [1], None, None),
+                _component_dict("ns", "othername", "c", "0.0.1", [1], None, None),
             ],
-            {"a": 1},
+            [{"a": 1, DataRegistryField.name: "c"}, {"a": 1, DataRegistryField.name: "c2"}, {"a": 1, DataRegistryField.name: "c"}],
             False,
             [
-                _component_dict("ns", "name", "c", "2.0.0", [1], a=1),
-                _component_dict("ns", "name", "c2", "0.1.0", [1], a=1),
-                _component_dict("ns", "othername", "c", "0.0.1", [1], a=1),
+                _component_dict("ns", "name", "c", "2.0.0", [1], None, None, a=1),
+                _component_dict("ns", "name", "c2", "0.1.0", [1], None, None, a=1),
+                _component_dict("ns", "othername", "c", "0.0.1", [1], None, None, a=1),
             ],
+        ],
+        [
+            [
+                _component_dict(None, None, "c", "2.0.0", [1], "doi", "title"),
+                _component_dict(None, None, "c", "1.0.0", [1], "doi", "title"),
+                _component_dict(None, None, "c2", "0.1.0", [1], "doi", "title"),
+                _component_dict(None, None, "c2", "0.0.1", [1], "doi", "title"),
+                _component_dict(None, None, "c", "0.0.1", [1], "doi", "othertitle"),
+            ],
+            [{"a": 1, DataRegistryField.name: "c"}, {"a": 1, DataRegistryField.name: "c2"}, {"a": 1, DataRegistryField.name: "c"}],
+            True,
+            [
+                _component_dict(None, None, "c", "2.0.0", [1], "doi", "title", a=1),
+                _component_dict(None, None, "c2", "0.1.0", [1], "doi", "title", a=1),
+                _component_dict(None, None, "c", "0.0.1", [1], "doi", "othertitle", a=1),
+            ],
+        ],
+        [
+            [_component_dict("ns", "name", "c*", "2.0.0", [1], None, None), _component_dict("ns", "name", "c*", "1.0.0", [1], None, None)],
+            {"a": 1, DataRegistryField.name: "c123"},
+            False,
+            [_component_dict("ns", "name", "c123", "2.0.0", [1], None, None, a=1)],
+        ],
+        [
+            [_component_dict(None, None, "c*", "2.0.0", [1], "doi", "title"), _component_dict(None, None, "c*", "1.0.0", [1], "doi", "title")],
+            {"a": 1, DataRegistryField.name: "c123"},
+            True,
+            [_component_dict(None, None, "c123", "2.0.0", [1], "doi", "title", a=1)],
         ],
     ],
 )
 def test_downloader_resolve_components(downloader, input_block, return_value, external, expected):
     with patch("data_pipeline_api.registry.downloader.get_on_end_point") as get_on_end_point:
-        get_on_end_point.return_value = return_value
+        if not isinstance(return_value, List):
+            return_value = [return_value]
+        get_on_end_point.side_effect = itertools.cycle(return_value)
         result = downloader._resolve_components(input_block, external=external)
         assert result == expected
 
@@ -349,9 +412,10 @@ def test_downloader_storage_roots(downloader, input_block, return_value, expecte
         assert result == expected
 
 
-def _external_object_dict(name, version, **kwargs):
+def _external_object_dict(name, title, version, **kwargs):
     d = {
         (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): name,
+        (DataRegistryTarget.external_object, DataRegistryField.title): title,
         (DataRegistryTarget.external_object, DataRegistryField.version): version,
     }
     for k, v in kwargs.items():
@@ -362,35 +426,45 @@ def _external_object_dict(name, version, **kwargs):
 @pytest.mark.parametrize(
     ["input_block", "return_value", "expected"],
     [
-        [[_external_object_dict("name", "1.0.0")], None, []],
-        [[_external_object_dict("name", "1.0.0")], [], []],
+        [[_external_object_dict("name", "title", "1.0.0")], None, []],
+        [[_external_object_dict("name", "title", "1.0.0")], [], []],
         [
-            [_external_object_dict("name", "1.0.0")],
-            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name"}],
-            [_external_object_dict("name", "1.0.0", a=1)],
+            [_external_object_dict("name", "title", "1.0.0")],
+            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name", "title": "title"}],
+            [_external_object_dict("name", "title", "1.0.0", a=1)],
         ],
-        [[], [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name"}], []],
+        [[], [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name", "title": "title"}], []],
         [
-            [_external_object_dict("name", "1.0.0")],
-            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name"},
-             {DataRegistryField.version: "2.0.0", "b": 2, "doi_or_unique_name": "name"}],
-            [_external_object_dict("name", "2.0.0", b=2)],
-        ],
-        [
-            [_external_object_dict("name", "1.0.0")],
-            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name"},
-             {DataRegistryField.version: "2.0.0", "b": 2, "doi_or_unique_name": "name"}],
-            [_external_object_dict("name", "2.0.0", b=2),],
+            [_external_object_dict("name", "title", "1.0.0")],
+            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "2.0.0", "b": 2, "doi_or_unique_name": "name", "title": "title"}],
+            [_external_object_dict("name", "title", "2.0.0", b=2)],
         ],
         [
-            [_external_object_dict("name", "1.0.0")],
-            [{DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name"},
-             {DataRegistryField.version: "2.0.0", "doi_or_unique_name": "name"},
-             {DataRegistryField.version: "3.0.0", "doi_or_unique_name": "name2"},
-             {DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name3"}],
-            [_external_object_dict("name2", "3.0.0"),
-             _external_object_dict("name", "2.0.0"),
-             _external_object_dict("name3", "1.0.0")],
+            [_external_object_dict("name", "title", "1.0.0")],
+            [{DataRegistryField.version: "1.0.0", "a": 1, "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "2.0.0", "b": 2, "doi_or_unique_name": "name", "title": "title"}],
+            [_external_object_dict("name", "title", "2.0.0", b=2),],
+        ],
+        [
+            [_external_object_dict("name", "title", "1.0.0")],
+            [{DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "2.0.0", "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "3.0.0", "doi_or_unique_name": "name2", "title": "title"},
+             {DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name3", "title": "title"}],
+            [_external_object_dict("name2", "title", "3.0.0"),
+             _external_object_dict("name", "title", "2.0.0"),
+             _external_object_dict("name3", "title", "1.0.0")],
+        ],
+        [
+            [_external_object_dict("name", "title", "1.0.0")],
+            [{DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "2.0.0", "doi_or_unique_name": "name", "title": "title2"},
+             {DataRegistryField.version: "3.0.0", "doi_or_unique_name": "name", "title": "title"},
+             {DataRegistryField.version: "1.0.0", "doi_or_unique_name": "name", "title": "title3"}],
+            [_external_object_dict("name", "title", "3.0.0"),
+             _external_object_dict("name", "title2", "2.0.0"),
+             _external_object_dict("name", "title3", "1.0.0")],
         ],
     ],
 )
@@ -456,6 +530,7 @@ def test_write_metadata_external_object(downloader):
             (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name",
             (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
             (DataRegistryTarget.external_object, DataRegistryField.version): "1.0.0",
+            (DataRegistryTarget.external_object, DataRegistryField.title): "title",
             (DataRegistryTarget.storage_location, DataRegistryField.hash): "somehash",
             "output_filename": "filename.ext",
             "full_output_filename": "/filename.ext",
@@ -465,6 +540,7 @@ def test_write_metadata_external_object(downloader):
             (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): "name1",
             (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,
             (DataRegistryTarget.external_object, DataRegistryField.version): "1.0.1",
+            (DataRegistryTarget.external_object, DataRegistryField.title): "title2",
             (DataRegistryTarget.storage_location, DataRegistryField.hash): "somehash1",
             "output_filename": "filename1.ext",
             "full_output_filename": "/filename1.ext",
@@ -480,6 +556,7 @@ def test_write_metadata_external_object(downloader):
   doi_or_unique_name: name
   extension: ext
   filename: filename.ext
+  title: title
   verified_hash: somehash
   version: 1.0.0
 - accessibility: 1
@@ -487,6 +564,7 @@ def test_write_metadata_external_object(downloader):
   doi_or_unique_name: name1
   extension: ext
   filename: filename1.ext
+  title: title2
   verified_hash: somehash1
   version: 1.0.1
     """.strip()
@@ -501,6 +579,7 @@ def test_download_data_public_file(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -520,6 +599,7 @@ def test_download_data_public_dir(downloader):
                     (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
                     (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
                     (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
                     "full_output_filename": "output_path",
                 }
             ]
@@ -535,10 +615,35 @@ def test_download_data_not_public(downloader):
     with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
         with patch.object(Path, "mkdir"):
             downloader._resolved_data_products = [
-                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,}
+                {(DataRegistryTarget.storage_root, DataRegistryField.accessibility): 1,
+                 (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",}
             ]
             fs = Mock()
             fs_path.return_value = fs, "path"
             downloader._download()
             fs_path.assert_not_called()
             fs.assert_not_called()
+
+
+def test_download_data_twice(downloader):
+    with patch("data_pipeline_api.registry.downloader.get_remote_filesystem_and_path") as fs_path:
+        with patch.object(Path, "mkdir"):
+            downloader._resolved_data_products = [
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_root, DataRegistryField.root): "http://source_uri",
+                    (DataRegistryTarget.storage_location, DataRegistryField.path): "source_path",
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                    "full_output_filename": "output_path",
+                },
+                {
+                    (DataRegistryTarget.storage_root, DataRegistryField.accessibility): 0,
+                    (DataRegistryTarget.storage_location, DataRegistryField.hash): "some_hash",
+                }
+            ]
+            fs = Mock()
+            fs_path.return_value = fs, "path"
+            fs.isdir.return_value = False
+            downloader._download()
+            fs_path.assert_called_once_with("http", "http://source_uri", "source_path")
+            fs.get.assert_called_once_with("path", "output_path", block_size=0)

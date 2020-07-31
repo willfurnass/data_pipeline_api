@@ -41,6 +41,8 @@ def test_create_target_data_dict():
         ["git@github.com:Org/Repo.git", None, "github://Org:Repo@master/"],
         ["https://www.test.blah", "abcdef", "https://www.test.blah"],
         ["https://www.test.blah", None, "https://www.test.blah"],
+        ["https://github.com/Org/Repo.git", "abcdef", "github://Org:Repo@abcdef/"],
+        ["https://github.com/Org/Repo.git", None, "github://Org:Repo@master/"],
     ],
 )
 def test_to_github_uri(input_uri, sha, expected):

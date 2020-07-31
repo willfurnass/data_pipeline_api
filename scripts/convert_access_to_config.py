@@ -31,6 +31,9 @@ def convert_cli(access_filename, config_filename, use_filenames):
         for key in ("data_directory", "access_log", "run_id", "fail_on_hash_mismatch"):
             if key in access["config"]:
                 config[key] = access["config"][key]
+        # Copy run metadata.
+        if "run_metadata" in access:
+            config["run_metadata"] = access["run_metadata"]
         # Copy reads.
         reads = [
             {

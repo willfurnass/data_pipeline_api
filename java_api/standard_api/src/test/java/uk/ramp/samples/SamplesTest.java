@@ -5,14 +5,23 @@ import static org.assertj.core.data.Offset.offset;
 import static uk.ramp.distribution.Distribution.DistributionType.empirical;
 
 import java.util.stream.IntStream;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well512a;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class SamplesTest {
+  private RandomGenerator rng;
+
+  @Before
+  public void setUp() {
+    rng = new Well512a();
+  }
 
   @Test
   public void derivedEstimateFromSamples() {
-    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
+    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).rng(rng).build();
     assertThat(samples.getEstimate().floatValue()).isCloseTo(2, offset(1e-7F));
   }
 
@@ -28,13 +37,13 @@ public class SamplesTest {
 
   @Test
   public void derivedSamplesFromSamples() {
-    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
+    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).rng(rng).build();
     assertThat(samples.getSamples()).containsExactly(1, 2, 3);
   }
 
   @Test
   public void derivedDistributionFromSamples() {
-    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
+    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).rng(rng).build();
     var distribution = samples.getDistribution();
     assertThat(distribution.internalType()).isEqualTo(empirical);
     assertThat(distribution.getEstimate().floatValue()).isCloseTo(2, offset(1e-7F));

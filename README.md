@@ -36,7 +36,7 @@ This is most useful for testing and development.
 A packaged version can be installed via [Anaconda Cloud](https://anaconda.org/scottishcovidresponse/data_pipeline_api) for use in other applications:
 
 ```bash
-conda install -c ScottishCovidResponse data-pipeline-api
+conda install -c scottishcovidresponse data-pipeline-api
 ```
 
 ### Pip
@@ -52,6 +52,10 @@ git clone https://github.com/ScottishCovidResponse/data_pipeline_api.git
 cd data_pipeline_api
 git tag --sort=v:refname
 ```
+
+## Data Registry Interactions
+
+See [registry README](data_pipeline_api/registry/README.md).
 
 ## Releasing a new version
 

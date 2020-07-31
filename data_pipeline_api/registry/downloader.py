@@ -1,6 +1,8 @@
+import fnmatch
 import itertools
 import logging
 import os
+import re
 import urllib
 from collections import defaultdict
 from functools import partial
@@ -70,13 +72,15 @@ class Downloader:
             }
         )
 
-    def add_external_object(self, doi_or_unique_name: str, version: Optional[str] = None) -> None:
+    def add_external_object(self, doi_or_unique_name: str, title: Optional[str] = None, component: Optional[str] = None, version: Optional[str] = None) -> None:
         """
         Registers an external object to be downloaded
         """
         self._external_objects.append(
             {
                 (DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name): doi_or_unique_name,
+                (DataRegistryTarget.external_object, DataRegistryField.title): title,
+                (DataRegistryTarget.object_component, DataRegistryField.name): component,
                 (DataRegistryTarget.external_object, DataRegistryField.version): version,
             }
         )
@@ -135,7 +139,7 @@ class Downloader:
         resolved = []
         for block in input_blocks:
             obj = None
-            component = None if external else block.get((DataRegistryTarget.object_component, DataRegistryField.name))
+            component = block.get((DataRegistryTarget.object_component, DataRegistryField.name))
             target = DataRegistryTarget.external_object if external else DataRegistryTarget.data_product
             object_ref = block[target, DataRegistryField.object]
             if component:
@@ -174,17 +178,30 @@ class Downloader:
                     next(iter(sort_by_semver(v, key=(DataRegistryTarget.data_product, DataRegistryField.version))))
                 )
         else:
-            versioned_blocks = input_blocks
+            grouped = defaultdict(list)
+            for block in input_blocks:
+                grouped[
+                    block[DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name],
+                    block[DataRegistryTarget.external_object, DataRegistryField.title],
+                    block[DataRegistryTarget.object_component, DataRegistryField.name],
+                ].append(block)
+            versioned_blocks = []
+            for k, v in grouped.items():
+                versioned_blocks.append(
+                    next(iter(sort_by_semver(v, key=(DataRegistryTarget.external_object, DataRegistryField.version))))
+                )
 
         resolved = []
         for block in versioned_blocks:
+            cname = block.get((DataRegistryTarget.object_component, DataRegistryField.name))
             components = block[DataRegistryTarget.object, DataRegistryField.components]
             for component_url in components:
                 cblock = block.copy()
                 component = get_on_end_point(component_url, self._token)
-                for k, v in component.items():
-                    cblock[DataRegistryTarget.object_component, k] = v
-                resolved.append(cblock)
+                if not cname or re.match(fnmatch.translate(cname), component[DataRegistryField.name]):
+                    for k, v in component.items():
+                        cblock[DataRegistryTarget.object_component, k] = v
+                    resolved.append(cblock)
         return resolved
 
     def _resolve_storage_locations(
@@ -199,11 +216,10 @@ class Downloader:
             for k, v in storage_location.items():
                 cblock[DataRegistryTarget.storage_location, k] = v
             target = DataRegistryTarget.external_object if external else DataRegistryTarget.data_product
-            name_field = DataRegistryField.doi_or_unique_name if external else DataRegistryField.name
-            name = Path(cblock[target, name_field])
-            version = cblock[target, DataRegistryField.version]
+            name_fields = (DataRegistryField.doi_or_unique_name, DataRegistryField.title, DataRegistryField.version) if external else (DataRegistryField.name, DataRegistryField.version)
+            name = Path("/".join(filter(None, (cblock.get((target, name_field)) for name_field in name_fields))))
             output_filename = (
-                name / version / Path(cblock[DataRegistryTarget.storage_location, DataRegistryField.path]).name
+                name / Path(cblock[DataRegistryTarget.storage_location, DataRegistryField.path]).name
             )
             cblock[OUTPUT_FILENAME] = output_filename.as_posix()
             cblock[FULL_OUTPUT_FILENAME] = (self._data_directory / output_filename).as_posix()
@@ -234,17 +250,22 @@ class Downloader:
             version = block.get((DataRegistryTarget.external_object, DataRegistryField.version))
             if version is not None:
                 query_data[DataRegistryField.version] = version
+            title = block.get((DataRegistryTarget.external_object, DataRegistryField.title))
+            if title is not None:
+                query_data[DataRegistryField.title] = title
             external_objects = get_data(
                 query_data, DataRegistryTarget.external_object, self._data_registry_url, self._token, exact=False
             )
             if external_objects:
                 external_objects = sort_by_semver(external_objects)
-                grouped_external_objects = {}
-                for external_object in external_objects:
-                    external_object_name = external_object[DataRegistryField.doi_or_unique_name]
-                    if external_object_name not in grouped_external_objects:
-                        grouped_external_objects[external_object_name] = external_object
-                external_objects = list(grouped_external_objects.values())
+                if block.get((DataRegistryTarget.object_component, DataRegistryField.name)) is None:
+                    grouped_external_objects = {}
+                    for external_object in external_objects:
+                        external_object_name = external_object[DataRegistryField.doi_or_unique_name]
+                        external_object_title = external_object[DataRegistryField.title]
+                        if (external_object_name, external_object_title) not in grouped_external_objects:
+                            grouped_external_objects[external_object_name, external_object_title] = external_object
+                    external_objects = list(grouped_external_objects.values())
                 for external_object in external_objects:
                     cblock = block.copy()
                     for k, v in external_object.items():
@@ -276,6 +297,9 @@ class Downloader:
                 MetadataKey.doi_or_unique_name: block[
                     DataRegistryTarget.external_object, DataRegistryField.doi_or_unique_name
                 ],
+                MetadataKey.title: block[
+                    DataRegistryTarget.external_object, DataRegistryField.title
+                ],
                 MetadataKey.accessibility: block[DataRegistryTarget.storage_root, DataRegistryField.accessibility],
                 MetadataKey.version: block[DataRegistryTarget.external_object, DataRegistryField.version],
                 MetadataKey.verified_hash: block[DataRegistryTarget.storage_location, DataRegistryField.hash],
@@ -288,9 +312,13 @@ class Downloader:
             yaml.safe_dump(metadatas, stream)
 
     def _download(self):
+        downloaded_hashes = set()
         for block in itertools.chain(self._resolved_data_products, self._resolved_external_objects):
             accessibility = block[DataRegistryTarget.storage_root, DataRegistryField.accessibility]
-            if accessibility == 0:  # public
+            block_hash = block[DataRegistryTarget.storage_location, DataRegistryField.hash]
+            if block_hash in downloaded_hashes:
+                logger.debug(f"Storage location with hash {block_hash} has already been downloaded, skipping download")
+            elif accessibility == 0:  # public
                 source_uri = block[DataRegistryTarget.storage_root, DataRegistryField.root]
                 source_path = block[DataRegistryTarget.storage_location, DataRegistryField.path]
                 output_path = Path(block[FULL_OUTPUT_FILENAME])
@@ -308,6 +336,7 @@ class Downloader:
                     fs.get(source_path, output_path.as_posix(), **kwargs)
             else:
                 logger.info(f"Data is not public, skipping download")
+            downloaded_hashes.add(block_hash)
 
     def _data_product_pipe(self, input_blocks: List[DownloaderDict]) -> List[DownloaderDict]:
         for fn in [

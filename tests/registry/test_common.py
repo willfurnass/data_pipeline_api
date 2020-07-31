@@ -1,4 +1,5 @@
 import os
+import socket
 from pathlib import Path
 from unittest.mock import patch, Mock, call
 from datetime import datetime as dt
@@ -15,7 +16,7 @@ from data_pipeline_api.registry.common import (
     DataRegistryTarget,
     unique_dicts,
     upload_to_storage,
-    get_fields,
+    get_filter_fields,
 )
 
 DATA_REGISTRY_URL = "data/"
@@ -263,9 +264,10 @@ def test_get_remote_filesystem_and_path(patch_fs, protocol, uri, path, kwargs, e
     rfs.assert_called_once_with(**expected_call)
 
 
-def test_get_remote_filesystem_and_path_active_ftp():
+@pytest.mark.parametrize(["error"], [[TimeoutError], [socket.timeout]])
+def test_get_remote_filesystem_and_path_active_ftp(error):
     def timeout():
-        raise TimeoutError
+        raise error
 
     with patch(f"data_pipeline_api.registry.common.FTPFileSystem") as rfs:
         new_fs = Mock()
@@ -277,7 +279,7 @@ def test_get_remote_filesystem_and_path_active_ftp():
 
 
 def test_build_query_string():
-    with patch("data_pipeline_api.registry.common.get_fields") as fields:
+    with patch("data_pipeline_api.registry.common.get_filter_fields") as fields:
         fields.return_value = {DataRegistryField.name}
         assert build_query_string({}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
         assert (
@@ -305,21 +307,19 @@ def test_build_query_string():
         )
         assert build_query_string({DataRegistryField.name: ["blah"]}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == ""
         assert build_query_string({DataRegistryField.name: dt(2020, 7, 24, 12, 1, 2)}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=2020-07-24T12%3A01%3A02Z"
+        assert build_query_string({DataRegistryField.name: f"{DATA_REGISTRY_URL}/text_file/"}, DataRegistryTarget.issue, DATA_REGISTRY_URL, TOKEN) == "name=data%2F%2Ftext_file%2F"
 
 
-def test_get_fields():
+def test_get_filter_fields():
     with patch("requests.options") as options:
         options.return_value = MockResponse({})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
 
-        options.return_value = MockResponse({"actions": {}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
+        options.return_value = MockResponse({"filter_fields": []})
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
 
-        options.return_value = MockResponse({"actions": {"POST": {}}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == set()
-
-        options.return_value = MockResponse({"actions": {"POST": {"field1": [], "field2": 1, "field3": {"a": 1}}}})
-        assert get_fields("target", DATA_REGISTRY_URL, TOKEN) == {"field1", "field2", "field3"}
+        options.return_value = MockResponse({"filter_fields": ["field1", "field2", "field3"]})
+        assert get_filter_fields("target", DATA_REGISTRY_URL, TOKEN) == {"field1", "field2", "field3"}
 
 
 def test_sort_by_semver():
@@ -354,18 +354,22 @@ def test_unique_dicts():
     ]
 
 
-@pytest.mark.parametrize(["remote_uri", "filename", "return_path", "expected_path"], [
-    ["ssh://server/srv/ftp/", "test.txt", "/srv/ftp/test.txt", "test.txt"],
-    ["ssh://server/srv/ftp/", "some/path/test.txt", "/srv/ftp/some/path/test.txt", "some/path/test.txt"],
-    ["http://somewebsite.com/", "some/path/test.txt", "http://somewebsite.com/some/path/test.txt", "some/path/test.txt"],
-    ["ssh://server/", "some/path/test.txt", "some/path/test.txt", "some/path/test.txt"],
+@pytest.mark.parametrize(["remote_uri", "filename", "return_path", "prefix", "expected_path"], [
+    ["ssh://server/srv/ftp/", "test.txt", "/srv/ftp/test.txt", None, "test_abc.txt"],
+    ["ssh://server/srv/ftp/", "some/path/test.txt", "/srv/ftp/some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["http://somewebsite.com/", "some/path/test.txt", "http://somewebsite.com/some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["ssh://server/", "some/path/test.txt", "some/path/test.txt", None, "some/path/test_abc.txt"],
+    ["ssh://server/", "some/path/test.txt", "prefix/some/path/test.txt", "prefix", "prefix/some/path/test_abc.txt"],
 ])
-def test_upload_to_storage(remote_uri, filename, return_path, expected_path):
+def test_upload_to_storage(remote_uri, filename, return_path, prefix, expected_path):
     with patch("data_pipeline_api.registry.common.get_remote_filesystem_and_path") as rfs_and_path:
-        fs = Mock()
-        rfs_and_path.return_value = [fs, return_path]
-        path = upload_to_storage(remote_uri, {}, Path("."), Path(filename))
-        assert path == expected_path
+        with patch("data_pipeline_api.registry.common.FileAPI") as file_api:
+            file_api.calculate_hash.return_value = "abc"
+            fs = Mock()
+            rfs_and_path.return_value = [fs, return_path]
+            path = upload_to_storage(remote_uri, {}, Path("."), Path(filename), path_prefix=prefix)
+            assert path == expected_path
+            rfs_and_path.assert_called_once_with(remote_uri.split(":")[0], remote_uri, "/".join(filter(None, [prefix, filename])))
 
 
 def test_get_on_end_point_paginated_single_page():

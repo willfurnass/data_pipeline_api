@@ -18,6 +18,7 @@ from data_pipeline_api.registry.common import (
     upload_to_storage,
 )
 from data_pipeline_api.file_api import FileAPI
+from data_pipeline_api.registry.utils import get_remote_options
 
 
 @click.command(context_settings=dict(max_content_width=200))
@@ -115,15 +116,19 @@ def upload_data_product_cli(
 
     data_registry = data_registry or DEFAULT_DATA_REGISTRY_URL
     remote_uri_override = remote_uri_override or remote_uri
+    remote_uri = remote_uri.strip()
+    remote_uri_override = remote_uri_override.strip()
     storage_root_name = storage_root_name or urllib.parse.urlparse(remote_uri_override).netloc
     storage_root = remote_uri_override
-    remote_option = {} if remote_option is None else dict(remote_option)
+    remote_options = get_remote_options()
+    arg_remote_options = dict(remote_option) if remote_option else {}
+    remote_options.update(arg_remote_options)
     data_product_path = Path(data_product_path)
 
     storage_location_hash = FileAPI.calculate_hash(data_product_path)
 
     path = upload_to_storage(
-        remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path
+        remote_uri, remote_option, data_product_path.parent, data_product_path, upload_path=storage_location_path, path_prefix=namespace
     )
     namespace_ref = get_reference({DataRegistryField.name: namespace}, DataRegistryTarget.namespace, data_registry, token)
     if namespace_ref:

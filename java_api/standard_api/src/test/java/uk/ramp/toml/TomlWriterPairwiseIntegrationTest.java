@@ -1,10 +1,13 @@
 package uk.ramp.toml;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,22 +35,26 @@ public class TomlWriterPairwiseIntegrationTest {
           + "samples = [ 1, 2, 3,]";
 
   private TOMLMapper tomlMapper;
+  private RandomGenerator rng;
 
   @Before
   public void setUp() throws Exception {
-    tomlMapper = new TOMLMapper();
+    rng = mock(RandomGenerator.class);
+    when(rng.nextDouble()).thenReturn(0D);
+    tomlMapper = new TOMLMapper(rng);
   }
 
   @Test
   public void write() throws IOException, JSONException {
-    var estimate = ImmutableEstimate.builder().internalValue(1.0).build();
+    var estimate = ImmutableEstimate.builder().internalValue(1.0).rng(rng).build();
     var distribution =
         ImmutableDistribution.builder()
             .internalType(DistributionType.gamma)
             .internalShape(1)
             .internalScale(2)
+            .rng(rng)
             .build();
-    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
+    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).rng(rng).build();
 
     Components components =
         ImmutableComponents.builder()

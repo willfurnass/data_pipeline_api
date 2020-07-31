@@ -1,17 +1,19 @@
 package uk.ramp.parameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import java.util.Map;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import uk.ramp.distribution.Distribution.DistributionType;
 import uk.ramp.distribution.ImmutableDistribution;
 import uk.ramp.estimate.ImmutableEstimate;
+import uk.ramp.mapper.DataPipelineMapper;
 import uk.ramp.samples.ImmutableSamples;
 
 public class ComponentsDeserializerTest {
@@ -38,26 +40,28 @@ public class ComponentsDeserializerTest {
           + "}";
 
   private ObjectMapper objectMapper;
+  private RandomGenerator rng;
 
   @Before
   public void setUp() throws Exception {
-    objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new Jdk8Module());
-    objectMapper.registerModule(new GuavaModule());
+    rng = mock(RandomGenerator.class);
+    when(rng.nextDouble()).thenReturn(0D);
+    objectMapper = new DataPipelineMapper(rng);
   }
 
   @Test
   public void deserialize() throws JsonProcessingException {
     Components actualComponents = objectMapper.readValue(json, Components.class);
 
-    var estimate = ImmutableEstimate.builder().internalValue(1.0).build();
+    var estimate = ImmutableEstimate.builder().internalValue(1.0).rng(rng).build();
     var distribution =
         ImmutableDistribution.builder()
             .internalType(DistributionType.gamma)
             .internalShape(1)
             .internalScale(2)
+            .rng(rng)
             .build();
-    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).build();
+    var samples = ImmutableSamples.builder().addSamples(1, 2, 3).rng(rng).build();
     var expectedComponents =
         ImmutableComponents.builder()
             .components(

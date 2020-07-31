@@ -38,7 +38,7 @@ setup(
     description="Interacts with SCRC data pipeline",
     author="SCRC",
     author_email="scrc@glasgow.ac.uk",
-    packages=["data_pipeline_api", "data_pipeline_api.file_formats"],
+    packages=["data_pipeline_api", "data_pipeline_api.file_formats", "data_pipeline_api.registry"],
     install_requires=_read_requirements(),
     setup_requires=["setuptools_scm", "pyyaml"],
     use_scm_version=True,
@@ -47,9 +47,8 @@ setup(
             'pipeline_download = data_pipeline_api.registry.download:download_cli',
             'pipeline_upload = data_pipeline_api.registry.access_upload:upload_model_run_cli',
             'pipeline_post = data_pipeline_api.registry.upload:upload_cli',
-            'pipeline_create_model = data_pipeline_api.registry.create_model:create_model_cli',
-            'pipeline_upload_input = data_pipeline_api.registry.upload_input:upload_input_cli',
             'pipeline_convert_access_to_config = scripts.convert_access_to_config:convert_cli',
+            'pipeline_upload_data_product = data_pipeline_api.registry.upload_data_product:upload_data_product_cli'
         ],
     }
 )
