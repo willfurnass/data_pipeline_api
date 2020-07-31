@@ -1,4 +1,3 @@
-/cppbindings
 *.dSYM
 /build
 /python
