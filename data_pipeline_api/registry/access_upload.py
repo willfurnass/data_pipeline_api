@@ -189,7 +189,6 @@ def _add_data_product_output_posts(
     path: str,
     data_product_name: str,
     namespace_str: str,
-    model_version_str: str,
     run_id: str,
     component_name: str,
     calculated_hash: str,
@@ -203,7 +202,6 @@ def _add_data_product_output_posts(
     :param path: StorageLocation path
     :param data_product_name: Name of the output data product
     :param namespace_str: namespace that the data product is a member of
-    :param model_version_str: version number of the model
     :param run_id: id of the run
     :param component_name: name of the output component
     :param calculated_hash: calculated hash of the output data product file
@@ -229,7 +227,7 @@ def _add_data_product_output_posts(
         DataRegistryTarget.data_product,
         {
             DataRegistryField.name: data_product_name,
-            DataRegistryField.version: f"{model_version_str}+{run_id}",
+            DataRegistryField.version: f"{run_id}",
             DataRegistryField.namespace: namespace,
             DataRegistryField.object: obj,
         },
@@ -327,21 +325,21 @@ def to_github_uri(input_uri: str, git_sha: str = "master") -> str:
 
 def _add_code_repo(
     posts: List[YamlDict],
-    model_name: str,
-    model_version: str,
     model_git_sha: str,
     model_uri: str,
+    model_name: Optional[str],
+    model_version: Optional[str],
 ) -> YamlDict:
     """
-    Creates a code_repo_release and storage_location for the model and adds them to the list of objects to post to the
-    data registry
+    Creates a code_repo and storage_location, and optionally a code_repo_release for the
+    model and adds them to the list of objects to post to the data registry
 
     :param posts: List of posts to the data registry, will be modified
-    :param model_name: name of the model
-    :param model_version: version of the model
     :param model_git_sha: git sha of the model
     :param model_uri: uri that the model is located at
-    :return: the object reference to the code repo release
+    :param model_name: name of the model
+    :param model_version: version of the model
+    :return: the object reference to the code repo
     """
     storage_root_uri = to_github_uri(model_uri, model_git_sha)
 
@@ -368,22 +366,24 @@ def _add_code_repo(
     code_repo_obj = _create_target_data_dict(
         DataRegistryTarget.object,
         {
-            DataRegistryField.description: f"{model_name}+{model_version}",
+            DataRegistryField.description: f"{storage_root_uri}",
             DataRegistryField.storage_location: code_repo_location,
         },
     )
-    code_repo_release = _create_target_data_dict(
-        DataRegistryTarget.code_repo_release,
-        {
-            DataRegistryField.name: model_name,
-            DataRegistryField.version: model_version,
-            DataRegistryField.website: model_uri,
-            DataRegistryField.object: code_repo_obj,
-        },
-    )
     posts.extend(
-        [code_repo_storage, code_repo_location, code_repo_obj, code_repo_release]
+        [code_repo_storage, code_repo_location, code_repo_obj]
     )
+    if model_name is not None and model_version is not None:
+        code_repo_release = _create_target_data_dict(
+            DataRegistryTarget.code_repo_release,
+            {
+                DataRegistryField.name: model_name,
+                DataRegistryField.version: model_version,
+                DataRegistryField.website: model_uri,
+                DataRegistryField.object: code_repo_obj,
+            },
+        )
+        posts.append(code_repo_release)
 
     return code_repo_obj
 
@@ -482,8 +482,8 @@ def upload_model_run(
         data_directory = config_filename.parent / data_directory
     run_id = run_metadata[RunMetadata.run_id]
     namespace = run_metadata.get(RunMetadata.default_output_namespace)
-    model_version_str = run_metadata[RunMetadata.model_version]
-    model_name = run_metadata[RunMetadata.model_name]
+    model_version_str = run_metadata.get(RunMetadata.model_version)
+    model_name = run_metadata.get(RunMetadata.model_name)
     open_timestamp = run_metadata[RunMetadata.open_timestamp]
     model_git_sha = run_metadata[RunMetadata.git_sha]
     model_uri = run_metadata[RunMetadata.git_repo]
@@ -502,7 +502,7 @@ def upload_model_run(
         posts, remote_uri_override, accessibility, data_registry_url, token
     )
     code_repo = _add_code_repo(
-        posts, model_name, model_version_str, model_git_sha, model_uri
+        posts, model_git_sha, model_uri, model_name, model_version_str
     )
 
     for event in config["io"]:
@@ -540,7 +540,6 @@ def upload_model_run(
                     path,
                     data_product_name,
                     event_namespace,
-                    model_version_str,
                     run_id,
                     component,
                     access_calculated_hash,
