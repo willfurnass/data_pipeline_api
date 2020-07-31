@@ -56,6 +56,8 @@ def test_write_np_float_estimate(tmp_path):
         ("poisson", {"lambda": 2}),
         ("exponential", {"lambda": 2}),
         ("beta", {"alpha": 2, "beta": 3}),
+        ("binomial", {"n": 100, "p": 0.2}),
+        ("multinomial", {"n": 100, "p": [0.2, 0.8]}),
     ],
 )
 def test_distribution_roundtrip(name, parameters):
@@ -77,20 +79,27 @@ def test_distribution_roundtrip(name, parameters):
         ("poisson", {"lambda": 2}, 2),  # lambda
         ("exponential", {"lambda": 2}, 1 / 2),  # 1 / lambda
         ("beta", {"alpha": 2, "beta": 3}, 2 / (2 + 3)),  # alpha / (alpha + beta)
+        ("binomial", {"n": 100, "p": 0.2}, 100 * 0.2),  # n p
+        ("multinomial", {"n": 100, "p": [0.2, 0.8]}, 100 * np.array([0.2, 0.8])),  # n p
     ],
 )
 def test_distribution_mean(name, parameters, mean):
-    assert (
+    assert np.array_equal(
         parameter_file.decode_distribution(
             dict(type="distribution", distribution=name, **parameters)
-        ).mean()
-        == mean
+        ).mean(),
+        mean,
     )
 
 
 @pytest.mark.parametrize(
     ("name", "parameters", "variance"),
     [
+        (
+            "categorical",
+            {"bins": ["a", "b"], "weights": [0.2, 0.8]},
+            np.array([0.2, 0.8]) * (1 - np.array([0.2, 0.8])),
+        ),  # p (1 - p)
         ("gamma", {"k": 2, "theta": 3}, 2 * 3 ** 2),  # k theta^2
         ("normal", {"mu": 2, "sigma": 3}, 3 ** 2),  # sigma^2
         ("uniform", {"a": 2, "b": 3}, (3 - 2) ** 2 / 12),  # (b - a)^2 / 12
@@ -101,15 +110,23 @@ def test_distribution_mean(name, parameters, mean):
             {"alpha": 2, "beta": 3},
             (2 * 3) / ((2 + 3) ** 2 * (2 + 3 + 1)),
         ),  # (alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1))
+        ("binomial", {"n": 100, "p": 0.2}, 100 * 0.2 * (1 - 0.2),),  # n p (1 - p)
+        (
+            "multinomial",
+            {"n": 100, "p": [0.2, 0.8]},
+            100 * np.array([0.2, 0.8]) * (1 - np.array([0.2, 0.8])),
+        ),  # n p (1 - p)
     ],
 )
 def test_distribution_variance(name, parameters, variance):
-    assert (
-        parameter_file.decode_distribution(
-            dict(type="distribution", distribution=name, **parameters)
-        ).var()
-        == variance
+    distribution = parameter_file.decode_distribution(
+        dict(type="distribution", distribution=name, **parameters)
     )
+    try:
+        assert distribution.var() == variance
+    except AttributeError:
+        # Covariance calculations are not exact.
+        assert np.allclose(distribution.cov().diagonal(), variance)
 
 
 def test_samples_roundtrip(tmp_path):

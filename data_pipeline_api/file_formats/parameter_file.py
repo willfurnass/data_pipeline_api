@@ -96,6 +96,7 @@ distribution_name_mapping = {
     "poisson": "poisson",
     "expon": "exponential",
     "beta": "beta",
+    "binom": "binomial",
 }
 
 # Functions to encode (scipy) distribution parameters.
@@ -106,6 +107,7 @@ distribution_parameter_encoders = {
     "poisson": lambda shapes, loc, scale: {"lambda": shapes[0]},
     "exponential": lambda shapes, loc, scale: {"lambda": 1 / scale},
     "beta": lambda shapes, loc, scale: dict(alpha=shapes[0], beta=shapes[1]),
+    "binomial": lambda shapes, loc, scale: dict(n=shapes[0], p=shapes[1]),
 }
 
 
@@ -116,6 +118,12 @@ def encode_distribution(distribution: Distribution) -> Dict[str, Any]:
         encoded_parameters = {
             "bins": [str(c) for c in distribution.categories],
             "weights": list(distribution.p),
+        }
+    elif isinstance(distribution, stats._multivariate.multinomial_frozen):
+        name = "multinomial"
+        encoded_parameters = {
+            "n": distribution.n,
+            "p": list(distribution.p),
         }
     elif isinstance(distribution, stats.distributions.rv_frozen):
         name = distribution_name_mapping[distribution.dist.name]
@@ -136,6 +144,8 @@ distribution_decoders = {
     "poisson": lambda data: stats.poisson(data["lambda"]),
     "exponential": lambda data: stats.expon(scale=1 / data["lambda"]),
     "beta": lambda data: stats.beta(data["alpha"], data["beta"]),
+    "binomial": lambda data: stats.binom(data["n"], data["p"]),
+    "multinomial": lambda data: stats.multinomial(data["n"], data["p"]),
 }
 
 
