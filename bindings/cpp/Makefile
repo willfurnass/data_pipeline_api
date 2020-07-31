@@ -23,8 +23,6 @@ PYTHON_CONFIG_FLAGS := $(shell $(PYTHON) -c 'import sys; print("" if (sys.versio
 PYTHON_CFLAGS := $(PYTHON_EXTRA_CFLAGS) $(PYBIND11_INCLUDE) $(shell $(PYTHON_CONFIG) $(PYTHON_CONFIG_FLAGS) --cflags) -UNDEBUG -fPIC
 PYTHON_LDFLAGS := $(PYTHON_EXTRA_LDFLAGS) $(shell $(PYTHON_CONFIG) $(PYTHON_CONFIG_FLAGS) --ldflags)
 
-# TODO: Python 3.8 requires the --embed flag to $(PYTHON_CONFIG)
-
 ###############################################################################
 # Directories
 ###############################################################################
