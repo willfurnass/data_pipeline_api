@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install Python and all required libraries to the location given as an argument
+# Install Python to the location given as an argument
 
 set -e
 set -u
@@ -13,7 +13,6 @@ if [[ ! ${dest} =~ ^/.* ]]; then
     exit 1
 fi
 
-#python_url=https://www.python.org/ftp/python/3.8.3/Python-3.8.3.tgz
 python_url=https://www.python.org/ftp/python/3.7.7/Python-3.7.7.tgz
 
 python_archive_name=${python_url##*/}
@@ -30,9 +29,6 @@ python_name=${python_archive_name%.tgz}
 cd ${python_name}
 ./configure --prefix=${dest}/${python_name}
 make -j 8 install
-
-export PATH=${dest}/${python_name}/bin:$PATH
-pip3 install --upgrade pip pybind11 pyyaml pandas scipy toml
 
 echo
 echo "Select this Python installation using:"
