@@ -6,6 +6,7 @@ from typing import Dict, List, Union, Optional, Any
 import click
 import yaml
 
+from data_pipeline_api.metadata import MetadataKey
 from data_pipeline_api.registry.common import (
     configure_cli_logging,
     DATA_REGISTRY_ACCESS_TOKEN,
@@ -85,7 +86,10 @@ def download_from_configs(
             config = read_config["where"].copy()
             config.update(read_config.get("use", {}))
             downloader.add_external_object(
-                config["doi_or_unique_name"], config.get("version")
+                config[MetadataKey.doi_or_unique_name],
+                config.get(MetadataKey.title),
+                config.get(MetadataKey.component),
+                config.get(MetadataKey.version)
             )
         else:
             parsed_config = _parse_read_config(
