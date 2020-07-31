@@ -26,10 +26,12 @@ jobs:
 
     - name: Compile
       run: |
+        source .venv/bin/activate
         cd bindings/cpp
         make -j 4
 
     - name: Run tests
       run: |
+        source .venv/bin/activate
         cd bindings/cpp
         make test
