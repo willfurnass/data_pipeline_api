@@ -19,13 +19,9 @@ This directory contains C++ bindings for the Python data pipeline API.
 
 - Install the required packages:
   ```
-  pip install networkx matplotlib pandas toml h5py scipy pyyaml semver fsspec s3fs click requests paramiko coverage pytest pytest-cov aiohttp pybind11
+  pip install -r bindings/cpp/requirements.txt
   ```
   
-- Note: we have not been successful in running with Conda. The problem
-  appears to be related to the provided Python being compiled with a
-  different compiler than is used to build the C++ bindings.
-
 - Check that `data_pipeline_api` is working by running the tests,
   `pytest tests`, from the top-level repository directory.
 
@@ -43,10 +39,26 @@ The test program for the wrapper can be run as:
 make test
 ```
 
-## DiRAC CSD3
+## Machine-specific notes
+
+### DiRAC CSD3
 
 Follow the above instructions, but be sure to run
 ```
 module load python/3.6
 ```
 first. The default python does not have python3-config, which is required for the compilation.
+
+## Developer notes
+
+- We have not been successful in running with Conda. The problem
+  appears to be related to the provided Python being compiled with a
+  different compiler than is used to build the C++ bindings.
+
+- requirements.txt can be manually updated from environment.yml with
+  ```
+  cd bindings/cpp
+  make requirements.txt
+  ```
+  as long as a python with pyyaml is available. A better solution should probably be
+  found.
