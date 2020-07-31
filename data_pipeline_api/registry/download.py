@@ -62,7 +62,10 @@ def _parse_read_config(
 
 
 def download_from_configs(
-    run_metadata: Dict[str, Any], read_configs: ReadConfigs, token: str, root_dir: Optional[Union[Path, str]] = None
+    run_metadata: Dict[str, Any],
+    read_configs: ReadConfigs,
+    token: str,
+    root_dir: Optional[Union[Path, str]] = None,
 ) -> None:
     """
     Iterates through the config read blocks and downloads the relevant data for each block
@@ -89,7 +92,7 @@ def download_from_configs(
                 config[MetadataKey.doi_or_unique_name],
                 config.get(MetadataKey.title),
                 config.get(MetadataKey.component),
-                config.get(MetadataKey.version)
+                config.get(MetadataKey.version),
             )
         else:
             parsed_config = _parse_read_config(
@@ -117,6 +120,8 @@ def download_from_config_file(config_filename: Union[Path, str], token: str) -> 
     with open(config_filename, "r") as cf:
         config = yaml.safe_load(cf)
     run_metadata = config.get("run_metadata", {})
+    # Copy the top level data_directory into the run_metadata.
+    run_metadata[RunMetadata.data_directory] = config["data_directory"]
     read_configs = config.get("read")
     if not read_configs:
         raise ValueError("No read config specified in configuration file")
