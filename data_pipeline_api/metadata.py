@@ -4,7 +4,6 @@ from typing import Mapping, Any
 Metadata = Mapping[str, Any]
 
 
-
 class MetadataKey:
     """Metadata key constants.
     """
@@ -20,6 +19,7 @@ class MetadataKey:
     calculated_hash = "calculated_hash"
     accessibility = "accessibility"
     doi_or_unique_name = "doi_or_unique_name"
+    title = "title"
 
 
 def value_matches(value_a: Any, value_b: Any) -> bool:
