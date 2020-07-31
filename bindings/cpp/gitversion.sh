@@ -9,7 +9,7 @@ tmpfile=${outfile}.tmp
 version=$(git describe --dirty --always)
 git_hash=$(git rev-parse HEAD)
 upstream_branch=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} || echo "NONE")
-upstream_remote=${upstream_branch%/* || echo "NONE"}
+upstream_remote=${upstream_branch%/*} || echo "NONE"
 upstream_url=$(git remote get-url ${upstream_remote} || echo "NONE")
 
 echo "GIT ${version}"
