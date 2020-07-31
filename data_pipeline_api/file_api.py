@@ -202,7 +202,10 @@ class FileAPI:
         self._run_metadata["run_id"] = self._run_id
         self._run_metadata["data_directory"] = str(self._unnormalised_data_directory)
         self._run_metadata["open_timestamp"] = self._open_timestamp
-        self._run_metadata.update(self._config.get("run_metadata", {}))
+        run_metadata = self._config.get("run_metadata", {})
+        if any(key in run_metadata for key in FileAPI.RESERVED_RUN_METADATA_KEYS):
+            raise ValueError(f"reserved key {key} is set in run_metadata")
+        self._run_metadata.update(run_metadata)
 
         self._read_overrides = FileAPI.construct_overrides(self._config.get("read", ()))
         self._write_overrides = FileAPI.construct_overrides(
