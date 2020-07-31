@@ -127,7 +127,7 @@ Array<double> DataPipeline::read_array(const string &data_product, const string 
     case 2:
       for (int i = 0; i < shape.at(0); i++) {
         for (int j = 0; j < shape.at(1); j++) {
-          array(i,j) = py::float_(array_np.attr("item")(tuple<int,int>({i,j})));
+          array(i,j) = py::float_(array_np.attr("item")(make_tuple(i,j)));
         }
       }
       break;
@@ -157,7 +157,7 @@ void DataPipeline::write_array(const string &data_product, const string &compone
     case 2:
       for (int i = 0; i < shape.at(0); i++) {
         for (int j = 0; j < shape.at(1); j++) {
-          array_np.attr("itemset")(tuple<int,int>({i,j}), array(i,j)); // TODO: check index ordering etc here
+          array_np.attr("itemset")(make_tuple(i,j), array(i,j)); // TODO: check index ordering etc here
         }
       }
       break;
