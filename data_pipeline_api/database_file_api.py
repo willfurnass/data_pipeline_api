@@ -18,8 +18,6 @@ class DatabaseFileAPI(FileAPI):
     RUN_METADATA_NEEDED_FOR_UPLOAD = {
         RunMetadata.data_directory,
         RunMetadata.run_id,
-        RunMetadata.model_version,
-        RunMetadata.model_name,
         RunMetadata.open_timestamp,
         RunMetadata.git_sha,
         RunMetadata.git_repo,
