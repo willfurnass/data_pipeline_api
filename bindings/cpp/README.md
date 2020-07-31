@@ -9,7 +9,7 @@ This directory contains C++ bindings for the Python data pipeline API.
 
 ## Requirements
 
-- Python 3 with a working python3-config
+- Python 3.7 or greater with a working python3-config
 
 - Create and activate a virtual environment for the required packages from the top-level repository directory:
   ```
