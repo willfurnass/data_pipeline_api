@@ -2,9 +2,6 @@ package uk.ramp.toml;
 
 import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.core.io.InputDecorator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.moandjiezana.toml.Toml;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,13 +10,19 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.apache.commons.math3.random.RandomGenerator;
+import uk.ramp.mapper.DataPipelineMapper;
 
 class TOMLInputDecorator extends InputDecorator {
+  private final RandomGenerator rng;
+
+  TOMLInputDecorator(RandomGenerator rng) {
+    this.rng = rng;
+  }
 
   @Override
   public InputStream decorate(IOContext ctxt, InputStream in) throws IOException {
-    var objectMapper =
-        new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule());
+    var objectMapper = new DataPipelineMapper(rng);
 
     Map<String, Object> map = new Toml().read(in).toMap();
     String objString = objectMapper.writeValueAsString(map);
@@ -35,8 +38,7 @@ class TOMLInputDecorator extends InputDecorator {
 
   @Override
   public Reader decorate(IOContext ctxt, Reader r) throws IOException {
-    var objectMapper =
-        new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule());
+    var objectMapper = new DataPipelineMapper(rng);
 
     Map<String, Object> map = new Toml().read(r).toMap();
     String objString = objectMapper.writeValueAsString(map);

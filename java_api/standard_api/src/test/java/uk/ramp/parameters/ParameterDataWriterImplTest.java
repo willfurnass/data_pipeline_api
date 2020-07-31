@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import uk.ramp.estimate.ImmutableEstimate;
@@ -17,18 +18,21 @@ import uk.ramp.toml.TomlWriter;
 public class ParameterDataWriterImplTest {
   private CleanableFileChannel fileChannel;
   private TomlWriter tomlWriter;
+  private RandomGenerator rng;
 
   @Before
   public void setUp() throws Exception {
     fileChannel = mock(CleanableFileChannel.class);
     tomlWriter = mock(TomlWriter.class);
     when(fileChannel.size()).thenReturn(64L);
+    rng = mock(RandomGenerator.class);
+    when(rng.nextDouble()).thenReturn(0D);
   }
 
   @Test
   public void writeEstimate() throws IOException {
     var dataWriter = new ParameterDataWriterImpl(tomlWriter);
-    var estimate = ImmutableEstimate.builder().internalValue(5).build();
+    var estimate = ImmutableEstimate.builder().internalValue(5).rng(rng).build();
     var components = ImmutableComponents.builder().putComponents("component", estimate).build();
     dataWriter.write(fileChannel, "component", estimate);
 

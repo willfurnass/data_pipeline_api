@@ -8,55 +8,68 @@ import static org.assertj.core.api.Assertions.withinPercentage;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well512a;
+import org.junit.Before;
 import org.junit.Test;
 import uk.ramp.distribution.Distribution.DistributionType;
 
 public class DistributionTest {
-  private final Distribution gammaDistribution =
-      ImmutableDistribution.builder()
-          .internalType(DistributionType.gamma)
-          .internalShape(1)
-          .internalScale(2)
-          .build();
+  private Distribution gammaDistribution;
+  private Distribution categoricalDistribution;
 
-  private final MinMax firstMinMax =
-      ImmutableMinMax.builder()
-          .isLowerInclusive(true)
-          .isUpperInclusive(true)
-          .lowerBoundary(0)
-          .upperBoundary(4)
-          .build();
+  @Before
+  public void setUp() {
+    RandomGenerator rng = new Well512a();
 
-  private final MinMax secondMinMax =
-      ImmutableMinMax.builder()
-          .isLowerInclusive(true)
-          .isUpperInclusive(true)
-          .lowerBoundary(5)
-          .upperBoundary(9)
-          .build();
+    gammaDistribution =
+        ImmutableDistribution.builder()
+            .internalType(DistributionType.gamma)
+            .internalShape(1)
+            .internalScale(2)
+            .rng(rng)
+            .build();
 
-  private final MinMax thirdMinMax =
-      ImmutableMinMax.builder()
-          .isLowerInclusive(true)
-          .isUpperInclusive(true)
-          .lowerBoundary(10)
-          .upperBoundary(14)
-          .build();
+    MinMax firstMinMax =
+        ImmutableMinMax.builder()
+            .isLowerInclusive(true)
+            .isUpperInclusive(true)
+            .lowerBoundary(0)
+            .upperBoundary(4)
+            .build();
 
-  private final MinMax fourthMinMax =
-      ImmutableMinMax.builder()
-          .isLowerInclusive(true)
-          .isUpperInclusive(true)
-          .lowerBoundary(15)
-          .upperBoundary(20)
-          .build();
+    MinMax secondMinMax =
+        ImmutableMinMax.builder()
+            .isLowerInclusive(true)
+            .isUpperInclusive(true)
+            .lowerBoundary(5)
+            .upperBoundary(9)
+            .build();
 
-  private final Distribution categoricalDistribution =
-      ImmutableDistribution.builder()
-          .internalType(DistributionType.categorical)
-          .bins(List.of(firstMinMax, secondMinMax, thirdMinMax, fourthMinMax))
-          .weights(List.of(0.4, 0.1, 0.1, 0.4))
-          .build();
+    MinMax thirdMinMax =
+        ImmutableMinMax.builder()
+            .isLowerInclusive(true)
+            .isUpperInclusive(true)
+            .lowerBoundary(10)
+            .upperBoundary(14)
+            .build();
+
+    MinMax fourthMinMax =
+        ImmutableMinMax.builder()
+            .isLowerInclusive(true)
+            .isUpperInclusive(true)
+            .lowerBoundary(15)
+            .upperBoundary(20)
+            .build();
+
+    categoricalDistribution =
+        ImmutableDistribution.builder()
+            .internalType(DistributionType.categorical)
+            .bins(List.of(firstMinMax, secondMinMax, thirdMinMax, fourthMinMax))
+            .weights(List.of(0.4, 0.1, 0.1, 0.4))
+            .rng(rng)
+            .build();
+  }
 
   @Test
   public void derivedEstimateFromDistribution() {

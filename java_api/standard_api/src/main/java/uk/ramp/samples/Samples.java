@@ -39,6 +39,7 @@ public interface Samples extends Component {
     return ImmutableDistribution.builder()
         .internalType(DistributionType.empirical)
         .empiricalSamples(samples())
+        .rng(rng())
         .build();
   }
 }

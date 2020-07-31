@@ -15,9 +15,13 @@ public class MinMaxSerializer extends JsonSerializer<MinMax> {
   @Override
   public void serialize(MinMax value, JsonGenerator gen, SerializerProvider serializers)
       throws IOException {
+    var serializedStr = serialize(value);
+    gen.writeString(serializedStr);
+  }
+
+  private String serialize(MinMax value) {
     String first = value.isLowerInclusive() ? INCLUSIVE_LEFT : EXCLUSIVE_LEFT;
     String last = value.isUpperInclusive() ? INCLUSIVE_RIGHT : EXCLUSIVE_RIGHT;
-    String serializedStr = first + value.lowerBoundary() + SEPARATOR + value.upperBoundary() + last;
-    gen.writeString(serializedStr);
+    return first + value.lowerBoundary() + SEPARATOR + value.upperBoundary() + last;
   }
 }

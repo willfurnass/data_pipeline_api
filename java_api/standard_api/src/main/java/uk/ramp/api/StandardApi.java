@@ -1,8 +1,11 @@
 package uk.ramp.api;
 
 import com.google.common.collect.Table;
+import java.lang.ref.Cleaner;
+import java.lang.ref.Cleaner.Cleanable;
 import java.nio.file.Path;
 import java.util.List;
+import org.apache.commons.math3.random.RandomGenerator;
 import uk.ramp.distribution.Distribution;
 import uk.ramp.estimate.ImmutableEstimate;
 import uk.ramp.file.CleanableFileChannel;
@@ -18,24 +21,45 @@ import uk.ramp.toml.TOMLMapper;
 import uk.ramp.toml.TomlReader;
 import uk.ramp.toml.TomlWriter;
 
-public class StandardApi {
-  private final FileApi fileApi;
+public class StandardApi implements AutoCloseable {
+  private static final Cleaner cleaner = Cleaner.create(); // safety net for closing
+  private final Cleanable cleanable;
+  private final CleanableFileApi fileApi;
   private final ParameterDataReader parameterDataReader;
   private final ParameterDataWriter parameterDataWriter;
+  private final RandomGenerator rng;
 
-  public StandardApi(Path configPath) {
-    this.fileApi = new FileApi(configPath);
-    this.parameterDataReader = new ParameterDataReaderImpl(new TomlReader(new TOMLMapper()));
-    this.parameterDataWriter = new ParameterDataWriterImpl(new TomlWriter(new TOMLMapper()));
+  public StandardApi(Path configPath, RandomGenerator rng) {
+    this(
+        new FileApi(configPath),
+        new ParameterDataReaderImpl(new TomlReader(new TOMLMapper(rng))),
+        new ParameterDataWriterImpl(new TomlWriter(new TOMLMapper(rng))),
+        rng);
   }
 
   StandardApi(
       FileApi fileApi,
       ParameterDataReader parameterDataReader,
-      ParameterDataWriter parameterDataWriter) {
-    this.fileApi = fileApi;
+      ParameterDataWriter parameterDataWriter,
+      RandomGenerator rng) {
+    this.fileApi = new CleanableFileApi(fileApi);
     this.parameterDataReader = parameterDataReader;
     this.parameterDataWriter = parameterDataWriter;
+    this.rng = rng;
+    this.cleanable = cleaner.register(this, this.fileApi);
+  }
+
+  private static class CleanableFileApi implements Runnable {
+    private final FileApi fileApi;
+
+    CleanableFileApi(FileApi fileApi) {
+      this.fileApi = fileApi;
+    }
+
+    @Override
+    public void run() {
+      fileApi.close();
+    }
   }
 
   public Number readEstimate(String dataProduct, String component) {
@@ -43,7 +67,7 @@ public class StandardApi {
         ImmutableMetadataItem.builder().dataProduct(dataProduct).component(component).build();
 
     ReadComponent data;
-    try (CleanableFileChannel fileChannel = fileApi.openForRead(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForRead(query)) {
       data = parameterDataReader.read(fileChannel, component);
     }
     return data.getEstimate();
@@ -56,9 +80,9 @@ public class StandardApi {
             .component(component)
             .extension("toml")
             .build();
-    var estimate = ImmutableEstimate.builder().internalValue(estimateNumber).build();
+    var estimate = ImmutableEstimate.builder().internalValue(estimateNumber).rng(rng).build();
 
-    try (CleanableFileChannel fileChannel = fileApi.openForWrite(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForWrite(query)) {
       parameterDataWriter.write(fileChannel, component, estimate);
     }
   }
@@ -68,7 +92,7 @@ public class StandardApi {
         ImmutableMetadataItem.builder().dataProduct(dataProduct).component(component).build();
 
     ReadComponent data;
-    try (CleanableFileChannel fileChannel = fileApi.openForRead(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForRead(query)) {
       data = parameterDataReader.read(fileChannel, component);
     }
     return data.getDistribution();
@@ -82,7 +106,7 @@ public class StandardApi {
             .extension("toml")
             .build();
 
-    try (CleanableFileChannel fileChannel = fileApi.openForWrite(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForWrite(query)) {
       parameterDataWriter.write(fileChannel, component, distribution);
     }
   }
@@ -92,7 +116,7 @@ public class StandardApi {
         ImmutableMetadataItem.builder().dataProduct(dataProduct).component(component).build();
 
     ReadComponent data;
-    try (CleanableFileChannel fileChannel = fileApi.openForRead(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForRead(query)) {
       data = parameterDataReader.read(fileChannel, component);
     }
     return data.getSamples();
@@ -106,7 +130,7 @@ public class StandardApi {
             .extension("toml")
             .build();
 
-    try (CleanableFileChannel fileChannel = fileApi.openForWrite(query)) {
+    try (CleanableFileChannel fileChannel = fileApi.fileApi.openForWrite(query)) {
       parameterDataWriter.write(fileChannel, component, samples);
     }
   }
@@ -126,5 +150,10 @@ public class StandardApi {
 
   public void writeArray(String dataProduct, String component, Number[] arr) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void close() {
+    cleanable.clean();
   }
 }

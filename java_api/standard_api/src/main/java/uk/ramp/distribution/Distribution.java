@@ -18,14 +18,21 @@ import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.EmpiricalDistribution;
+import org.immutables.value.Value.Auxiliary;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Lazy;
 import uk.ramp.parameters.Component;
 
 @JsonSerialize
 @Immutable
 @JsonDeserialize
 @JsonInclude(Include.NON_EMPTY)
+/*
+ TODO split out individual distribution types into own classes
+ TODO support other distributions:
+ https://github.com/ScottishCovidResponse/SCRCIssueTracking/issues/671
+*/
 public interface Distribution extends Component {
   enum DistributionType {
     gamma(),
@@ -47,7 +54,6 @@ public interface Distribution extends Component {
   @JsonProperty("loc")
   OptionalDouble internalLoc();
 
-  @JsonIgnore
   Optional<List<Number>> empiricalSamples();
 
   List<MinMax> bins();
@@ -85,36 +91,44 @@ public interface Distribution extends Component {
 
   @Override
   @JsonIgnore
+  @Auxiliary
   default Number getEstimate() {
     return mean();
   }
 
   @JsonIgnore
+  @Auxiliary
   default Number getSample() {
     return drawSample();
   }
 
   @Override
   @JsonIgnore
+  @Auxiliary
   default List<Number> getSamples() {
     throw new UnsupportedOperationException("Cannot produce list of all samples from distribution");
   }
 
   @Override
   @JsonIgnore
+  @Auxiliary
   default Distribution getDistribution() {
     return this;
   }
 
-  private RealDistribution underlyingDistribution() {
+  @JsonIgnore
+  @Lazy
+  @Auxiliary
+  default RealDistribution underlyingDistribution() {
     if (internalType().equals(DistributionType.gamma)) {
-      return new GammaDistribution(internalShape().orElseThrow(), internalScale().orElseThrow());
+      return new GammaDistribution(
+          rng(), internalShape().orElseThrow(), internalScale().orElseThrow());
     } else if (internalType().equals(DistributionType.exponential)) {
-      return new ExponentialDistribution(internalScale().orElseThrow());
+      return new ExponentialDistribution(rng(), internalScale().orElseThrow());
     } else if (internalType().equals(DistributionType.uniform)) {
-      return new UniformRealDistribution();
+      return new UniformRealDistribution(rng(), 0, 1);
     } else if (internalType().equals(DistributionType.empirical)) {
-      var dist = new EmpiricalDistribution();
+      var dist = new EmpiricalDistribution(rng());
       dist.load(
           empiricalSamples().orElseThrow().stream().mapToDouble(Number::doubleValue).toArray());
       return dist;
@@ -141,7 +155,7 @@ public interface Distribution extends Component {
               .flatMapToDouble(vals -> vals.stream().mapToDouble(Double::doubleValue))
               .toArray();
 
-      return new EnumeratedRealDistribution(outcomes, probabilities);
+      return new EnumeratedRealDistribution(rng(), outcomes, probabilities);
     }
     throw new UnsupportedOperationException(
         String.format("Distribution type %s is not supported.", internalType()));

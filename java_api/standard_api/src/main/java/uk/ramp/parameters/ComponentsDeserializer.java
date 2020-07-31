@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.Streams;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,11 +14,19 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.apache.commons.math3.random.RandomGenerator;
 import uk.ramp.distribution.ImmutableDistribution;
 import uk.ramp.estimate.ImmutableEstimate;
+import uk.ramp.mapper.DataPipelineMapper;
 import uk.ramp.samples.ImmutableSamples;
 
 public class ComponentsDeserializer extends JsonDeserializer<Components> {
+  private final RandomGenerator rng;
+
+  public ComponentsDeserializer(RandomGenerator rng) {
+    this.rng = rng;
+  }
+
   private static final Map<String, Class<?>> typeMapping =
       Map.of(
           "point-estimate", ImmutableEstimate.class,
@@ -43,11 +49,17 @@ public class ComponentsDeserializer extends JsonDeserializer<Components> {
   private Entry<String, Component> deserializeSingleComponent(Entry<String, JsonNode> entry) {
     String key = entry.getKey();
     ObjectNode componentNode = entry.getValue().deepCopy();
+    componentNode.putPOJO("rng", new Object()); // this is a hack to force rng to populate via
+    // RandomGeneratorDeserializer.class
     String type = componentNode.get("type").asText();
     componentNode.remove("type");
     Class<?> deserializeClass = typeMapping.get(type);
-    ObjectMapper objectMapper =
-        new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule());
+
+    if (deserializeClass == null) {
+      throw new IllegalArgumentException(String.format("Unsupported component type %s", type));
+    }
+
+    ObjectMapper objectMapper = new DataPipelineMapper(rng);
     Component component;
     try {
       component = (Component) objectMapper.treeToValue(componentNode, deserializeClass);

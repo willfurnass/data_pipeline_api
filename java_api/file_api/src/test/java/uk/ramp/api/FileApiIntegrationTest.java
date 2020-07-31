@@ -89,7 +89,7 @@ public class FileApiIntegrationTest {
     fileHandle.write(buffer);
     fileApi.close();
 
-    assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml"))).contains("io: []");
+    assertThat(Files.readString(Path.of(parentPath, "access-runId.yaml"))).doesNotContain("io:");
   }
 
   @Test

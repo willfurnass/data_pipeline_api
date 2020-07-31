@@ -65,6 +65,8 @@ public interface MetadataItem {
 
   Optional<String> description();
 
+  Optional<String> accessibility();
+
   default boolean isSuperSetOf(MetadataItem key) {
     return List.<Function<MetadataItem, Optional<String>>>of(
             MetadataItem::internalFilename,
@@ -78,7 +80,8 @@ public interface MetadataItem {
             MetadataItem::source,
             metadataItem -> issuesInComparableFormat(metadataItem.issues().orElse(List.of())),
             MetadataItem::namespace,
-            MetadataItem::description)
+            MetadataItem::description,
+            MetadataItem::accessibility)
         .stream()
         .map(func -> func.andThen(s -> s.orElse("")))
         .allMatch(func -> keyIsEitherNotPresentOrEqual(func.apply(key), func.apply(this)));
@@ -158,6 +161,10 @@ public interface MetadataItem {
     Function<MetadataItem, Boolean> isDataDirectoryPresent =
         meta -> meta.dataDirectory().isPresent();
     Function<MetadataItem, Boolean> isIssuesPresent = meta -> meta.issues().isPresent();
+    Function<MetadataItem, Boolean> isNamespacePresent = meta -> meta.namespace().isPresent();
+    Function<MetadataItem, Boolean> isDescriptionPresent = meta -> meta.description().isPresent();
+    Function<MetadataItem, Boolean> isAccessibilityPresent =
+        meta -> meta.accessibility().isPresent();
 
     if (shouldOverride.apply(isFilenamePresent)) {
       newMetadataItem =
@@ -205,12 +212,16 @@ public interface MetadataItem {
       newMetadataItem = newMetadataItem.withIssues(metadataOverride.issues().get());
     }
 
-    if (metadataOverride.namespace().isPresent()) {
+    if (shouldOverride.apply(isNamespacePresent)) {
       newMetadataItem = newMetadataItem.withNamespace(metadataOverride.namespace().get());
     }
 
-    if (metadataOverride.description().isPresent()) {
+    if (shouldOverride.apply(isDescriptionPresent)) {
       newMetadataItem = newMetadataItem.withDescription(metadataOverride.description().get());
+    }
+
+    if (shouldOverride.apply(isAccessibilityPresent)) {
+      newMetadataItem = newMetadataItem.withAccessibility(metadataOverride.accessibility().get());
     }
 
     return newMetadataItem;

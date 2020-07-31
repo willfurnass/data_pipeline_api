@@ -13,10 +13,7 @@ public class MinMaxDeserializer extends JsonDeserializer<MinMax> {
   private static final String EXCLUSIVE_RIGHT = ")";
   private static final String SEPARATOR = ",";
 
-  @Override
-  public MinMax deserialize(JsonParser p, DeserializationContext ctxt)
-      throws IOException, JsonProcessingException {
-    String serializedStr = p.readValueAs(String.class);
+  private MinMax deserialize(String serializedStr) {
     boolean lowerInclusive;
     boolean upperInclusive;
     if (serializedStr.startsWith(INCLUSIVE_LEFT)) {
@@ -55,5 +52,12 @@ public class MinMaxDeserializer extends JsonDeserializer<MinMax> {
         .upperBoundary(upper)
         .isUpperInclusive(upperInclusive)
         .build();
+  }
+
+  @Override
+  public MinMax deserialize(JsonParser p, DeserializationContext ctxt)
+      throws IOException, JsonProcessingException {
+    String serializedStr = p.readValueAs(String.class);
+    return deserialize(serializedStr);
   }
 }

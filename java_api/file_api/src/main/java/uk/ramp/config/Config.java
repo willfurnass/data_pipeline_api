@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value.Derived;
 import org.immutables.value.Value.Immutable;
@@ -16,12 +17,14 @@ import uk.ramp.metadata.ImmutableMetadataItem;
 @JsonSerialize
 @JsonDeserialize
 public interface Config {
-  @JsonProperty("data_directory")
-  Optional<String> internalDataDirectory();
+
+  @JsonProperty("run_metadata")
+  Map<String, String> runMetadata();
 
   @JsonIgnore
   default String normalisedDataDirectory() {
-    return normalisePath(parentPath().orElseThrow(), internalDataDirectory().orElse("."));
+    var internalDataDirectory = runMetadata().getOrDefault("data_directory", ".");
+    return normalisePath(parentPath().orElseThrow(), internalDataDirectory);
   }
 
   @JsonProperty("access_log")
