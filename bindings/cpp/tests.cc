@@ -99,6 +99,5 @@ TEST_CASE("write_array") {
   array(1) = 2;
   array(2) = 3;
 
-  // Get error "'memoryview' object has no attribute 'dtype'". 
   CHECK_NOTHROW(dp.write_array("output-object", "example-array", array));
 }
