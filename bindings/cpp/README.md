@@ -5,90 +5,48 @@
 
 This directory contains C++ bindings for the Python data pipeline API.
 
+(See [DiRAC CSD3](#DiRAC_CSD3) for specific notes on installing on that machine.)
+
 ## Requirements
 
-There are two ways to make sure you have a working Python with all the
-required packages:
+- Python 3 with a working python3-config
 
-1. Manual: If you are familiar with Python, have Python3 installed,
-   and are willing to edit the Makefile to add certain paths to
-   installed packages if it doesn't work, just ensure you have the
-   required packages installed, e.g. using pip3:
-   ```
-   pip3 install pybind11 pyyaml pandas scipy toml semver h5py
-   ```
-   Add --user if needed.
-2. Automatic: Giving up on any existing installation, we can build our
-   own by running the provided script:
-   ```
-   cd data_pipeline_api/bindings/cpp
-   ./install-python-stack $PWD/python
-   ```
-   Copy and paste the "export PATH=" line printed at the end to choose this version of Python.
+- Create and activate a virtual environment for the required packages from the top-level repository directory:
+  ```
+  python3 -m venv .venv
+  source .venv/bin/activate
+  ```
 
-## Run the Python example
+- Install the required packages:
+  ```
+  pip install networkx matplotlib pandas toml h5py scipy pyyaml semver fsspec s3fs click requests paramiko coverage pytest pytest-cov aiohttp pybind11
+  ```
+  
+- Note: we have not been successful in running with Conda. The problem
+  appears to be related to the provided Python being compiled with a
+  different compiler than is used to build the C++ bindings.
 
-To test that things are working so far, you should now be able to run
-the Python example:
+- Check that `data_pipeline_api` is working by running the tests,
+  `pytest tests`, from the top-level repository directory.
 
-```
-cd data_pipeline_api
-export PYTHONPATH=$PWD/src:$PYTHONPATH
-python3 examples/data_access.py
-```
-This should output
-
-```
-    source   target    mixing
-0   [0,17)   [0,17)  2.158825
-1   [0,17)  [17,70)  1.642811
-2   [0,17)      70+  0.095393
-3  [17,70)   [0,17)  0.540818
-4  [17,70)  [17,70)  2.291221
-5  [17,70)      70+  0.175799
-6      70+   [0,17)  0.036736
-7      70+  [17,70)  0.274034
-8      70+      70+  0.075217
-```
-(You might also get some YAML warnings.)
-
-## Building the C++ wrapper
-
-Now build the C++ test program:
+## Building the C++ wrapper library
 
 ```
 cd bindings/cpp
 make
 ```
 
-## Running the C++ wrapper
+## Run the C++ wrapper tests
 
 The test program for the wrapper can be run as:
 ```
-./test_datapipeline
+make test
 ```
 
-It should run without producing an error (you might get warnings about
-YAML) and output some data from the data repository.
+## DiRAC CSD3
 
-## Notes for installation on DiRAC CSD3
-
-(TODO: update to use the self-contained build above)
-
-The python/3.6 module on CSD3 can be used, but it has no pip
-available, and some of the packages appear to be broken, so it's best
-to install pip3 and all required packages in ~/.local as follows:
-
+Follow the above instructions, but be sure to run
 ```
-. /etc/profile.d/modules.sh
-module purge
 module load python/3.6
-
-# Bootstrap pip3
-python -m ensurepip --user --upgrade
-
-# Install required packages to ~/.local
-pip3 install --user --upgrade pybind11 pyyaml pandas scipy toml
 ```
-
-Then proceed as above.
+first. The default python does not have python3-config, which is required for the compilation.
