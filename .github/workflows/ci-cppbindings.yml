@@ -22,7 +22,7 @@ jobs:
         python3 -m venv .venv
         source .venv/bin/activate
         pip install wheel
-        pip install -r bindings/cpp/requirements.txt
+        pip install -r bindings/cpp/requirements.txt dataclasses
 
     - name: Compile
       run: |
