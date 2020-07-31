@@ -1,9 +1,7 @@
-run_metadata:
-  data_directory: folder/data
-  run_id: runId
-
+data_directory: folder/data
 access_log: access-{run_id}.yaml
 fail_on_hash_mismatch: True
+run_id: runId
 
 read:
   - where:
