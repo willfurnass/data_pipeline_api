@@ -21,8 +21,7 @@ jobs:
       run: |
         python3 -m venv .venv
         source .venv/bin/activate
-        pip install wheel
-        pip install networkx matplotlib pandas toml h5py scipy pyyaml semver fsspec s3fs click requests paramiko coverage pytest pytest-cov aiohttp pybind11
+        pip install -r bindings/cpp/requirements.txt
 
     - name: Compile
       run: |
