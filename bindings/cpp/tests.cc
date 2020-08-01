@@ -71,7 +71,6 @@ TEST_CASE("read_table") {
 }
 
 TEST_CASE("table::get_column/types") {
-  INIT_DP;
   Table table;
 
   table.add_column<long>("a",{1,2,3});
