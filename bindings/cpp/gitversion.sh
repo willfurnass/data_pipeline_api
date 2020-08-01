@@ -3,8 +3,8 @@
 set -e
 set -u
 
-outfile=$1
-tmpfile=${outfile}.tmp
+outfile="$1"
+tmpfile="${outfile}.tmp"
 
 version=$(git describe --dirty --always)
 git_hash=$(git rev-parse HEAD)
@@ -13,7 +13,7 @@ upstream_remote=${upstream_branch%/*} || echo "NONE"
 upstream_url=$(git remote get-url "${upstream_remote}" || echo "NONE")
 
 echo "GIT ${version}"
-cat >$tmpfile <<EOF
+cat >"$tmpfile" <<EOF
 #pragma once
 #define GIT_VERSION "$version"
 #define GIT_HASH "$git_hash"
