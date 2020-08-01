@@ -24,9 +24,9 @@ double DataPipeline::read_estimate(string data_product, const string &component)
 
 Distribution DataPipeline::read_distribution(const string &data_product, const string &component)
 {
-  py::object d_py = api.attr("read_distribution")(data_product, component);
-
   throw runtime_error("Not implemented");
+  // py::object d_py = api.attr("read_distribution")(data_product, component);
+
 
   // Distribution d;
 
