@@ -28,10 +28,10 @@ void test_array()
   bool caught_ok = false;
   try {
     cout << "  a(11) == " << a(11) << endl;
-  } catch(out_of_range e) {
+  } catch(out_of_range &e) {
     caught_ok = true;
     cout << "Correct exception when accessing out of bounds" << endl;
-  } catch(exception e) {
+  } catch(exception &e) {
     throw(logic_error(string("Unexpected exception ")+e.what()+" caught in test"));
   }
   if (!caught_ok) {
