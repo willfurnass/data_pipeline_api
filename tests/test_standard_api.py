@@ -51,6 +51,7 @@ def test_write_distribution(standard_api):
 def test_read_distribution_as_estimate(standard_api):
     with standard_api as api:
         assert api.read_estimate("parameter", "example-distribution") == 2.0
+        assert api.read_estimate("parameter", "example-unicode-distribution") == 1.0
 
 
 def test_read_distribution_as_distribution(standard_api):
