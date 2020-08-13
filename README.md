@@ -91,6 +91,10 @@ pytest --cov=data_pipeline_api tests
 
 **ToDo**
 
+### Using the API in R
+
+A description of how to use this API in R is given [here](r_api/README.md).
+
 # Current issues and questions
 
 **ToDo** Migrate these to GitHub issues.
