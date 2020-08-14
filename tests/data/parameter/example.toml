@@ -8,6 +8,12 @@ distribution = "gamma"
 k = 1
 theta = 2
 
+[example-unicode-distribution]
+type = "distribution"
+distribution = "normal"
+"μ" = 1
+"σ²" = 2
+
 [example-samples]
 type = "samples"
 samples = [ 1, 2, 3,]

@@ -5,6 +5,7 @@ from typing import Union, Dict, Any, Tuple
 import toml
 import numpy as np
 from scipy import stats
+from math import sqrt
 
 # ======================================================================================
 # Common
@@ -137,25 +138,40 @@ def encode_distribution(distribution: Distribution) -> Dict[str, Any]:
 
 # Functions to decode serialised distributions.
 distribution_decoders = {
-    "categorical": lambda data: Categorical(data["bins"], data["weights"]),
-    "gamma": lambda data: stats.gamma(data["k"], scale=data["theta"]),
-    "normal": lambda data: stats.norm(data["mu"], data["sigma"]),
-    "uniform": lambda data: stats.uniform(data["a"], data["b"] - data["a"]),
-    "poisson": lambda data: stats.poisson(data["lambda"]),
-    "exponential": lambda data: stats.expon(scale=1 / data["lambda"]),
-    "beta": lambda data: stats.beta(data["alpha"], data["beta"]),
-    "binomial": lambda data: stats.binom(data["n"], data["p"]),
-    "multinomial": lambda data: stats.multinomial(data["n"], data["p"]),
+    "categorical": [lambda data: Categorical(data["bins"], data["weights"])],
+    "gamma": [lambda data: stats.gamma(data["k"], scale=data["theta"]),
+              lambda data: stats.gamma(data["k"], scale=data["θ"]),
+              lambda data: stats.gamma(data["shape"], scale=data["scale"]),
+              lambda data: stats.gamma(data["alpha"], scale=1 / data["beta"]),
+              lambda data: stats.gamma(data["α"], scale=1 / data["β"]),
+              lambda data: stats.gamma(data["shape"], scale=1 / data["rate"])],
+    "normal": [lambda data: stats.norm(data["mu"], data["sigma"]),
+               lambda data: stats.norm(data["μ"], data["σ"]),
+               lambda data: stats.norm(data["μ"], sqrt(data["σ²"])),
+               lambda data: stats.norm(data["mu"], 1 / sqrt(data["tau"])),
+               lambda data: stats.norm(data["μ"], 1 / sqrt(data["τ"]))],
+    "uniform": [lambda data: stats.uniform(data["a"], data["b"] - data["a"])],
+    "poisson": [lambda data: stats.poisson(data["lambda"]),
+                lambda data: stats.poisson(data["λ"])],
+    "exponential": [lambda data: stats.expon(scale=1 / data["lambda"]),
+                    lambda data: stats.expon(scale=1 / data["λ"]),
+                    lambda data: stats.expon(scale=data["scale"])],
+    "beta": [lambda data: stats.beta(data["alpha"], data["beta"]),
+             lambda data: stats.beta(data["α"], data["β"])],
+    "binomial": [lambda data: stats.binom(data["n"], data["p"])],
+    "multinomial": [lambda data: stats.multinomial(data["n"], data["p"])],
 }
 
 
 def decode_distribution(encoded_distribution: Dict[str, Any]) -> Distribution:
     """Decode distribution from serialised format.
     """
-    return distribution_decoders[encoded_distribution["distribution"]](
-        encoded_distribution
-    )
-
+    for decoder in distribution_decoders[encoded_distribution["distribution"]]:
+        try:
+            return decoder(encoded_distribution)
+        except KeyError:
+            continue
+    raise KeyError(encoded_distribution["distribution"])
 
 def read_distribution(file: TextIOBase, component: str) -> Distribution:
     parameter = read_parameter(file, component)
