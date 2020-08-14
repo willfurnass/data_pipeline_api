@@ -24,7 +24,7 @@ template<typename T>
 class ColumnT : public Column
 {
   public:
-  ColumnT(const vector<T> &vals_in) : vals(vals_in) {type = typeid(T);};
+  explicit ColumnT(const vector<T> &vals_in) : vals(vals_in) {type = typeid(T);};
   string get_value_as_string(int i);
 
   vector<T> vals;
