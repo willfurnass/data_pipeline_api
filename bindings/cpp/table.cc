@@ -14,7 +14,7 @@ using namespace std;
 class Column 
 {
   public:
-  Column() : type(typeid(void)) {};
+  explicit Column() : type(typeid(void)) {};
   virtual ~Column() {};
   virtual string get_value_as_string(int i)=0;
   type_index type;
