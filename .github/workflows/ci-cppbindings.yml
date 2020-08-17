@@ -1,0 +1,37 @@
+name: ci-cppbindings
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+        # This doesn't work:
+        # /bin/bash --noprofile --norc -e -o pipefail -o nounset {0}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Install packages
+      run: sudo apt-get update && sudo apt-get install -y python3-setuptools python3-venv && sudo rm -rf /var/lib/apt/lists/*
+
+    - name: Install Python packages
+      run: |
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip install wheel
+        pip install -r bindings/cpp/requirements.txt 
+
+    - name: Compile
+      run: |
+        source .venv/bin/activate
+        cd bindings/cpp
+        make -j 4
+
+    - name: Run tests
+      run: |
+        source .venv/bin/activate
+        cd bindings/cpp
+        make test
