@@ -1,7 +1,7 @@
 
 # C++ bindings for Python Data Pipeline API
 
-[![](https://github.com/ScottishCovidResponse/data_pipeline_api/workflows/ci-cppbindings/badge.svg?branch=cppbindings)](https://github.com/ScottishCovidResponse/data_pipeline_api/actions?query=workflow%3Aci-cppbindings)
+[![](https://github.com/ScottishCovidResponse/data_pipeline_api/workflows/ci-cppbindings/badge.svg?branch=cppbindings)](https://github.com/ScottishCovidResponse/data_pipeline_api/actions?query=workflow%3Aci-cppbindings)![SCRC API C++ Bindings (CMake)](https://github.com/ScottishCovidResponse/data_pipeline_api/workflows/SCRC%20API%20C++%20Bindings%20(CMake)/badge.svg)
 
 This directory contains C++ bindings for the Python data pipeline API.
 
@@ -37,6 +37,21 @@ make
 The test program for the wrapper can be run as:
 ```
 make test
+```
+
+## Alternative build with CMake
+
+Alternative to the above the library can also be built using CMake.
+
+```
+cmake -H. -Bbuild
+cmake --build build
+```
+
+the tests for this method have been written using GTest and can be run using the created binary:
+
+```
+./build/bin/SCRCdataAPI-tests
 ```
 
 ## Machine-specific notes
