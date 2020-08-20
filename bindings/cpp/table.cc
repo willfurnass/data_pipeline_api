@@ -1,12 +1,3 @@
-
-#include <iostream>
-#include <string>
-#include <map>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include <typeinfo>
-#include <typeindex>
 #include "table.hh"
 
 using namespace std;
@@ -69,6 +60,11 @@ Table::Table() : m_size(0)
 template<typename T>
 void Table::add_column(const string &colname, const vector<T> &values)
 {
+  if (columns.find(colname) != columns.end())
+  {
+    throw invalid_argument("Column '"+colname+"' already exists");
+  }
+
   if (m_size > 0)  {
     if (values.size() != m_size) {
       throw invalid_argument("Column size mismatch in add_column");
@@ -86,7 +82,7 @@ template<typename T>
 vector<T> &Table::get_column(const string &colname)
 {
   if (columns.find(colname) == columns.end()) {
-    throw out_of_range("There is no column named " + colname + " in this table");
+    throw out_of_range("There is no column named '" + colname + "' in this table");
   }
 
   const type_index  &stored_type = columns[colname]->type;
@@ -117,7 +113,7 @@ vector<string> Table::get_column_as_string(const string &colname)
   return result;
 }
 
-const vector<string> &Table::get_column_names()
+vector<string> Table::get_column_names() const
 {
   return colnames;
 }
@@ -161,6 +157,12 @@ string Table::to_string()
   ss << sep << endl;
 
   return ss.str();
+}
+
+type_index Table::get_column_type(const string colname)
+{
+  const type_index col_type = columns[colname]->type;
+  return col_type;
 }
 
 #define INSTANTIATE_TABLE(type) \

@@ -71,7 +71,7 @@ int main()
   // cout << "mixing = [" << mixing.at(0) << "," << mixing.at(1) << ", ... ]" << endl;
 
   // read_array
-  Array<double> array = dp.read_array("object", "example-array");
+  Array<double> array = dp.read_array<double>("object", "example-array");
 
   vector<int> shape = array.size();
 
