@@ -9,12 +9,16 @@ jobs:
         image: ubuntu:latest
         env:
             DEBIAN_FRONTEND : noninteractive
+            LANG : 'en_GB.UTF-8' 
+            LANGUAGE : 'en_GB:en' 
+            LC_ALL : 'en_GB.UTF-8'
     steps:
         - uses: actions/checkout@v2
         
         - name: Install Requirements
           run: |
-               apt update && apt install -y python3 python3-pip cmake git
+               apt update && apt install -y locales python3 python3-pip cmake git
+               locale-gen en_GB.UTF-8
        
         - name: Pip Install Python Modules
           run: pip3 install -r bindings/cpp/requirements.txt
