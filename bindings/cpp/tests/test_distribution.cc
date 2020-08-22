@@ -4,9 +4,13 @@
 
 TEST_F(SCRCAPITest, TestWriteDistribution)
 {
-    EXPECT_NO_THROW(pDataPipeline_->write_distribution("output-parameter", "example-distribution", Gamma(10, 10)));
-    EXPECT_NO_FATAL_FAILURE(pDataPipeline_->read_distribution("output-parameter", "example-distribution").getParameter("k") == 10);
-    EXPECT_NO_FATAL_FAILURE(pDataPipeline_->read_distribution("output-parameter", "example-distribution").getParameter("theta") == 10);
+  const std::string CONFIG_FILE = std::string(ROOTDIR)+"/bindings/cpp/tests/config.yaml";
+  const std::string uri = std::string(GIT_URL);
+  const std::string version = std::string(VERSION);
+  DataPipeline* dp_test = new DataPipeline(CONFIG_FILE, uri, version);
+  EXPECT_NO_THROW(dp_test->write_distribution("output-parameter", "example-distribution", Gamma(10, 10)));
+  EXPECT_EQ(dp_test->read_distribution("output-parameter", "example-distribution").getParameter("k"), 10);
+  EXPECT_EQ(dp_test->read_distribution("output-parameter", "example-distribution").getParameter("theta"), 10);
 }
 
 TEST_F(SCRCAPITest, TestReadDistribution)

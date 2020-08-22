@@ -33,11 +33,11 @@ TEST_CASE("read_estimate") {
 }
 
 TEST_CASE("write_distribution") {
-  INIT_DP;
+  DataPipeline dp_test("config.yaml", uri, GIT_VERSION)
   const pybind11::object _gamma = Gamma(10, 10);
-  CHECK_NOTHROW(dp.write_distribution("output-parameter", "example-distribution", _gamma));
-  CHECK(dp.read_distribution("output-parameter", "example-distribution").getParameter("k") == 10);
-  CHECK(dp.read_distribution("output-parameter", "example-distribution").getParameter("theta") == 10);
+  CHECK_NOTHROW(dp_test.write_distribution("output-parameter", "example-distribution", _gamma));
+  CHECK(dp_test.read_distribution("output-parameter", "example-distribution").getParameter("k") == 10);
+  CHECK(dp_test.read_distribution("output-parameter", "example-distribution").getParameter("theta") == 10);
 }
 
 TEST_CASE("read_distribution") {

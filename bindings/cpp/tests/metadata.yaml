@@ -1,0 +1,6 @@
+-
+  data_product: output-parameter
+  component: example-distribution
+  version: 1.0.0
+  filename: output-parameter/example.toml
+  
