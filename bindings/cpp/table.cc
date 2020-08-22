@@ -159,7 +159,7 @@ string Table::to_string()
   return ss.str();
 }
 
-type_index Table::get_column_type(const string colname)
+type_index Table::get_column_type(const string &colname)
 {
   const type_index col_type = columns[colname]->type;
   return col_type;
