@@ -37,7 +37,7 @@ INC_DIRS := $(SRC_DIR) $(BUILD_DIR)
 
 # Library
 TARGET_LIB := $(BUILD_DIR)/libdatapipeline.a
-LIB_SRC_NAMES := array.cc datapipeline.cc table.cc
+LIB_SRC_NAMES := array.cc distributions.cc datapipeline.cc table.cc
 LIB_SRCS := $(addprefix $(SRC_DIR)/,$(LIB_SRC_NAMES))
 LIB_OBJS := $(LIB_SRCS:%=$(BUILD_DIR)/%.o)
 
@@ -64,7 +64,7 @@ TESTS := $(foreach name,$(TARGET_EXEC_NAMES),TEST_$(name))
 # Flags
 ###############################################################################
 
-CXXFLAGS := $(CXXFLAGS) -g -std=c++11 -Wno-attributes $(PYTHON_CFLAGS) -Wall
+CXXFLAGS := $(CXXFLAGS) -g -std=c++17 -Wno-attributes $(PYTHON_CFLAGS) -Wall
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS := $(CPPFLAGS) $(INC_FLAGS) -MMD -MP
 LDFLAGS := $(LDFLAGS) $(PYTHON_LDFLAGS)
