@@ -54,6 +54,87 @@ the tests for this method have been written using GTest and can be run using the
 ./build/bin/SCRCdataAPI-tests
 ```
 
+## Usage
+
+Where possible the usage of the API in C++ mirrors that of Python however there are a few exceptions.
+
+### Reading and Writing Distributions
+
+Note that the procedure to read distributions is different to writing them. Due to the differences between C++ and Python, the retrieval method
+converts the Python `scipy.stats` object to a simple class `Distribution` from which parameters can be extracted. The reason for this wrapper class is that some variables exist within the `kwargs` member of the `scipy.stats` object, whereas others exist within `args`, the class unpacks these to be a single set in a way that varies depending on the type of distribution received.
+
+To retrieve a parameter that is a single value (i.e. not an array) use the `getParameter(<param_name>)` method:
+
+```C++
+DataPipeline* dat_pipe = new DataPipeline("/path/to/config.yaml", github_uri, version);
+
+// Retrieve the parameter 'k' from the Gamma distribution 'example-distribution'
+const double k = dat_pipe->read_distribution("parameter", "example-distribution").getParameter("k");
+```
+
+for parameters which are an array, use `getArrayParameter(<param_name>)` which returns a `std::vector<double>`:
+
+```C++
+// Retrieve the parameter 'p' from the Multinomial distribution 'example-distribution'
+const std::vector<double> dat_pipe->read_distribution("parameter", "example-distribution").getArrayParameter("p");
+```
+
+Writing distributions is easy, the following functions return `pybind11::object`s which are then handed to the API:
+
+```C++
+Gamma(double k, double theta);
+
+Normal(double mu, double sigma);
+
+Poisson(double lambda);
+
+Multinomial(double n, std::vector<double> p);
+
+Uniform(double a, double b);
+
+Beta(double alpha, double beta);
+
+Binomial(int n, double p);
+```
+
+for example, to write a Poisson distribution named "my_dist":
+
+```C++
+dat_pipe->write_distribution("distribution", "my_dist", Poisson(5));
+```
+
+### Reading and Writing Parameters
+
+Parameters are read and written in a manner identical to the Python API:
+
+```C++
+dat_pipe->read_estimate("parameter", "example-estimate");
+dat_pipe->write_estimate("output-parameter", "example-estimate", 1.0);
+```
+
+### Reading and Writing Tables
+
+Tables are read into a `Table` object which is a set of STL vectors representing columns. The columns can then be retrieved:
+
+```C++
+Table table = pDataPipeline_->read_table("object", "example-table");
+
+std::vector<long> col_a = table.get_column<long>("a");
+```
+
+Tables are assembled using STL vectors also:
+
+```C++
+Table table;
+const std::vector<std::string> _alpha = {"A", "B", "C", "D", "E", "F"};
+const std::vector<double> _numero = {0.5, 2.2, 3.4, 4.6, 5.2, 6.1};
+const std::vector<int> _id = {0,1,2,3,4,5};
+table.add_column("ALPHA", _alpha);
+table.add_column("NUMERO", _numero);
+table.add_column("ID", _id);
+pDataPipeline_->write_table("output-table", "example-table", table);
+```
+
 ## Machine-specific notes
 
 ### DiRAC CSD3
