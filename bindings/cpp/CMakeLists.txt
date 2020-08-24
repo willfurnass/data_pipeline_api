@@ -23,7 +23,7 @@ execute_process(
     OUTPUT_VARIABLE GIT_REMOTE_URL
 )
 
-project( SCRCdataAPI VERSION 0.7.3 LANGUAGES CXX )
+project( datapipeline VERSION 0.7.3 LANGUAGES CXX )
 
 SET( CMAKE_CXX_STANDARD 17 )
 SET( CMAKE_CXX_STANDARD_REQUIRED ON )
@@ -48,7 +48,7 @@ MESSAGE(STATUS "\t${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "\tPYTHONLIBS: ${PYTHON_INCLUDE_DIRS}")
 MESSAGE(STATUS "---------------------------------")
 
-add_library( ${PROJECT_NAME} SHARED ${SRCFILES} )
+add_library( ${PROJECT_NAME} STATIC ${SRCFILES} )
 target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}
                             ${PROJECT_NAME} PUBLIC ${PYBIND11LIBS}
                             ${PROJECT_NAME} PUBLIC ${PYTHON_INCLUDE_DIRS}
