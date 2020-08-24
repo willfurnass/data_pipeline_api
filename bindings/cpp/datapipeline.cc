@@ -40,7 +40,6 @@ void DataPipeline::write_estimate(const string &data_product, const string &comp
 void DataPipeline::write_distribution(const string &data_product, const string &component,
                         const pybind11::object &distribution)
 {
-  pybind11::print(distribution);
   api.attr("write_distribution")(data_product, component, distribution);
 }
 

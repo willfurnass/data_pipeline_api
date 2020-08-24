@@ -32,6 +32,7 @@ class Distribution
             {
                 os << p.first << "=";
                 os << p.second;
+                os << ", ";
             }
             
             for(auto p : d._array_parameters)
@@ -40,10 +41,12 @@ class Distribution
                 for(auto i : p.second)
                 {
                     os << i;
-                    os << ",";
+                    os << ", ";
                 }
                 os << "]";
             }
+
+            os << ")";
 
             return os;
         }
