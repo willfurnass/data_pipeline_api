@@ -30,7 +30,7 @@ jobs:
         
         - name: Run Unit Tests
           run: |
-                ./bindings/cpp/build/bin/SCRCdataAPI-tests
+                ./bindings/cpp/build/bin/datapipeline-tests
                 if [ $? -eq 0 ]; then
                     echo "Regression tests completed successfully"
                     exit 0
