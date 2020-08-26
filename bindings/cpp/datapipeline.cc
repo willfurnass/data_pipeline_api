@@ -71,6 +71,9 @@ Table DataPipeline::read_table(const string &data_product, const string &compone
       // TODO: long isn't 64 bits on Windows or 32 bit systems
       vector<long> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<long>>();
       table.add_column<long>(colname, values);
+    } else if (dtype == "int32") {
+      vector<int> values = dataframe[colname.c_str()].attr("tolist")().cast<vector<int>>();
+      table.add_column<int>(colname, values);
     } else {
       cout << "WARNING: Converting column " << colname << " from unsupported type " << dtype << " to string" << endl;
 
