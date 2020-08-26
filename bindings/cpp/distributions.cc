@@ -73,10 +73,9 @@ Distribution todis_beta(pybind11::object d_py)
 Distribution todis_binomial(pybind11::object d_py)
 {
     const string name = "binomial";
-    const double n = d_py.attr("n").cast<double>();
-    const std::vector<double> p = d_py.attr("p").cast<vector<double>>();
+    const vector<double> args = d_py.attr("args").cast<vector<double>>();
 
-    return Distribution(name, {{"n", n}}, {{"p", p}});
+    return Distribution(name, {{"n", args[0]}, {"p", args[1]}});
 }
 
 Distribution todis_multinomial(pybind11::object d_py)
@@ -111,6 +110,10 @@ const Distribution get_distribution(pybind11::object d_py)
     else if(name == "binom")
     {
         return todis_poisson(d_py);
+    }
+    else if(name == "beta")
+    {
+        return todis_beta(d_py);
     }
     else if(name == "expon")
     {

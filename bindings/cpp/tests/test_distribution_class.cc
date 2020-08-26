@@ -21,4 +21,16 @@ TEST_F(SCRCAPITest, TestDistributionPrint)
 {
    Distribution _dis = todis_gamma(Gamma(10,10));
    EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_poisson(Poisson(10));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_multinomial(Multinomial(3, {4,5,6}));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_binomial(Binomial(3, 7));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_uniform(Uniform(3, 7));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_beta(Beta(3, 7));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
+   _dis = todis_normal(Normal(3, 7));
+   EXPECT_NO_FATAL_FAILURE(std::cout << _dis << std::endl);
 }
