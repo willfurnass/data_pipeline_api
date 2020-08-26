@@ -32,8 +32,6 @@ SET( CMAKE_THREAD_LIBS_INIT "-lpthread" )
 SET( SRCFILES array.cc distributions.cc datapipeline.cc table.cc )
 get_filename_component( BINDINGS_ROOT ${CMAKE_SOURCE_DIR} DIRECTORY )
 get_filename_component( DATA_PIPELINE_ROOT ${BINDINGS_ROOT} DIRECTORY )
-SET( PYTHON_CFLAGS "${PYTHON_EXTRA_CFLAGS} ${PYCFLAGS} -UNDEBUG -fPIC" )
-SET( PYTHON_LDFLAGS "${PYTHON_EXTRA_LDFLAGS} ${PYLDFLAGS}" )
 set( CMAKE_CXX_FLAGS "-DROOTDIR=\\\"${DATA_PIPELINE_ROOT}\\\" -DGIT_URL=\\\"${GIT_REMOTE_URL}\\\" -DVERSION=\\\"${SOFT_VERSION}\\\"" )
 
 find_package(PythonLibs 3 REQUIRED)

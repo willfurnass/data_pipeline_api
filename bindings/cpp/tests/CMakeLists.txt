@@ -76,7 +76,7 @@ MESSAGE(STATUS "\tGMOCK: ${GMOCK_INCLUDE_DIRS}")
 MESSAGE(STATUS "\tFLAGS: ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "----------------------------------")
 
-target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME} ${PROJECT_LIBS} ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
+target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME} ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 
 include(GoogleTest)
 gtest_discover_tests(${TEST_NAME})
