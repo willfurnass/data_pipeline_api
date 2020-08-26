@@ -5,9 +5,11 @@
 #include "pybind11/embed.h"
 
 #include "table.hh"
-#include "datapipeline.hh"
-
 #include "array.hh"
+
+#include "datapipeline.hh"
+#include "distributions.hh"
+
 #include "gitversion.hh"
 
 using namespace std;
@@ -30,20 +32,22 @@ TEST_CASE("read_estimate") {
   CHECK(dp.read_estimate("parameter", "example-samples") == 2);
 }
 
-TEST_CASE("write_distribution", "[!shouldfail]") {
-  INIT_DP;
-  Distribution dist;
-  CHECK_NOTHROW(dp.write_distribution("output-parameter", "example-distribution", dist));
+TEST_CASE("write_distribution") {
+  DataPipeline dp_test("tests/config.yaml", uri, GIT_VERSION);
+  const pybind11::object _gamma = Gamma(10, 10);
+  CHECK_NOTHROW(dp_test.write_distribution("output-parameter", "example-distribution", _gamma));
+  CHECK(dp_test.read_distribution("output-parameter", "example-distribution").getParameter("k") == 10);
+  CHECK(dp_test.read_distribution("output-parameter", "example-distribution").getParameter("theta") == 10);
 }
 
-TEST_CASE("read_distribution","[!shouldfail]") {
+TEST_CASE("read_distribution") {
   INIT_DP;
 
   CHECK_THROWS_AS(dp.read_distribution("parameter", "example-estimate"),
                   pybind11::error_already_set);
   CHECK(dp.read_distribution("parameter", "example-distribution").name == "gamma");
-  CHECK(dp.read_distribution("parameter", "example-distribution").params["shape"] == 1);
-  CHECK(dp.read_distribution("parameter", "example-distribution").params["scale"] == 2);
+  CHECK(dp.read_distribution("parameter", "example-distribution").getParameter("k") == 1);
+  CHECK(dp.read_distribution("parameter", "example-distribution").getParameter("theta") == 2);
   CHECK_THROWS_AS(dp.read_distribution("parameter", "example-samples"),
                   pybind11::error_already_set);
 }
@@ -82,21 +86,33 @@ TEST_CASE("table::get_column/types") {
 TEST_CASE("read_array") {
   INIT_DP;
 
-  Array<double> array = dp.read_array("object", "example-array");
+  Array<double> array = dp.read_array<double>("object", "example-array");
 
   CHECK(array(0) == 1);
   CHECK(array(1) == 2);
   CHECK(array(2) == 3);
 }
 
-TEST_CASE("write_array") {
+TEST_CASE("write_array_double") {
   INIT_DP;
 
   Array<double> array(1,{3});
+
+  array(0) = 1.;
+  array(1) = 2.;
+  array(2) = 3.;
+
+  CHECK_NOTHROW(dp.write_array<double>("output-object", "example-array", array));
+}
+
+TEST_CASE("write_array_int") {
+  INIT_DP;
+
+  Array<int> array(1,{3});
 
   array(0) = 1;
   array(1) = 2;
   array(2) = 3;
 
-  CHECK_NOTHROW(dp.write_array("output-object", "example-array", array));
+  CHECK_NOTHROW(dp.write_array<int>("output-object", "example-array", array));
 }

@@ -67,3 +67,5 @@ vector<int> Array<T>::size() const
 }
 
 template class Array<double>;
+template class Array<int>;
+template class Array<float>;
