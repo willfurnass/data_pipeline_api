@@ -16,3 +16,8 @@ repos/*
 
 # sphinx / readthedocs
 doc/build/*
+
+# tests directories
+tests/data/output*
+tests/data/access*.yaml
+bindings/cpp/tests/output*

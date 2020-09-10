@@ -12,6 +12,11 @@ DataPipeline::DataPipeline(const string &config_file, const string &uri, const s
   api(py::module::import("data_pipeline_api.standard_api").attr("StandardAPI").attr("from_config")(
     config_file, uri, git_sha)) {}
 
+DataPipeline::~DataPipeline()
+{
+  api.attr("file_api").attr("close")();
+}
+
 double DataPipeline::read_estimate(string data_product, const string &component)
 {
   // TODO: can we assume all estimate are floats? Should we check it?
