@@ -1,0 +1,25 @@
+name: SCRC Python API
+
+on: [push]
+
+jobs:
+  Install_and_Test:
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: '3.x'
+        - name: Install Dependencies
+          run: pip install pytest pyyaml coverage
+        - name: Install Module
+          run: echo "Using Python $(python --version | xargs)" && pip install .
+        - name: Run Tests
+          run: coverage run --source=data_pipeline_api -m pytest
+        - name: Push Coverage Results
+          run: |
+            coverage xml
+            bash <(curl -s https://codecov.io/bash)
+
+
+    
