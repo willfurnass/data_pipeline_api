@@ -138,7 +138,7 @@ def upload_data_product_cli(
         data_products = get_data(query, DataRegistryTarget.data_product, data_registry, token, False)
         if data_products:
             latest = next(iter(sort_by_semver(data_products)))
-            data_product_version = str(semver.parse_version_info(latest[DataRegistryField.version]).bump_minor())
+            data_product_version = str(semver.VersionInfo.parse(latest[DataRegistryField.version]).bump_minor())
         elif not data_product_version:
             data_product_version = "0.1.0"
 

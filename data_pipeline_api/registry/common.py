@@ -129,7 +129,7 @@ def sort_by_semver(items: List[Dict[str, Any]], descending: bool = True, key: An
     :return: Sorted list of items
     """
     return sorted(
-        items, key=lambda data: semver.parse_version_info(data[key]), reverse=descending,
+        items, key=lambda data: semver.VersionInfo.parse(data[key]), reverse=descending,
     )
 
 

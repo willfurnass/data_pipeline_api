@@ -20,7 +20,7 @@ def clear_cache():
     get_on_end_point.cache_clear()
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def patch_options():
     with patch("requests.options") as options:
         options.return_value = MockResponse({"actions": {"POST": {"name": None}}})
