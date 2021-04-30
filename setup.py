@@ -1,36 +1,6 @@
-from pathlib import Path
-from pkg_resources import Requirement
-import re
-
 from setuptools import setup
-import yaml
 
 IGNORE_PACKAGES = ["python", "coverage", "pytest", "pytest-cov"]
-
-
-def _convert_conda_deps_to_python_requirements(conda_deps):
-    reqs = [Requirement(re.sub(r"\b=\b", "==", dep)) for dep in conda_deps]
-    return [req for req in reqs if req.name not in IGNORE_PACKAGES]
-
-
-def _read_requirements():
-    """
-    Read dependencies from environment.yml
-    """
-    with open(Path(__file__).parent / "environment.yml") as fp:
-        env = yaml.safe_load(fp)
-
-    requirements = []
-    for req in _convert_conda_deps_to_python_requirements(env["dependencies"]):
-        # Even though we want to pin the packages during development, we
-        # need to allow people to download newer versions to avoid
-        # conflicts downstream.
-        if len(req.specs) == 1 and req.specs[0][0] == "==":
-            _, version = req.specs[0]
-            requirements.append(f"{req.name}>={version}")
-        else:
-            requirements.append(str(req))
-    return requirements
 
 
 setup(
@@ -39,7 +9,27 @@ setup(
     author="SCRC",
     author_email="scrc@glasgow.ac.uk",
     packages=["data_pipeline_api", "data_pipeline_api.file_formats", "data_pipeline_api.registry"],
-    install_requires=_read_requirements(),
+    install_requires= [
+      'networkx == 2.4',
+      'matplotlib == 3.1.3',
+      'pandas == 1.0.3',
+      'toml == 0.9.4',
+      'h5py == 2.10.0',
+      'scipy==1.4.1',
+      'pyyaml==5.3.1',
+      'semver==2.9.0',
+      'fsspec==0.7.4',
+      's3fs==0.4.2',
+      'click==7.1.2',
+      'requests==2.23.0',
+      'paramiko==2.7.1',
+      'gitpython==3.1.3',
+
+      # test dependencies
+      'coverage==5.0',
+      'pytest==5.4.1',
+      'pytest-cov==2.8.1'
+    ],
     setup_requires=["setuptools_scm", "pyyaml"],
     use_scm_version=True,
     entry_points={
