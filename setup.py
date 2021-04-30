@@ -1,6 +1,6 @@
 from setuptools import setup
 
-IGNORE_PACKAGES = ["python", "coverage", "pytest", "pytest-cov"]
+#IGNORE_PACKAGES = ["python", "coverage", "pytest", "pytest-cov"]
 
 
 setup(
