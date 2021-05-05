@@ -8,7 +8,6 @@ access-77fa637e8c644e79be1542fce6cfc97e.yaml
 access-84ed8d1264374e2697fb7d52b2a67d85.yaml
 access-c1876429bfea4ac4a6286c8ed7ce026e.yaml
 contributing.md
-environment.yml
 jitpack.yml
 setup.py
 .github/workflows/ci-cppbindings-cmake.yml
@@ -44,7 +43,6 @@ bindings/cpp/tests/test_estimate.cc
 bindings/cpp/tests/test_pipeline_table.cc
 bindings/cpp/tests/test_sample.cc
 bindings/cpp/tests/test_table_class.cc
-conda/meta.yaml
 data_pipeline_api/__init__.py
 data_pipeline_api/data_processing_api.py
 data_pipeline_api/database_file_api.py
