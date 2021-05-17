@@ -30,7 +30,7 @@ env:
 
 matrix:
   include:
-    - name: 'Conda Python with .yml-file'
+    - name: "Conda Python with .yml-file"
       language: python
       install:
         - sudo apt-get update && sudo apt-get install -y wget
@@ -51,14 +51,3 @@ matrix:
       after_success:
         - coverage xml
         - bash <(curl -s https://codecov.io/bash)
-
-    - name: 'Java API build and publish'
-      before_script:
-        - "cd java_api"
-      jdk: openjdk11
-      language: java
-      script: "./gradlew build"
-      after_success: 
-        - bash <(curl -s https://codecov.io/bash)
-        - ./gradlew publish
-
