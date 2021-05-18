@@ -132,7 +132,7 @@ def upload_from_config(config: Dict[str, List[YamlDict]], data_registry_url: str
             if do_request:
                 if DataRegistryField.version in data:
                     try:
-                        semver.parse_version_info(data[DataRegistryField.version])
+                        semver.VersionInfo.parse(data[DataRegistryField.version])
                     except ValueError as e:
                         raise ValueError(
                             f"version must match the Semantic Versioning (SemVer) "

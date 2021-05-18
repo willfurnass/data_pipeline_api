@@ -22,21 +22,20 @@ See [contributing](contributing.md).
 
 ## Installing
 
-### Conda
+### From Repository
 
-Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) (it also works with [anaconda](https://docs.anaconda.com/anaconda/install/), but we do not need the extra packages). With conda installed, run the following commands to create the virtual environment and activate it:
-
-```
-conda env create -f environment.yml
-conda activate data_pipeline_api
-```
-
-This is most useful for testing and development.
-
-A packaged version can be installed via [Anaconda Cloud](https://anaconda.org/scottishcovidresponse/data_pipeline_api) for use in other applications:
+This package can be installed from the repository using setup.py
 
 ```bash
-conda install -c scottishcovidresponse data-pipeline-api
+git clone https://github.com/ScottishCovidResponse/data_pipeline_api.git
+cd data_pipeline_api
+pip install -e .
+```
+
+or
+
+```bash
+pip install git+https://github.com/ScottishCovidResponse/data_pipeline_api.git
 ```
 
 ### Pip
@@ -116,5 +115,3 @@ A description of how to use this API in R is given [here](r_api/README.md).
 ## License
 
 [BSD 3-Clause License](LICENSE).
-
-

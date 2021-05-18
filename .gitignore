@@ -16,3 +16,6 @@ repos/*
 
 # sphinx / readthedocs
 doc/build/*
+
+# setuptools
+.eggs/
