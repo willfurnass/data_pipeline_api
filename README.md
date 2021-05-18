@@ -26,17 +26,17 @@ See [contributing](contributing.md).
 
 This package can be installed from the repository using setup.py
 
-'''bash
+```bash
 git clone https://github.com/ScottishCovidResponse/data_pipeline_api.git
 cd data_pipeline_api
 pip install -e .
-'''
+```
 
 or
 
-'''bash
+```bash
 pip install git+https://github.com/ScottishCovidResponse/data_pipeline_api.git
-'''
+```
 
 ### Pip
 
